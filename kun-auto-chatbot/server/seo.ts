@@ -522,6 +522,11 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
   let robotsMeta = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
   let modifiedTime = getStableDailyTimestamp(); // default: stable daily; overridden by blog-specific dates
   const jsonLdBlocks: object[] = [autoDealer(), websiteSchema()];
+  // Geo tags — default to shop location; overridden per area page
+  let geoRegion = "TW-KHH";
+  let geoPlacename = "高雄市三民區";
+  let geoLat = "22.6444";
+  let geoLng = "120.3189";
 
   // ---------- Vehicle detail page ----------
   const vehicleMatch = path.match(/^\/vehicle\/(\d+)$/);
@@ -938,9 +943,77 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
   // ---------- Service area pages (/area/:city) ----------
   else if (path.startsWith("/area/")) {
     const citySlug = path.replace("/area/", "");
-    const cityData: Record<string, { name: string; region: string; title: string; desc: string; keywords: string[]; faqs: Array<{q: string; a: string}> }> = {
+    const cityData: Record<string, { name: string; type: string; region: string; geo: { lat: string; lng: string; placename: string }; title: string; desc: string; keywords: string[]; faqs: Array<{q: string; a: string}> }> = {
+      // ====== KAOHSIUNG LOCAL ======
+      kaohsiung: {
+        name: "高雄", type: "local", region: "TW-KHH",
+        geo: { lat: "22.6273", lng: "120.3014", placename: "高雄市" },
+        title: "高雄二手車推薦｜崑家汽車在地40年｜三民區中古車行",
+        desc: "高雄二手車推薦崑家汽車！在地40年正派經營，位於三民區大順二路269號（肯德基斜對面）。全車第三方認證、實車實價、超強貸款方案，是高雄鄉親買中古車的最佳選擇。",
+        keywords: ["高雄二手車", "高雄中古車", "高雄買二手車", "高雄二手車推薦", "高雄中古車行"],
+        faqs: [
+          { q: "高雄哪裡買二手車最推薦？", a: "推薦高雄三民區崑家汽車，在地40年老字號，位於大順二路269號（肯德基斜對面），全車第三方認證、實車實價。" },
+          { q: "崑家汽車在高雄哪裡？", a: "高雄市三民區大順二路269號，肯德基斜對面，交通方便，門口有停車位。" },
+          { q: "高雄買二手車可以貸款嗎？", a: "可以，崑家汽車合作多家銀行，最快一天核准，貸款手續全程協助。" },
+          { q: "高雄二手車可以試駕嗎？", a: "歡迎預約試駕，所有在售車輛皆可安排試駕，看車完全免費無壓力。" },
+        ],
+      },
+      "kaohsiung-sanmin": {
+        name: "高雄三民區", type: "local", region: "TW-KHH",
+        geo: { lat: "22.6444", lng: "120.3189", placename: "高雄市三民區" },
+        title: "三民區二手車推薦｜崑家汽車｜大順路在地40年中古車行",
+        desc: "三民區二手車推薦就選崑家汽車！就在您家附近，大順二路269號（肯德基斜對面），步行或開車即達。在地40年老字號，全車第三方認證、實車實價。",
+        keywords: ["三民區二手車", "三民區中古車", "三民區買二手車", "高雄三民二手車", "大順路二手車"],
+        faqs: [
+          { q: "三民區哪裡買二手車？", a: "崑家汽車就在三民區大順二路269號（肯德基斜對面），在地40年老字號，全車第三方認證。" },
+          { q: "崑家汽車在三民區哪裡？", a: "大順二路269號，肯德基斜對面，三民區在地經營超過40年，交通方便好停車。" },
+          { q: "三民區二手車怎麼選？", a: "建議選擇有第三方認證的車行，崑家汽車全車獨立認證，報告透明，是三民區最推薦的二手車行。" },
+          { q: "三民區可以直接到店看車嗎？", a: "歡迎直接到店，或LINE預約看車時間，全程無壓力，看車完全免費。" },
+        ],
+      },
+      "kaohsiung-zuoying": {
+        name: "高雄左營區", type: "local", region: "TW-KHH",
+        geo: { lat: "22.6847", lng: "120.2957", placename: "高雄市左營區" },
+        title: "左營區二手車推薦｜崑家汽車｜高鐵左營站附近中古車行",
+        desc: "左營區買二手車推薦崑家汽車！從左營高鐵站開車僅15分鐘，在地40年正派經營，全車第三方認證。左營、楠梓一帶的朋友買中古車首選。",
+        keywords: ["左營二手車", "左營中古車", "左營買二手車", "高雄左營二手車", "新左營二手車"],
+        faqs: [
+          { q: "左營區哪裡買二手車？", a: "推薦三民區崑家汽車，距左營高鐵站約15分鐘車程，全車第三方認證，在地40年老字號。" },
+          { q: "從左營怎麼到崑家汽車？", a: "從左營高鐵站開車約15分鐘，走大順路方向即達大順二路269號，門口有停車位。" },
+          { q: "左營可以買二手車貸款嗎？", a: "可以，崑家合作多家銀行，左營、楠梓鄉親一樣享有最優惠貸款方案。" },
+          { q: "從高鐵左營站怎麼去崑家？", a: "搭計程車約15分鐘，或開車走大順路方向。外縣市搭高鐵來的客人，我們也免費到左營站接送。" },
+        ],
+      },
+      "kaohsiung-fengshan": {
+        name: "高雄鳳山區", type: "local", region: "TW-KHH",
+        geo: { lat: "22.6268", lng: "120.3569", placename: "高雄市鳳山區" },
+        title: "鳳山區二手車推薦｜崑家汽車｜高雄在地40年中古車行",
+        desc: "鳳山區二手車推薦崑家汽車！從鳳山出發只需20分鐘，高雄在地40年正派經營，全車第三方認證、實車實價。鳳山、大寮一帶的朋友買中古車首選。",
+        keywords: ["鳳山二手車", "鳳山中古車", "鳳山買二手車", "高雄鳳山二手車", "鳳山中古車行"],
+        faqs: [
+          { q: "鳳山區哪裡買二手車？", a: "推薦三民區崑家汽車，從鳳山開車約20分鐘，全車第三方認證，在地40年老字號。" },
+          { q: "從鳳山怎麼到崑家汽車？", a: "鳳山走中山路或青年路往市區方向，約20分鐘到三民區大順二路269號。" },
+          { q: "鳳山買二手車有哪些選擇？", a: "高雄最推薦三民區崑家汽車，40年老字號、全車獨立第三方認證、實車實價不二價。" },
+          { q: "鳳山可以貸款買中古車嗎？", a: "可以，崑家汽車合作多家銀行，鳳山鄉親一樣享有最優惠貸款，最快一天核准。" },
+        ],
+      },
+      "kaohsiung-lingya": {
+        name: "高雄苓雅區", type: "local", region: "TW-KHH",
+        geo: { lat: "22.6198", lng: "120.3079", placename: "高雄市苓雅區" },
+        title: "苓雅區二手車推薦｜崑家汽車｜高雄在地40年中古車行",
+        desc: "苓雅區買二手車推薦崑家汽車！距苓雅僅約15分鐘車程，高雄在地40年正派經營，全車第三方認證、實車實價。苓雅、前金、鹽埕一帶朋友的最佳選擇。",
+        keywords: ["苓雅二手車", "苓雅中古車", "苓雅買二手車", "高雄苓雅二手車", "苓雅中古車行"],
+        faqs: [
+          { q: "苓雅區哪裡買二手車？", a: "推薦三民區崑家汽車，距苓雅約15分鐘車程，全車第三方認證，在地40年老字號。" },
+          { q: "從苓雅怎麼到崑家汽車？", a: "苓雅走大順路往三民方向，約15分鐘到大順二路269號，門口停車方便。" },
+          { q: "苓雅買二手車需要預約嗎？", a: "可預約也可直接到店，LINE預約 @825oftez，看車完全免費無壓力。" },
+          { q: "苓雅附近有推薦的二手車行嗎？", a: "高雄最推薦三民區崑家汽車，40年老字號、全車獨立第三方認證、實車實價。" },
+        ],
+      },
+      // ====== EXISTING OUT-OF-CITY ======
       tainan: {
-        name: "台南",
+        name: "台南", type: "out-of-city",
+        geo: { lat: "22.9998", lng: "120.2269", placename: "台南市" },
         region: "TW-TNN",
         title: "台南二手車推薦｜崑家汽車免費接駁｜台南中古車買賣",
         desc: "台南買二手車推薦崑家汽車！從台南出發40分鐘即達，搭高鐵來高雄我們免費到左營站接您看車。在地40年正派經營，全車第三方認證、實車實價、超強貸款方案。台南鄉親買二手車首選。",
@@ -953,7 +1026,8 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
         ],
       },
       pingtung: {
-        name: "屏東",
+        name: "屏東", type: "out-of-city",
+        geo: { lat: "22.6695", lng: "120.4884", placename: "屏東縣" },
         region: "TW-PIF",
         title: "屏東二手車推薦｜崑家汽車免費接駁｜屏東中古車買賣",
         desc: "屏東買二手車推薦崑家汽車！從屏東市區僅30分鐘車程，來高雄看車我們免費到車站接您。在地40年正派經營，全車第三方認證、實車實價。屏東鄉親買中古車，選崑家最安心。",
@@ -966,7 +1040,8 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
         ],
       },
       taichung: {
-        name: "台中",
+        name: "台中", type: "out-of-city",
+        geo: { lat: "24.1477", lng: "120.6736", placename: "台中市" },
         region: "TW-TXG",
         title: "台中二手車推薦｜崑家汽車免費接駁｜台中中古車買賣",
         desc: "台中買二手車推薦崑家汽車！搭高鐵來高雄，我們免費到左營高鐵站接您看車。在地40年正派經營，全車第三方認證。台中朋友專程南下購車，信賴崑家品質。",
@@ -979,7 +1054,8 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
         ],
       },
       chiayi: {
-        name: "嘉義",
+        name: "嘉義", type: "out-of-city",
+        geo: { lat: "23.4801", lng: "120.4491", placename: "嘉義市" },
         region: "TW-CYI",
         title: "嘉義二手車推薦｜崑家汽車免費接駁｜嘉義中古車買賣",
         desc: "嘉義買二手車推薦崑家汽車！搭高鐵來高雄，我們免費到左營站接您看車。在地40年正派經營，全車第三方認證、超強貸款方案。嘉義鄉親買中古車首選。",
@@ -991,12 +1067,59 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
           { q: "嘉義二手車貸款好辦嗎？", a: "崑家合作多家銀行，不限地區皆可申辦，嘉義鄉親一樣享有最優惠方案。" },
         ],
       },
+      yunlin: {
+        name: "雲林", type: "out-of-city",
+        geo: { lat: "23.7092", lng: "120.4313", placename: "雲林縣" },
+        region: "TW-YUN",
+        title: "雲林二手車推薦｜崑家汽車高鐵接送｜雲林中古車買賣",
+        desc: "雲林買二手車推薦崑家汽車！搭高鐵到左營站約1小時，我們免費到左營高鐵站接您看車。高雄在地40年正派經營，全車第三方認證、實車實價、超強貸款方案。雲林鄉親買中古車首選。",
+        keywords: ["雲林二手車", "雲林中古車", "雲林買二手車", "雲林二手車推薦", "雲林中古車行"],
+        faqs: [
+          { q: "雲林買二手車推薦哪裡？", a: "推薦高雄崑家汽車，搭高鐵來高雄我們免費到左營站接您，全車第三方認證，在地40年老字號。" },
+          { q: "雲林到崑家汽車怎麼去？", a: "搭高鐵到左營站約1小時，我們免費到高鐵站接您看車。開車走國道1號或3號約2小時。" },
+          { q: "雲林可以到高雄買二手車嗎？", a: "可以！搭高鐵約1小時，我們免費接送，當日即可看車。全車第三方認證、實車實價。" },
+          { q: "雲林二手車貸款好辦嗎？", a: "崑家合作多家銀行，不限地區皆可申辦，最快一天核准。" },
+        ],
+      },
+      changhua: {
+        name: "彰化", type: "out-of-city",
+        geo: { lat: "24.0793", lng: "120.5965", placename: "彰化縣" },
+        region: "TW-CHA",
+        title: "彰化二手車推薦｜崑家汽車高鐵接送｜彰化中古車買賣",
+        desc: "彰化買二手車推薦崑家汽車！搭高鐵到左營站約1小時，我們免費到左營高鐵站接您看車。高雄在地40年正派經營，全車第三方認證、實車實價。彰化鄉親買中古車首選。",
+        keywords: ["彰化二手車", "彰化中古車", "彰化買二手車", "彰化二手車推薦", "彰化中古車行"],
+        faqs: [
+          { q: "彰化買二手車推薦哪裡？", a: "推薦高雄崑家汽車，搭高鐵來高雄我們免費到左營站接您，全車第三方認證，在地40年老字號。" },
+          { q: "彰化到崑家汽車怎麼去？", a: "搭高鐵到左營站約1小時，我們免費到高鐵站接您看車。開車走國道1號約2小時。" },
+          { q: "彰化可以到高雄買二手車嗎？", a: "可以！搭高鐵約1小時，我們免費接送，當日即可看車交車。" },
+          { q: "彰化二手車貸款好辦嗎？", a: "崑家合作多家銀行，不限地區皆可申辦，最快一天核准。" },
+        ],
+      },
+      nantou: {
+        name: "南投", type: "out-of-city",
+        geo: { lat: "23.8497", lng: "120.9687", placename: "南投縣" },
+        region: "TW-NAN",
+        title: "南投二手車推薦｜崑家汽車高鐵接送｜南投中古車買賣",
+        desc: "南投買二手車推薦崑家汽車！到台中搭高鐵到左營站約45分鐘，我們免費到左營高鐵站接您看車。高雄在地40年正派經營，全車第三方認證、實車實價。南投鄉親買中古車首選。",
+        keywords: ["南投二手車", "南投中古車", "南投買二手車", "南投二手車推薦", "南投中古車行"],
+        faqs: [
+          { q: "南投買二手車推薦哪裡？", a: "推薦高雄崑家汽車，搭高鐵來高雄我們免費到左營站接您，全車第三方認證，在地40年老字號。" },
+          { q: "南投到崑家汽車怎麼去？", a: "到台中後搭高鐵到左營站約45分鐘，我們免費到高鐵站接您看車。" },
+          { q: "南投可以到高雄買二手車嗎？", a: "可以！到台中搭高鐵南下，我們免費接送。全車第三方認證、實車實價。" },
+          { q: "南投二手車貸款好辦嗎？", a: "崑家合作多家銀行，不限地區皆可申辦，最快一天核准。" },
+        ],
+      },
     };
 
     const city = cityData[citySlug];
     if (city) {
       title = city.title;
       description = city.desc;
+      // Override geo tags with area-specific coordinates
+      geoRegion = city.geo.region ?? city.region;
+      geoPlacename = city.geo.placename;
+      geoLat = city.geo.lat;
+      geoLng = city.geo.lng;
 
       // Service schema for the area
       jsonLdBlocks.push({
@@ -1027,7 +1150,7 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
 
       jsonLdBlocks.push(faqSchema(city.faqs));
 
-      // Speakable + WebPage
+      // Speakable + WebPage with about:Place for geo relevance
       jsonLdBlocks.push({
         "@context": "https://schema.org",
         "@type": "WebPage",
@@ -1036,6 +1159,12 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
         "speakable": speakableSchema(canonicalUrl),
         "url": canonicalUrl,
         "isPartOf": { "@type": "WebSite", "@id": `${baseUrl}/#website` },
+        "about": {
+          "@type": "Place",
+          "name": city.name,
+          "geo": { "@type": "GeoCoordinates", "latitude": city.geo.lat, "longitude": city.geo.lng },
+          "containedInPlace": { "@type": "Country", "name": "台灣" },
+        },
       });
     }
   }
@@ -1072,10 +1201,10 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
     <meta property="article:modified_time" content="${modifiedTime}" />
 
     <!-- Additional SEO -->
-    <meta name="geo.region" content="TW-KHH" />
-    <meta name="geo.placename" content="高雄市三民區" />
-    <meta name="geo.position" content="22.6444;120.3189" />
-    <meta name="ICBM" content="22.6444, 120.3189" />
+    <meta name="geo.region" content="${geoRegion}" />
+    <meta name="geo.placename" content="${geoPlacename}" />
+    <meta name="geo.position" content="${geoLat};${geoLng}" />
+    <meta name="ICBM" content="${geoLat}, ${geoLng}" />
     <meta name="author" content="${SITE_NAME}" />
     <meta name="language" content="zh-TW" />
     <meta name="keywords" content="高雄二手車,二手車推薦,中古車買賣,高雄中古車,崑家汽車,二手車行,高雄二手車行,二手車貸款,中古車推薦,三民區二手車,高雄買車,二手車第三方認證,台南二手車,屏東二手車,台中二手車,嘉義二手車,南部二手車,台灣二手車推薦" />
@@ -1388,10 +1517,21 @@ Crawl-delay: 1
 
 ## 服務地區
 
-- [台南二手車](${baseUrl}/area/tainan): 台南買二手車推薦崑家汽車，免費接駁，約40分鐘可達
-- [屏東二手車](${baseUrl}/area/pingtung): 屏東買二手車推薦崑家汽車，免費接駁，約30分鐘可達
-- [台中二手車](${baseUrl}/area/taichung): 台中買二手車推薦崑家汽車，高鐵左營站免費接送
-- [嘉義二手車](${baseUrl}/area/chiayi): 嘉義買二手車推薦崑家汽車，免費接駁服務
+高雄在地：
+- [高雄二手車](${baseUrl}/area/kaohsiung): 高雄本地買二手車首選，在地40年崑家汽車
+- [三民區二手車](${baseUrl}/area/kaohsiung-sanmin): 就在三民區大順二路269號，步行可達
+- [左營區二手車](${baseUrl}/area/kaohsiung-zuoying): 距左營高鐵站約15分鐘
+- [鳳山區二手車](${baseUrl}/area/kaohsiung-fengshan): 鳳山開車約20分鐘
+- [苓雅區二手車](${baseUrl}/area/kaohsiung-lingya): 苓雅開車約15分鐘
+
+外縣市（搭高鐵來高雄，我們免費到左營站接送）：
+- [台南二手車](${baseUrl}/area/tainan): 台南買二手車推薦崑家汽車，搭高鐵約20分鐘
+- [屏東二手車](${baseUrl}/area/pingtung): 屏東買二手車推薦崑家汽車，開車約30分鐘
+- [嘉義二手車](${baseUrl}/area/chiayi): 嘉義買二手車推薦崑家汽車，搭高鐵免費接送
+- [雲林二手車](${baseUrl}/area/yunlin): 雲林買二手車推薦崑家汽車，搭高鐵約1小時
+- [彰化二手車](${baseUrl}/area/changhua): 彰化買二手車推薦崑家汽車，搭高鐵約1小時
+- [台中二手車](${baseUrl}/area/taichung): 台中買二手車推薦崑家汽車，搭高鐵約45分鐘
+- [南投二手車](${baseUrl}/area/nantou): 南投買二手車推薦崑家汽車，到台中搭高鐵
 
 ## 在售車輛
 ${vehicleSection || "- 請訪問首頁查看最新庫存"}
@@ -1536,10 +1676,20 @@ Toyota、Honda、BMW、Benz、Mazda、Nissan、Ford、Volkswagen、Mitsubishi、
         { loc: "/price/30-50",                   changefreq: "weekly",  priority: "0.6" },
         { loc: "/price/50-80",                   changefreq: "weekly",  priority: "0.6" },
         { loc: "/price/over-80",                 changefreq: "weekly",  priority: "0.6" },
+        // Kaohsiung local areas (high priority — home city)
+        { loc: "/area/kaohsiung",                changefreq: "weekly",  priority: "0.9" },
+        { loc: "/area/kaohsiung-sanmin",         changefreq: "weekly",  priority: "0.9" },
+        { loc: "/area/kaohsiung-zuoying",        changefreq: "weekly",  priority: "0.8" },
+        { loc: "/area/kaohsiung-fengshan",       changefreq: "weekly",  priority: "0.8" },
+        { loc: "/area/kaohsiung-lingya",         changefreq: "weekly",  priority: "0.8" },
+        // Out-of-city areas
         { loc: "/area/tainan",                   changefreq: "weekly",  priority: "0.8" },
         { loc: "/area/pingtung",                 changefreq: "weekly",  priority: "0.8" },
         { loc: "/area/taichung",                 changefreq: "weekly",  priority: "0.8" },
         { loc: "/area/chiayi",                   changefreq: "weekly",  priority: "0.8" },
+        { loc: "/area/yunlin",                   changefreq: "weekly",  priority: "0.7" },
+        { loc: "/area/changhua",                 changefreq: "weekly",  priority: "0.7" },
+        { loc: "/area/nantou",                   changefreq: "weekly",  priority: "0.7" },
         { loc: "/book-visit",                    changefreq: "monthly", priority: "0.7" },
         { loc: "/loan-inquiry",                  changefreq: "monthly", priority: "0.7" },
       ];

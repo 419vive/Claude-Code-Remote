@@ -23,11 +23,22 @@ const BLOG_LINKS = [
   { label: "高雄二手車行推薦比較 2026", href: "/blog/kaohsiung-used-car-dealers-comparison" },
 ];
 
-const SERVICE_AREAS = [
+const LOCAL_AREA_LINKS = [
+  { label: "高雄二手車", href: "/area/kaohsiung" },
+  { label: "三民區二手車", href: "/area/kaohsiung-sanmin" },
+  { label: "左營區二手車", href: "/area/kaohsiung-zuoying" },
+  { label: "鳳山區二手車", href: "/area/kaohsiung-fengshan" },
+  { label: "苓雅區二手車", href: "/area/kaohsiung-lingya" },
+];
+
+const OUT_OF_CITY_LINKS = [
   { label: "台南二手車", href: "/area/tainan" },
   { label: "屏東二手車", href: "/area/pingtung" },
-  { label: "台中二手車", href: "/area/taichung" },
   { label: "嘉義二手車", href: "/area/chiayi" },
+  { label: "雲林二手車", href: "/area/yunlin" },
+  { label: "彰化二手車", href: "/area/changhua" },
+  { label: "台中二手車", href: "/area/taichung" },
+  { label: "南投二手車", href: "/area/nantou" },
 ];
 
 export default function SeoFooter() {
@@ -108,14 +119,21 @@ export default function SeoFooter() {
                 </a>
               </li>
             </ul>
-            <h3 className="text-sm font-bold text-white mt-6 mb-3">服務地區</h3>
+            <h3 className="text-sm font-bold text-white mt-6 mb-3">高雄在地</h3>
             <ul className="space-y-2">
-              {SERVICE_AREAS.map((area) => (
+              {LOCAL_AREA_LINKS.map((area) => (
                 <li key={area.href}>
-                  <a
-                    href={area.href}
-                    className="text-xs text-white/60 hover:text-white transition-colors"
-                  >
+                  <a href={area.href} className="text-xs text-white/60 hover:text-white transition-colors">
+                    {area.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <h3 className="text-sm font-bold text-white mt-4 mb-3">外縣市服務</h3>
+            <ul className="space-y-2">
+              {OUT_OF_CITY_LINKS.map((area) => (
+                <li key={area.href}>
+                  <a href={area.href} className="text-xs text-white/60 hover:text-white transition-colors">
                     {area.label}
                   </a>
                 </li>
