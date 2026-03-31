@@ -26,6 +26,8 @@ import WishlistButton from "@/components/WishlistButton";
 
 const FullscreenGallery = lazy(() => import("@/components/FullscreenGallery"));
 const Vehicle360Viewer = lazy(() => import("@/components/Vehicle360Viewer"));
+const VehicleVideoPlayer = lazy(() => import("@/components/VehicleVideoPlayer"));
+const VideoShowcaseNudge = lazy(() => import("@/components/VideoShowcaseNudge"));
 
 type DeviceType = "mobile" | "desktop";
 
@@ -152,8 +154,13 @@ export default function VehicleLanding() {
   const has360 = photos360.length > 0;
 
   // Media tab state
-  type MediaTab = "photos" | "video" | "360";
-  const [activeMediaTab, setActiveMediaTab] = useState<MediaTab>("photos");
+  type MediaTab = "photos" | "video" | "360" | "showcase";
+  // Check URL for ?tab=showcase (from LINE video card deep link)
+  const initialTab = useMemo(() => {
+    const urlTab = new URLSearchParams(window.location.search).get("tab");
+    return urlTab === "showcase" ? "showcase" as MediaTab : "photos" as MediaTab;
+  }, []);
+  const [activeMediaTab, setActiveMediaTab] = useState<MediaTab>(initialTab);
 
   const [currentPhoto, setCurrentPhoto] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -401,8 +408,8 @@ export default function VehicleLanding() {
 
         {/* Vehicle card */}
         <div className="bg-white/[0.08] backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden mb-4">
-          {/* Media tabs (only show if multiple media types) */}
-          {(hasVideo || has360) && (
+          {/* Media tabs — always show showcase tab since we generate it */}
+          {(hasVideo || has360 || photos.length > 0) && (
             <div className="flex items-center gap-1 px-4 pt-3 pb-1">
               <button
                 onClick={() => setActiveMediaTab("photos")}
@@ -439,6 +446,19 @@ export default function VehicleLanding() {
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                   360°
+                </button>
+              )}
+              {photos.length >= 2 && (
+                <button
+                  onClick={() => setActiveMediaTab("showcase")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    activeMediaTab === "showcase"
+                      ? "bg-[#C4A265]/20 text-[#C4A265] border border-[#C4A265]/30"
+                      : "bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/[0.1]"
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  精選影片
                 </button>
               )}
             </div>
@@ -570,6 +590,19 @@ export default function VehicleLanding() {
             </Suspense>
           )}
 
+          {/* Remotion auto-generated showcase video */}
+          {activeMediaTab === "showcase" && photos.length >= 2 && (
+            <Suspense
+              fallback={
+                <div className="aspect-video bg-black/30 flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-[#C4A265] border-t-transparent rounded-full animate-spin" />
+                </div>
+              }
+            >
+              <VehicleVideoPlayer vehicle={vehicle} />
+            </Suspense>
+          )}
+
           {/* Vehicle info */}
           <div className="px-5 py-4">
             <h1 className="text-white text-xl font-bold mb-1">{name}</h1>
@@ -667,6 +700,32 @@ export default function VehicleLanding() {
           </div>
         </div>
 
+        {/* Nearby service areas — internal link equity for geo SEO */}
+        <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] px-4 py-3 mb-4">
+          <p className="text-white/40 text-xs mb-2 font-semibold">附近服務地區</p>
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {[
+              { label: "高雄", href: "/area/kaohsiung" },
+              { label: "三民區", href: "/area/kaohsiung-sanmin" },
+              { label: "左營區", href: "/area/kaohsiung-zuoying" },
+              { label: "鳳山區", href: "/area/kaohsiung-fengshan" },
+              { label: "苓雅區", href: "/area/kaohsiung-lingya" },
+              { label: "台南", href: "/area/tainan" },
+              { label: "屏東", href: "/area/pingtung" },
+              { label: "台中", href: "/area/taichung" },
+              { label: "嘉義", href: "/area/chiayi" },
+            ].map((a) => (
+              <a
+                key={a.href}
+                href={a.href}
+                className="text-[#C4A265]/60 text-xs hover:text-[#C4A265] transition-colors"
+              >
+                {a.label}二手車
+              </a>
+            ))}
+          </div>
+        </div>
+
         {/* Footer */}
         <div className="text-center">
           <p className="text-white/25 text-xs">
@@ -682,6 +741,17 @@ export default function VehicleLanding() {
 
       {/* Proactive chat nudge after 15s */}
       <ProactiveChatTrigger vehicleName={name} delay={15000} />
+
+      {/* Video showcase nudge after 20s of browsing */}
+      {photos.length >= 2 && (
+        <Suspense fallback={null}>
+          <VideoShowcaseNudge
+            vehicleName={name}
+            delay={20000}
+            onWatchClick={() => setActiveMediaTab("showcase")}
+          />
+        </Suspense>
+      )}
 
       {/* Fullscreen Gallery */}
       {galleryOpen && photos.length > 0 && (

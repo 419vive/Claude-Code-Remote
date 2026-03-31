@@ -357,6 +357,176 @@ export function buildPhotoCarousel(vehicle: Vehicle): any[] {
   return result;
 }
 
+// ============ VIDEO SHOWCASE CARD ============
+// Sent to engaged customers after inquiry flow to drive conversion
+// Shows a rich preview card linking to the vehicle's Remotion video
+
+export function buildVideoShowcaseCard(vehicle: Vehicle): any {
+  const photos = parsePhotoUrls(vehicle);
+  const heroPhoto = photos[0] || "https://via.placeholder.com/800x600?text=崑家汽車";
+  const secondPhoto = photos[1] || heroPhoto;
+  const priceText = vehicle.priceDisplay || `${vehicle.price}萬`;
+  const specs: string[] = [];
+  if (vehicle.modelYear) specs.push(`${vehicle.modelYear}年`);
+  if (vehicle.mileage) specs.push(vehicle.mileage);
+  if (vehicle.transmission) specs.push(vehicle.transmission);
+  if (vehicle.fuelType) specs.push(vehicle.fuelType);
+
+  const baseUrl = process.env.BASE_URL || "https://claude-code-remote-production.up.railway.app";
+
+  return {
+    type: "flex",
+    altText: `🎬 ${vehicle.brand} ${vehicle.model} 精選影片`,
+    contents: {
+      type: "bubble",
+      size: "mega",
+      hero: {
+        type: "image",
+        url: heroPhoto,
+        size: "full",
+        aspectRatio: "20:13",
+        aspectMode: "cover",
+        action: {
+          type: "uri",
+          label: "看影片",
+          uri: `${baseUrl}/vehicle/${vehicle.id}?tab=showcase`,
+        },
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          // Video play badge overlay effect
+          {
+            type: "box",
+            layout: "horizontal",
+            contents: [
+              {
+                type: "box",
+                layout: "vertical",
+                contents: [
+                  {
+                    type: "text",
+                    text: "▶",
+                    size: "xxs",
+                    color: "#000000",
+                    align: "center",
+                  },
+                ],
+                width: "24px",
+                height: "24px",
+                backgroundColor: "#C4A265",
+                cornerRadius: "12px",
+                justifyContent: "center",
+                alignItems: "center",
+              },
+              {
+                type: "text",
+                text: "精選影片 · 15秒快速瀏覽",
+                size: "xs",
+                color: "#C4A265",
+                weight: "bold",
+                margin: "sm",
+                gravity: "center",
+              },
+            ],
+          },
+          // Vehicle name
+          {
+            type: "text",
+            text: `${vehicle.brand} ${vehicle.model}`,
+            weight: "bold",
+            size: "xl",
+            wrap: true,
+            maxLines: 2,
+            margin: "md",
+          },
+          // Specs
+          {
+            type: "text",
+            text: specs.join(" · "),
+            size: "xs",
+            color: "#999999",
+            wrap: true,
+          },
+          // Price
+          {
+            type: "text",
+            text: priceText,
+            size: "xxl",
+            weight: "bold",
+            color: "#C4A265",
+            margin: "md",
+          },
+          // Trust line
+          {
+            type: "text",
+            text: "🔒 第三方認證 · 實車實價 · 支援貸款",
+            size: "xxs",
+            color: "#999999",
+            margin: "sm",
+          },
+          // Second photo preview strip
+          {
+            type: "box",
+            layout: "horizontal",
+            margin: "lg",
+            spacing: "sm",
+            contents: photos.slice(0, 3).map((url: string) => ({
+              type: "image",
+              url,
+              size: "full",
+              aspectRatio: "1:1",
+              aspectMode: "cover",
+              flex: 1,
+            })),
+            cornerRadius: "8px",
+          },
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "button",
+            action: {
+              type: "uri",
+              label: "🎬 看完整影片",
+              uri: `${baseUrl}/vehicle/${vehicle.id}?tab=showcase`,
+            },
+            style: "primary",
+            color: "#C4A265",
+            height: "md",
+          },
+          {
+            type: "button",
+            action: {
+              type: "message",
+              label: "📅 這台我有興趣，預約看車",
+              text: `我想預約去看 ${vehicle.brand} ${vehicle.model}`,
+            },
+            style: "primary",
+            color: "#1B3A5C",
+            height: "md",
+          },
+          {
+            type: "button",
+            action: {
+              type: "uri",
+              label: "📞 直接打給賴先生",
+              uri: "tel:0936812818",
+            },
+            style: "secondary",
+          },
+        ],
+      },
+    },
+  };
+}
+
 // ============ PHOTO TRIGGER DETECTION ============
 
 /**

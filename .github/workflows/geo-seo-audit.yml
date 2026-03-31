@@ -1,0 +1,259 @@
+name: GEO/SEO Audit (Every 3 Days)
+
+on:
+  schedule:
+    # Runs every 3 days at 03:00 UTC (11:00 Taiwan time)
+    - cron: '0 3 */3 * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  issues: write
+  contents: read
+
+env:
+  SITE_URL: https://claude-code-remote-production.up.railway.app
+  SITE_NAME: 崑家汽車
+
+jobs:
+  schema-audit:
+    name: Schema Markup Validation
+    runs-on: ubuntu-latest
+    outputs:
+      report: ${{ steps.schema.outputs.report }}
+      issues_found: ${{ steps.schema.outputs.issues_found }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON-LD schemas
+        id: schema
+        run: |
+          REPORT=""
+          ISSUES=0
+          PAGES=(
+            "/"
+            "/area/kaohsiung"
+            "/area/pingtung"
+            "/area/tainan"
+            "/area/taichung"
+            "/area/taipei"
+            "/area/hsinchu"
+            "/area/chiayi"
+            "/area/yunlin"
+            "/area/changhua"
+            "/area/nantou"
+            "/area/taitung"
+            "/area/hualien"
+          )
+
+          for page in "${PAGES[@]}"; do
+            URL="${SITE_URL}${page}"
+            HTTP_CODE=$(curl -s -o /tmp/page.html -w "%{http_code}" --max-time 15 "$URL" 2>/dev/null || echo "000")
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              LD_COUNT=$(grep -c 'application/ld+json' /tmp/page.html 2>/dev/null || echo "0")
+              HAS_FAQ=$(grep -c 'FAQPage' /tmp/page.html 2>/dev/null || echo "0")
+              HAS_PERSON=$(grep -c '"Person"' /tmp/page.html 2>/dev/null || echo "0")
+              STATUS="✅"
+              if [ "$LD_COUNT" -lt 2 ]; then STATUS="⚠️"; ISSUES=$((ISSUES+1)); fi
+              REPORT="${REPORT}| \`${page}\` | ${HTTP_CODE} | ${LD_COUNT} JSON-LD | FAQ:${HAS_FAQ} Person:${HAS_PERSON} | ${STATUS} |"$'\n'
+            else
+              REPORT="${REPORT}| \`${page}\` | ${HTTP_CODE} | ❌ UNREACHABLE | - | ❌ |"$'\n'
+              ISSUES=$((ISSUES+1))
+            fi
+          done
+
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          echo "$REPORT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "issues_found=$ISSUES" >> $GITHUB_OUTPUT
+
+  pagespeed-audit:
+    name: PageSpeed Insights (Free API)
+    runs-on: ubuntu-latest
+    outputs:
+      report: ${{ steps.pagespeed.outputs.report }}
+    steps:
+      - name: Run PageSpeed Insights
+        id: pagespeed
+        run: |
+          REPORT=""
+          PAGES=("/" "/area/kaohsiung" "/area/tainan" "/area/taipei")
+          # PageSpeed Insights API — free tier, no key needed for basic usage
+          PSI_API="https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
+
+          for page in "${PAGES[@]}"; do
+            URL="${SITE_URL}${page}"
+            ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$URL'))")
+
+            # Mobile strategy (most important for Taiwan users)
+            RESULT=$(curl -s --max-time 30 \
+              "${PSI_API}?url=${ENCODED_URL}&strategy=mobile&category=performance&category=seo" \
+              2>/dev/null || echo "{}")
+
+            PERF=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(round(d.get('lighthouseResult',{}).get('categories',{}).get('performance',{}).get('score',0)*100))" 2>/dev/null || echo "N/A")
+            SEO=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(round(d.get('lighthouseResult',{}).get('categories',{}).get('seo',{}).get('score',0)*100))" 2>/dev/null || echo "N/A")
+            FCP=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('lighthouseResult',{}).get('audits',{}).get('first-contentful-paint',{}).get('displayValue','N/A'))" 2>/dev/null || echo "N/A")
+            LCP=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('lighthouseResult',{}).get('audits',{}).get('largest-contentful-paint',{}).get('displayValue','N/A'))" 2>/dev/null || echo "N/A")
+            CLS=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('lighthouseResult',{}).get('audits',{}).get('cumulative-layout-shift',{}).get('displayValue','N/A'))" 2>/dev/null || echo "N/A")
+
+            # Score indicators
+            PERF_ICON="✅"
+            if [ "$PERF" != "N/A" ] && [ "$PERF" -lt 50 ] 2>/dev/null; then PERF_ICON="❌"; fi
+            if [ "$PERF" != "N/A" ] && [ "$PERF" -ge 50 ] && [ "$PERF" -lt 90 ] 2>/dev/null; then PERF_ICON="⚠️"; fi
+
+            REPORT="${REPORT}| \`${page}\` | ${PERF_ICON} ${PERF} | ${SEO} | ${FCP} | ${LCP} | ${CLS} |"$'\n'
+          done
+
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          echo "$REPORT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  ai-citation-check:
+    name: AI Citation & Discoverability
+    runs-on: ubuntu-latest
+    outputs:
+      report: ${{ steps.citations.outputs.report }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check AI discoverability signals
+        id: citations
+        run: |
+          REPORT=""
+
+          # Check robots.txt for AI crawler access
+          ROBOTS=$(curl -s --max-time 10 "${SITE_URL}/robots.txt" 2>/dev/null || echo "NOT FOUND")
+          AI_BOTS=("GPTBot" "ChatGPT-User" "Google-Extended" "ClaudeBot" "PerplexityBot" "Anthropic")
+
+          REPORT="${REPORT}**AI Crawler Access (robots.txt)**"$'\n\n'
+          for bot in "${AI_BOTS[@]}"; do
+            if echo "$ROBOTS" | grep -qi "User-agent: ${bot}"; then
+              if echo "$ROBOTS" | grep -A2 -i "User-agent: ${bot}" | grep -qi "Disallow: /"; then
+                REPORT="${REPORT}- ❌ \`${bot}\`: **Blocked** — fix this!"$'\n'
+              else
+                REPORT="${REPORT}- ✅ \`${bot}\`: Allowed"$'\n'
+              fi
+            else
+              REPORT="${REPORT}- ✅ \`${bot}\`: Not restricted (allow by default)"$'\n'
+            fi
+          done
+
+          # Check AI citability blocks on key pages
+          REPORT="${REPORT}"$'\n'"**AI Citability Blocks**"$'\n\n'
+          for page in "/" "/area/kaohsiung" "/area/tainan"; do
+            PAGE_HTML=$(curl -s --max-time 15 "${SITE_URL}${page}" 2>/dev/null || echo "")
+            AI_COUNT=$(echo "$PAGE_HTML" | grep -c 'data-ai-summary' 2>/dev/null || echo "0")
+            PAA_COUNT=$(echo "$PAGE_HTML" | grep -c 'answer-summary\|data-paa\|FAQPage' 2>/dev/null || echo "0")
+            ICON="✅"; if [ "$AI_COUNT" -eq 0 ]; then ICON="⚠️"; fi
+            REPORT="${REPORT}- ${ICON} \`${page}\`: ${AI_COUNT} ai-summary, ${PAA_COUNT} FAQ/PAA blocks"$'\n'
+          done
+
+          # Sitemap check
+          SITEMAP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${SITE_URL}/sitemap.xml" 2>/dev/null || echo "000")
+          SITEMAP_ICON="✅"; if [ "$SITEMAP_CODE" != "200" ]; then SITEMAP_ICON="❌"; fi
+          REPORT="${REPORT}"$'\n'"**Sitemap:** ${SITEMAP_ICON} HTTP ${SITEMAP_CODE}"$'\n'
+
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          echo "$REPORT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  competitor-snapshot:
+    name: Competitor Quick Check
+    runs-on: ubuntu-latest
+    outputs:
+      report: ${{ steps.competitors.outputs.report }}
+    steps:
+      - name: Check competitor signals
+        id: competitors
+        run: |
+          REPORT=""
+          declare -A COMPETITORS
+          COMPETITORS["HOT大聯盟"]="https://www.hotcar.com.tw"
+          COMPETITORS["SUM優質車商"]="https://www.sum.com.tw"
+          COMPETITORS["崑家汽車"]="${SITE_URL}"
+
+          for NAME in "HOT大聯盟" "SUM優質車商" "崑家汽車"; do
+            URL="${COMPETITORS[$NAME]}"
+            HTTP_CODE=$(curl -s -o /tmp/comp.html -w "%{http_code}" --max-time 15 "$URL" 2>/dev/null || echo "000")
+            JSONLD=$(grep -c 'application/ld+json' /tmp/comp.html 2>/dev/null || echo "0")
+            HAS_FAQ=$(grep -c 'FAQPage' /tmp/comp.html 2>/dev/null || echo "0")
+            HAS_PERSON=$(grep -c '"Person"' /tmp/comp.html 2>/dev/null || echo "0")
+            ICON=""; if [ "$NAME" = "崑家汽車" ]; then ICON=" 👈"; fi
+            REPORT="${REPORT}| ${NAME}${ICON} | ${HTTP_CODE} | ${JSONLD} JSON-LD | FAQ:${HAS_FAQ} | Person:${HAS_PERSON} |"$'\n'
+          done
+
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          echo "$REPORT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  post-report:
+    name: Post Audit Report as GitHub Issue
+    needs: [schema-audit, pagespeed-audit, ai-citation-check, competitor-snapshot]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Issue with full report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const today = new Date().toISOString().split('T')[0];
+            const issuesFound = parseInt('${{ needs.schema-audit.outputs.issues_found }}') || 0;
+            const statusBadge = issuesFound === 0 ? '✅ 全部正常' : `⚠️ ${issuesFound} 個問題需處理`;
+
+            const body = [
+              `## GEO/SEO 自動審計報告 — ${today}`,
+              `**狀態:** ${statusBadge}`,
+              ``,
+              `### 1. Schema Markup 驗證`,
+              ``,
+              `| 頁面 | HTTP | JSON-LD | 詳情 | 狀態 |`,
+              `|------|------|---------|------|------|`,
+              `${{ needs.schema-audit.outputs.report }}`,
+              ``,
+              `### 2. Core Web Vitals (PageSpeed Insights — Mobile)`,
+              ``,
+              `| 頁面 | Performance | SEO | FCP | LCP | CLS |`,
+              `|------|-------------|-----|-----|-----|-----|`,
+              `${{ needs.pagespeed-audit.outputs.report }}`,
+              ``,
+              `### 3. AI 引用與可發現性`,
+              ``,
+              `${{ needs.ai-citation-check.outputs.report }}`,
+              ``,
+              `### 4. 競品快照`,
+              ``,
+              `| 競品 | HTTP | JSON-LD | FAQPage | Person |`,
+              `|------|------|---------|---------|--------|`,
+              `${{ needs.competitor-snapshot.outputs.report }}`,
+              ``,
+              `---`,
+              `### 下一步行動`,
+              ``,
+              `如果發現問題，修復後執行以下指令將解決方案存入 OpenSpace 技能記憶庫：`,
+              `\`\`\`bash`,
+              `./kun-auto-chatbot/scripts/save-audit-skill.sh "問題標題" "修復摘要"`,
+              `\`\`\``,
+              ``,
+              `**待確認項目（需 API Key）：**`,
+              `- [ ] Google Search Console 排名資料（需 GSC Service Account）`,
+              `- [ ] LINE Notify 通知（需 LINE Token — Secrets: \`LINE_NOTIFY_TOKEN\`）`,
+              `- [ ] OpenSpace 技能上傳（需 \`OPENSPACE_API_KEY\`）`,
+              ``,
+              `*自動產生 by GEO/SEO Audit Workflow · 每三天執行一次 · [查看工作流程](../../actions/workflows/geo-seo-audit.yml)*`,
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[GEO/SEO 審計] ${today} ${issuesFound > 0 ? '⚠️ ' + issuesFound + ' 問題' : '✅ 正常'}`,
+              body,
+              labels: ['geo-seo-audit', 'automated']
+            });
+
+      # Optional: Send email via GWS CLI if configured
+      - name: Send email summary (requires GWS_CONFIGURED secret)
+        if: ${{ secrets.GWS_CONFIGURED == 'true' }}
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          echo "GWS email notification would be sent here"
+          echo "Requires: gws gmail send --to owner@example.com --subject '[崑家汽車] GEO/SEO 審計 ${TODAY}'"
+          echo "Set GWS_CONFIGURED=true in GitHub Secrets to enable"

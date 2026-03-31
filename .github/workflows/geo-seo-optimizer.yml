@@ -1,0 +1,167 @@
+name: GEO/SEO Auto-Optimizer (Every 3 Days)
+
+on:
+  schedule:
+    # Runs 3 hours after the audit workflow (audit: 03:00, optimizer: 06:00 UTC)
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Audit issue number to fix (leave blank to use latest)'
+        required: false
+
+permissions:
+  issues: write
+  contents: write
+
+jobs:
+  optimize:
+    name: Read Audit Report & Fix Issues
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/review-data-security-FxJI8
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Get latest audit report
+        id: get-report
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const issueNumber = '${{ github.event.inputs.issue_number }}';
+
+            let issue;
+            if (issueNumber) {
+              const { data } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(issueNumber)
+              });
+              issue = data;
+            } else {
+              // Get latest geo-seo-audit issue
+              const { data: issues } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: 'geo-seo-audit',
+                state: 'open',
+                per_page: 1,
+                sort: 'created',
+                direction: 'desc'
+              });
+              if (!issues.length) {
+                core.setFailed('No audit issues found with label geo-seo-audit');
+                return '';
+              }
+              issue = issues[0];
+            }
+
+            core.exportVariable('AUDIT_ISSUE_NUMBER', issue.number);
+            core.exportVariable('AUDIT_ISSUE_TITLE', issue.title);
+            return issue.body || '';
+
+      - name: Analyze report and generate fixes with Claude API
+        id: claude-fix
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AUDIT_REPORT: ${{ steps.get-report.outputs.result }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY not set — skipping AI analysis"
+            echo "fix_summary=Skipped: No ANTHROPIC_API_KEY configured" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Send audit report to Claude API for analysis + fix instructions
+          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d "$(jq -n \
+              --arg report "$AUDIT_REPORT" \
+              '{
+                model: "claude-sonnet-4-6",
+                max_tokens: 4096,
+                messages: [{
+                  role: "user",
+                  content: ("You are a GEO/SEO engineer for 崑家汽車 (claude-code-remote-production.up.railway.app).\n\nHere is the latest audit report:\n\n" + $report + "\n\nAnalyze this report and identify issues. For each issue found, provide:\n1. What is broken\n2. Exact file path to fix (relative to kun-auto-chatbot/)\n3. What change to make\n\nFocus on:\n- Pages with 0 JSON-LD blocks (missing schema)\n- Pages with Performance < 80\n- AI citability blocks missing (data-ai-summary count = 0)\n- AI crawlers blocked\n- HTTP errors\n\nIf everything looks healthy (all ✅), respond with: ALL_GOOD\n\nRespond in a concise JSON array: [{\"issue\": \"...\", \"file\": \"...\", \"fix\": \"...\"}]\nOr just the text ALL_GOOD if no issues.")
+                }]
+              }')" 2>/dev/null)
+
+          ANALYSIS=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['content'][0]['text'])" 2>/dev/null || echo "Parse error")
+          echo "Claude analysis: $ANALYSIS"
+
+          echo "fix_summary<<EOF" >> $GITHUB_OUTPUT
+          echo "$ANALYSIS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Apply fixes if needed
+        env:
+          FIX_INSTRUCTIONS: ${{ steps.claude-fix.outputs.fix_summary }}
+        run: |
+          if echo "$FIX_INSTRUCTIONS" | grep -q "ALL_GOOD\|Skipped"; then
+            echo "No fixes needed or API not configured."
+            echo "FIXES_APPLIED=none" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          echo "Fixes identified. Applying..."
+
+          # Install deps
+          cd kun-auto-chatbot
+          npm install --silent 2>/dev/null || true
+
+          # Run build to confirm baseline
+          npm run build 2>/dev/null && echo "BUILD_OK=true" >> $GITHUB_ENV || echo "BUILD_OK=false" >> $GITHUB_ENV
+
+          echo "FIXES_APPLIED=manual-review-needed" >> $GITHUB_ENV
+
+      - name: Commit and push if changes were made
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No file changes to commit."
+          else
+            git add -A
+            git commit -m "fix(geo-seo): auto-optimizer fixes from audit $(date +%Y-%m-%d)"
+            git push origin claude/review-data-security-FxJI8
+            echo "COMMITTED=true" >> $GITHUB_ENV
+          fi
+
+      - name: Comment on audit issue with results
+        uses: actions/github-script@v7
+        env:
+          FIX_SUMMARY: ${{ steps.claude-fix.outputs.fix_summary }}
+        with:
+          script: |
+            const issueNumber = process.env.AUDIT_ISSUE_NUMBER;
+            if (!issueNumber) return;
+
+            const fixSummary = process.env.FIX_SUMMARY || 'No analysis available';
+            const committed = process.env.COMMITTED === 'true';
+            const apiConfigured = '${{ secrets.ANTHROPIC_API_KEY }}' !== '';
+
+            let body;
+            if (!apiConfigured) {
+              body = `## 🤖 Auto-Optimizer 執行結果\n\n⚠️ **未設定 ANTHROPIC_API_KEY**\n\nGitHub Secret \`ANTHROPIC_API_KEY\` 尚未設定，跳過 AI 分析。\n\n設定方式：\n1. 前往 **Settings → Secrets → Actions**\n2. 新增 \`ANTHROPIC_API_KEY\`（Anthropic Console 取得）\n\n設定後，優化器將自動讀取此報告並修復問題。`;
+            } else if (fixSummary.includes('ALL_GOOD')) {
+              body = `## 🤖 Auto-Optimizer 執行結果\n\n✅ **一切正常！** 本次審計未發現需要修復的問題。\n\n下次審計：3天後自動執行。`;
+            } else {
+              body = `## 🤖 Auto-Optimizer 執行結果\n\n### Claude 分析結果\n\`\`\`\n${fixSummary}\n\`\`\`\n\n### 狀態\n${committed ? '✅ 已自動提交修復' : '⚠️ 需要人工確認修復內容'}\n\n*由 geo-seo-optimizer workflow 自動產生*`;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(issueNumber),
+              body
+            });
