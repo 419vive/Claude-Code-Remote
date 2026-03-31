@@ -1,0 +1,13 @@
+{
+  "name": "geo-seo-patterns-kunjia-v1",
+  "description": "Proven GEO/SEO patterns for 崑家汽車 used car dealership — schema markup, AI citability, FAQ expansion, founder E-E-A-T signals",
+  "tags": ["seo", "geo", "schema-markup", "json-ld", "ai-citability", "e-e-a-t", "local-seo", "taiwan", "automotive"],
+  "version": "1.0.0",
+  "created": "2026-03-31",
+  "site": "kunjia-autos.com",
+  "results": {
+    "pages_covered": 13,
+    "faq_items_added": 96,
+    "schema_types_added": ["Person", "ServiceChannel", "AutoDealer", "FAQPage", "BreadcrumbList"]
+  }
+}
