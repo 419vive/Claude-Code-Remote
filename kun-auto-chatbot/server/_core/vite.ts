@@ -60,7 +60,7 @@ export function serveStatic(app: Express) {
     logger.error("Vite", `Could not find the build directory: ${distPath}, make sure to build the client first`);
   }
 
-  // Hashed assets (JS/CSS) get immutable cache (1 year) — filename changes on rebuild
+  // Hashed assets (JS/CSS) get immutable cache (1 year) â filename changes on rebuild
   app.use(
     "/assets",
     express.static(path.join(distPath, "assets"), {
@@ -69,7 +69,9 @@ export function serveStatic(app: Express) {
     })
   );
   // Other static files (favicon, images) get shorter cache
-  app.use(express.static(distPath, { maxAge: "1d" }));
+  // index: false prevents express.static from auto-serving index.html for "/",
+  // ensuring the "*" fallback handler runs and injectSeoTags() is called for the homepage.
+  app.use(express.static(distPath, { maxAge: "1d", index: false }));
 
   // fall through to index.html if the file doesn't exist
   // Inject full SEO tags for all public pages
