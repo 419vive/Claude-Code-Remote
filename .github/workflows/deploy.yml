@@ -1,0 +1,69 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kun-auto-chatbot
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: kun-auto-chatbot/package-lock.json
+
+      - name: Install dependencies
+        run: npm install --frozen-lockfile 2>/dev/null || npm install
+
+      - name: Build
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Type check
+        run: npm run check
+
+      # ── Railway deploy (uncomment if using Railway) ──────────────────────
+      # - name: Deploy to Railway
+      #   uses: bervproject/railway-deploy@v1.1.0
+      #   with:
+      #     railway-token: ${{ secrets.RAILWAY_TOKEN }}
+      #     service: kunjia-autos
+
+      # ── Render deploy (uncomment if using Render) ────────────────────────
+      # - name: Deploy to Render
+      #   run: |
+      #     curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+      # ── Docker + VPS deploy (uncomment if using your own server) ─────────
+      # - name: Build and push Docker image
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: kun-auto-chatbot
+      #     push: true
+      #     tags: ${{ secrets.DOCKER_USERNAME }}/kunjia-autos:latest
+      #
+      # - name: SSH deploy to VPS
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.VPS_HOST }}
+      #     username: ${{ secrets.VPS_USER }}
+      #     key: ${{ secrets.VPS_SSH_KEY }}
+      #     script: |
+      #       docker pull ${{ secrets.DOCKER_USERNAME }}/kunjia-autos:latest
+      #       docker-compose -f /opt/kunjia/docker-compose.yml up -d
+
+      - name: Notify on success
+        if: success()
+        run: echo "Build succeeded. Uncomment a deploy step above to go live."
