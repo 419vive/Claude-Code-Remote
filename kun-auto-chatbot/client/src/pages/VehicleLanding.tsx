@@ -448,7 +448,7 @@ export default function VehicleLanding() {
                   360°
                 </button>
               )}
-              {photos.length >= 2 && (
+              {photos.length >= 1 && (
                 <button
                   onClick={() => setActiveMediaTab("showcase")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
@@ -591,7 +591,7 @@ export default function VehicleLanding() {
           )}
 
           {/* Remotion auto-generated showcase video */}
-          {activeMediaTab === "showcase" && photos.length >= 2 && (
+          {activeMediaTab === "showcase" && photos.length >= 1 && (
             <Suspense
               fallback={
                 <div className="aspect-video bg-black/30 flex items-center justify-center">
@@ -743,7 +743,7 @@ export default function VehicleLanding() {
       <ProactiveChatTrigger vehicleName={name} delay={15000} />
 
       {/* Video showcase nudge after 20s of browsing */}
-      {photos.length >= 2 && (
+      {photos.length >= 1 && (
         <Suspense fallback={null}>
           <VideoShowcaseNudge
             vehicleName={name}
