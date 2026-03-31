@@ -4,7 +4,7 @@ import { invokeLLM } from "./_core/llm";
 import { ENV } from "./_core/env";
 import * as db from "./db";
 import { notifyOwner } from "./_core/notification";
-import { detectRichMenuTrigger, buildRichMenuResponseMessages, detectPhotoTrigger, buildPhotoCarousel, buildFollowWelcomeMessages, buildFaqCarousel, detectFaqTrigger, buildFaqAnswerMessages, buildContextualQuickReply, buildVehicleCarouselMessages, type ConversationContext } from "./lineFlexTemplates";
+import { detectRichMenuTrigger, buildRichMenuResponseMessages, detectPhotoTrigger, buildPhotoCarousel, buildFollowWelcomeMessages, buildFaqCarousel, detectFaqTrigger, buildFaqAnswerMessages, buildContextualQuickReply, buildVehicleCarouselMessages, buildVideoShowcaseCard, type ConversationContext } from "./lineFlexTemplates";
 import { formatTimeSlotsForPrompt } from "./timeSlotHelper";
 import { detectVehicleFromMessage, buildSmartVehicleKB, buildTargetVehiclePrompt, detectCustomerIntents, buildIntentInstructions, buildVehicleIndex } from "./vehicleDetectionService";
 import { buildLLMMessages, type PromptContext } from "./dynamicPromptBuilder";
@@ -1361,6 +1361,51 @@ async function processLineEvent(
     console.log(`[LINE] Reply API response: ${replyRes.status} ${replyBody}`);
   } catch (err) {
     console.error("[LINE] Reply failed:", err);
+  }
+
+  // ============ VIDEO SHOWCASE: Send after engaged inquiry ============
+  // Trigger conditions: qualified lead (50+) + specific vehicle detected + not already sent
+  const currentLeadScore = conversation!.leadScore || 0;
+  if (
+    currentLeadScore >= 50 &&
+    detection.vehicle &&
+    detection.type !== "none"
+  ) {
+    // Check if we already sent a video card for this vehicle (avoid spam)
+    const videoKey = `video_sent_${detection.vehicle.id}`;
+    const allHistoryTexts = allHistory.map((m) => m.content).join(" ");
+    const alreadySentVideo = allHistoryTexts.includes(`[🎬 已發送 ${detection.vehicle.brand} ${detection.vehicle.model} 精選影片]`);
+
+    if (!alreadySentVideo) {
+      console.log(`[LINE] 🎬 Sending video showcase for ${detection.vehicle.brand} ${detection.vehicle.model} (lead score: ${currentLeadScore})`);
+      const videoCard = buildVideoShowcaseCard(detection.vehicle);
+
+      // Save to conversation history
+      await db.addMessage({
+        conversationId: convId,
+        role: "assistant",
+        content: `[🎬 已發送 ${detection.vehicle.brand} ${detection.vehicle.model} 精選影片]`,
+      });
+
+      // Push (not reply — reply token already consumed)
+      try {
+        await fetch("https://api.line.me/v2/bot/message/push", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${channelAccessToken}`,
+          },
+          body: JSON.stringify({
+            to: userId,
+            messages: [videoCard],
+          }),
+        });
+        console.log(`[LINE] 🎬 Video showcase pushed successfully.`);
+        db.addAnalyticsEvent({ conversationId: convId, userId, eventCategory: "video_showcase", eventAction: `影片推送 ${detection.vehicle.brand} ${detection.vehicle.model}`, channel: "line" });
+      } catch (err) {
+        console.error("[LINE] Video showcase push failed:", err);
+      }
+    }
   }
 
   // ============ HUMAN HANDOFF: Push notification to owner + staff ============

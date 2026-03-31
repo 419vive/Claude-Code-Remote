@@ -27,6 +27,7 @@ import WishlistButton from "@/components/WishlistButton";
 const FullscreenGallery = lazy(() => import("@/components/FullscreenGallery"));
 const Vehicle360Viewer = lazy(() => import("@/components/Vehicle360Viewer"));
 const VehicleVideoPlayer = lazy(() => import("@/components/VehicleVideoPlayer"));
+const VideoShowcaseNudge = lazy(() => import("@/components/VideoShowcaseNudge"));
 
 type DeviceType = "mobile" | "desktop";
 
@@ -154,7 +155,12 @@ export default function VehicleLanding() {
 
   // Media tab state
   type MediaTab = "photos" | "video" | "360" | "showcase";
-  const [activeMediaTab, setActiveMediaTab] = useState<MediaTab>("photos");
+  // Check URL for ?tab=showcase (from LINE video card deep link)
+  const initialTab = useMemo(() => {
+    const urlTab = new URLSearchParams(window.location.search).get("tab");
+    return urlTab === "showcase" ? "showcase" as MediaTab : "photos" as MediaTab;
+  }, []);
+  const [activeMediaTab, setActiveMediaTab] = useState<MediaTab>(initialTab);
 
   const [currentPhoto, setCurrentPhoto] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -735,6 +741,17 @@ export default function VehicleLanding() {
 
       {/* Proactive chat nudge after 15s */}
       <ProactiveChatTrigger vehicleName={name} delay={15000} />
+
+      {/* Video showcase nudge after 20s of browsing */}
+      {photos.length >= 2 && (
+        <Suspense fallback={null}>
+          <VideoShowcaseNudge
+            vehicleName={name}
+            delay={20000}
+            onWatchClick={() => setActiveMediaTab("showcase")}
+          />
+        </Suspense>
+      )}
 
       {/* Fullscreen Gallery */}
       {galleryOpen && photos.length > 0 && (
