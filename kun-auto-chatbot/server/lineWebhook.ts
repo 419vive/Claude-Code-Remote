@@ -1364,10 +1364,10 @@ async function processLineEvent(
   }
 
   // ============ VIDEO SHOWCASE: Send after engaged inquiry ============
-  // Trigger conditions: qualified lead (50+) + specific vehicle detected + not already sent
+  // Trigger conditions: interested lead (25+) + specific vehicle detected + not already sent
   const currentLeadScore = conversation!.leadScore || 0;
   if (
-    currentLeadScore >= 50 &&
+    currentLeadScore >= 25 &&
     detection.vehicle &&
     detection.type !== "none"
   ) {
