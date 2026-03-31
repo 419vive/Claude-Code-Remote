@@ -4,7 +4,7 @@
  * This module handles all SEO concerns for the SPA by injecting proper meta tags,
  * Open Graph tags, and JSON-LD structured data into the HTML before sending to the client.
  * This ensures search engine crawlers see fully formed meta data without needing JS execution.
- */
+ */ 
 import { Router } from "express";
 import * as db from "./db";
 import { logger } from "./logger";
