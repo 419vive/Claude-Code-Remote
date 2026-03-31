@@ -26,6 +26,7 @@ import WishlistButton from "@/components/WishlistButton";
 
 const FullscreenGallery = lazy(() => import("@/components/FullscreenGallery"));
 const Vehicle360Viewer = lazy(() => import("@/components/Vehicle360Viewer"));
+const VehicleVideoPlayer = lazy(() => import("@/components/VehicleVideoPlayer"));
 
 type DeviceType = "mobile" | "desktop";
 
@@ -152,7 +153,7 @@ export default function VehicleLanding() {
   const has360 = photos360.length > 0;
 
   // Media tab state
-  type MediaTab = "photos" | "video" | "360";
+  type MediaTab = "photos" | "video" | "360" | "showcase";
   const [activeMediaTab, setActiveMediaTab] = useState<MediaTab>("photos");
 
   const [currentPhoto, setCurrentPhoto] = useState(0);
@@ -401,8 +402,8 @@ export default function VehicleLanding() {
 
         {/* Vehicle card */}
         <div className="bg-white/[0.08] backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden mb-4">
-          {/* Media tabs (only show if multiple media types) */}
-          {(hasVideo || has360) && (
+          {/* Media tabs — always show showcase tab since we generate it */}
+          {(hasVideo || has360 || photos.length > 0) && (
             <div className="flex items-center gap-1 px-4 pt-3 pb-1">
               <button
                 onClick={() => setActiveMediaTab("photos")}
@@ -439,6 +440,19 @@ export default function VehicleLanding() {
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                   360°
+                </button>
+              )}
+              {photos.length >= 2 && (
+                <button
+                  onClick={() => setActiveMediaTab("showcase")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    activeMediaTab === "showcase"
+                      ? "bg-[#C4A265]/20 text-[#C4A265] border border-[#C4A265]/30"
+                      : "bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/[0.1]"
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  精選影片
                 </button>
               )}
             </div>
@@ -567,6 +581,19 @@ export default function VehicleLanding() {
               }
             >
               <Vehicle360Viewer photos={photos360} alt={name} />
+            </Suspense>
+          )}
+
+          {/* Remotion auto-generated showcase video */}
+          {activeMediaTab === "showcase" && photos.length >= 2 && (
+            <Suspense
+              fallback={
+                <div className="aspect-video bg-black/30 flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-[#C4A265] border-t-transparent rounded-full animate-spin" />
+                </div>
+              }
+            >
+              <VehicleVideoPlayer vehicle={vehicle} />
             </Suspense>
           )}
 
