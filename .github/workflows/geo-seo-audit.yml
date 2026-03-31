@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  SITE_URL: https://www.kunjia-autos.com
+  SITE_URL: https://claude-code-remote-production.up.railway.app
   SITE_NAME: 崑家汽車
 
 jobs:

@@ -91,7 +91,7 @@ jobs:
                 max_tokens: 4096,
                 messages: [{
                   role: "user",
-                  content: ("You are a GEO/SEO engineer for 崑家汽車 (kunjia-autos.com).\n\nHere is the latest audit report:\n\n" + $report + "\n\nAnalyze this report and identify issues. For each issue found, provide:\n1. What is broken\n2. Exact file path to fix (relative to kun-auto-chatbot/)\n3. What change to make\n\nFocus on:\n- Pages with 0 JSON-LD blocks (missing schema)\n- Pages with Performance < 80\n- AI citability blocks missing (data-ai-summary count = 0)\n- AI crawlers blocked\n- HTTP errors\n\nIf everything looks healthy (all ✅), respond with: ALL_GOOD\n\nRespond in a concise JSON array: [{\"issue\": \"...\", \"file\": \"...\", \"fix\": \"...\"}]\nOr just the text ALL_GOOD if no issues.")
+                  content: ("You are a GEO/SEO engineer for 崑家汽車 (claude-code-remote-production.up.railway.app).\n\nHere is the latest audit report:\n\n" + $report + "\n\nAnalyze this report and identify issues. For each issue found, provide:\n1. What is broken\n2. Exact file path to fix (relative to kun-auto-chatbot/)\n3. What change to make\n\nFocus on:\n- Pages with 0 JSON-LD blocks (missing schema)\n- Pages with Performance < 80\n- AI citability blocks missing (data-ai-summary count = 0)\n- AI crawlers blocked\n- HTTP errors\n\nIf everything looks healthy (all ✅), respond with: ALL_GOOD\n\nRespond in a concise JSON array: [{\"issue\": \"...\", \"file\": \"...\", \"fix\": \"...\"}]\nOr just the text ALL_GOOD if no issues.")
                 }]
               }')" 2>/dev/null)
 
