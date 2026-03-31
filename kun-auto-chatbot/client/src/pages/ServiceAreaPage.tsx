@@ -198,6 +198,50 @@ export default function ServiceAreaPage() {
       </nav>
 
       <main className="container py-6">
+        {/* AI Citability Summary — structured data summary for AI engines */}
+        <section
+          className="mb-6 rounded-xl border bg-muted/40 p-4"
+          data-ai-summary="true"
+          itemScope
+          itemType="https://schema.org/AutoDealer"
+        >
+          <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3">崑家汽車快速資訊</h2>
+          <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs">
+            <div>
+              <dt className="text-muted-foreground">負責人</dt>
+              <dd className="font-semibold text-foreground" itemProp="name">賴崑家</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">成立年份</dt>
+              <dd className="font-semibold text-foreground" itemProp="foundingDate">1986年</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Google 評分</dt>
+              <dd className="font-semibold text-foreground">⭐ 4.8 / 5（156則）</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">地址</dt>
+              <dd className="font-semibold text-foreground" itemProp="address">高雄市三民區大順二路269號</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">電話</dt>
+              <dd className="font-semibold text-foreground">
+                <a href="tel:0936812818" itemProp="telephone">0936-812-818</a>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">營業時間</dt>
+              <dd className="font-semibold text-foreground">週一至週六 09:00–21:00</dd>
+            </div>
+            {!isLocal && (
+              <div className="col-span-2 sm:col-span-3">
+                <dt className="text-muted-foreground">外縣市接駁</dt>
+                <dd className="font-semibold text-foreground">免費 · 高鐵左營站接送</dd>
+              </div>
+            )}
+          </dl>
+        </section>
+
         {/* Info Cards */}
         <section className="mb-8">
           <h2 className="text-lg font-bold text-foreground mb-4">

@@ -667,6 +667,32 @@ export default function VehicleLanding() {
           </div>
         </div>
 
+        {/* Nearby service areas — internal link equity for geo SEO */}
+        <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] px-4 py-3 mb-4">
+          <p className="text-white/40 text-xs mb-2 font-semibold">附近服務地區</p>
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {[
+              { label: "高雄", href: "/area/kaohsiung" },
+              { label: "三民區", href: "/area/kaohsiung-sanmin" },
+              { label: "左營區", href: "/area/kaohsiung-zuoying" },
+              { label: "鳳山區", href: "/area/kaohsiung-fengshan" },
+              { label: "苓雅區", href: "/area/kaohsiung-lingya" },
+              { label: "台南", href: "/area/tainan" },
+              { label: "屏東", href: "/area/pingtung" },
+              { label: "台中", href: "/area/taichung" },
+              { label: "嘉義", href: "/area/chiayi" },
+            ].map((a) => (
+              <a
+                key={a.href}
+                href={a.href}
+                className="text-[#C4A265]/60 text-xs hover:text-[#C4A265] transition-colors"
+              >
+                {a.label}二手車
+              </a>
+            ))}
+          </div>
+        </div>
+
         {/* Footer */}
         <div className="text-center">
           <p className="text-white/25 text-xs">
