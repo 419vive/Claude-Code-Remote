@@ -31,6 +31,8 @@ const BlogPost = lazy(() => import("./pages/BlogPost"));
 const FaqPage = lazy(() => import("./pages/FaqPage"));
 const ServiceAreaPage = lazy(() => import("./pages/ServiceAreaPage"));
 const CarValuation = lazy(() => import("./pages/CarValuation"));
+const AboutUs = lazy(() => import("./pages/AboutUs"));
+const MediaKit = lazy(() => import("./pages/MediaKit"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
 
 function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -53,6 +55,8 @@ function Router() {
       <Route path="/faq" component={FaqPage} />
       <Route path="/area/:city" component={ServiceAreaPage} />
       <Route path="/car-valuation" component={CarValuation} />
+      <Route path="/about" component={AboutUs} />
+      <Route path="/media" component={MediaKit} />
       <Route path="/line" component={SmartRedirect} />
       <Route path="/contact" component={SmartRedirect} />
 

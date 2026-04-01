@@ -110,6 +110,11 @@ export default function SeoFooter() {
                 </a>
               </li>
               <li>
+                <a href="/about" className="text-xs text-white/60 hover:text-white transition-colors">
+                  關於我們
+                </a>
+              </li>
+              <li>
                 <a href="/blog" className="text-xs text-white/60 hover:text-white transition-colors">
                   購車攻略
                 </a>
@@ -137,6 +142,11 @@ export default function SeoFooter() {
               <li>
                 <a href="/chat" className="text-xs text-white/60 hover:text-white transition-colors">
                   AI 智慧問答
+                </a>
+              </li>
+              <li>
+                <a href="/media" className="text-xs text-white/60 hover:text-white transition-colors">
+                  媒體合作
                 </a>
               </li>
             </ul>
