@@ -115,6 +115,11 @@ export default function SeoFooter() {
                 </a>
               </li>
               <li>
+                <a href="/car-valuation" className="text-xs text-white/60 hover:text-white transition-colors">
+                  二手車估價
+                </a>
+              </li>
+              <li>
                 <a href="/faq" className="text-xs text-white/60 hover:text-white transition-colors">
                   常見問題 FAQ
                 </a>
