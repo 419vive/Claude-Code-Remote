@@ -446,9 +446,9 @@ export default function Home() {
                 className="h-28 w-auto sm:h-[9.5rem] md:h-[10.8rem]"
                 style={{ mixBlendMode: "screen" }}
               />
-              <p className="text-[11px] sm:text-xs tracking-[0.15em] text-white/75 font-medium mt-1">
+              <h1 className="text-[11px] sm:text-xs tracking-[0.15em] text-white/75 font-medium mt-1">
                 台灣南部在地 40 年老口碑·正派經營
-              </p>
+              </h1>
             </div>
 
 
