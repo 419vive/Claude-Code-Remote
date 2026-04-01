@@ -23,6 +23,7 @@ import StickyBookingBar from "@/components/StickyBookingBar";
 import { ViewingNow } from "@/components/SocialProof";
 import ProactiveChatTrigger from "@/components/ProactiveChatTrigger";
 import WishlistButton from "@/components/WishlistButton";
+import SeoFooter from "@/components/SeoFooter";
 
 const FullscreenGallery = lazy(() => import("@/components/FullscreenGallery"));
 const Vehicle360Viewer = lazy(() => import("@/components/Vehicle360Viewer"));
@@ -723,6 +724,18 @@ export default function VehicleLanding() {
                 {a.label}二手車
               </a>
             ))}
+          </div>
+        </div>
+
+        {/* Contextual blog links — internal linking for SEO */}
+        <div className="bg-white/[0.04] rounded-2xl border border-white/[0.06] px-4 py-3 mb-4">
+          <p className="text-white/60 text-xs font-semibold mb-2">📖 購車必讀</p>
+          <div className="space-y-1.5">
+            <a href="/blog/buy-used-car-guide" className="block text-xs text-white/40 hover:text-white/80 transition-colors">買二手車 7 大注意事項</a>
+            <a href="/blog/used-car-loan-guide" className="block text-xs text-white/40 hover:text-white/80 transition-colors">二手車貸款全攻略</a>
+            <a href="/blog/third-party-inspection-guide" className="block text-xs text-white/40 hover:text-white/80 transition-colors">第三方認證指南</a>
+            <a href="/blog/used-car-transfer-guide" className="block text-xs text-white/40 hover:text-white/80 transition-colors">過戶流程與費用</a>
+            <a href="/faq" className="block text-xs text-white/40 hover:text-white/80 transition-colors">常見問題 FAQ →</a>
           </div>
         </div>
 

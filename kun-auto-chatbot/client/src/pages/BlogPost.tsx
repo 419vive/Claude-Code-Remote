@@ -179,6 +179,33 @@ export default function BlogPost() {
                 <a href="/price/over-80" className="block text-xs text-primary hover:underline">80萬以上二手車</a>
               </div>
             </div>
+
+            {/* Popular brand links — internal linking density */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">熱門品牌二手車</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {["Toyota", "Honda", "BMW", "Benz", "Mazda", "Nissan", "Lexus", "Ford", "Volkswagen", "Mitsubishi"].map(brand => (
+                  <a
+                    key={brand}
+                    href={`/brand/${encodeURIComponent(brand)}`}
+                    className="inline-block text-[11px] px-2 py-1 rounded-md bg-muted text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    {brand}
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Service area links — local SEO internal linking */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">服務地區</h3>
+              <div className="space-y-2">
+                <a href="/area/tainan" className="block text-xs text-primary hover:underline">台南二手車</a>
+                <a href="/area/pingtung" className="block text-xs text-primary hover:underline">屏東二手車</a>
+                <a href="/area/taichung" className="block text-xs text-primary hover:underline">台中二手車</a>
+                <a href="/area/chiayi" className="block text-xs text-primary hover:underline">嘉義二手車</a>
+              </div>
+            </div>
           </aside>
         </div>
       </div>

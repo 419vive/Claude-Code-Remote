@@ -1,10 +1,27 @@
+import { useState, useMemo } from "react";
 import { blogPosts } from "@/data/blogPosts";
-import { ChevronRight, BookOpen, Calendar } from "lucide-react";
+import { ChevronRight, BookOpen, Calendar, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import SeoFooter from "@/components/SeoFooter";
 
 export default function BlogIndex() {
+  const [filter, setFilter] = useState<string>("全部");
+  const [searchQ, setSearchQ] = useState("");
+
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(blogPosts.map(p => p.category)));
+    return ["全部", ...cats];
+  }, []);
+
+  const filtered = useMemo(() => {
+    return blogPosts.filter(p => {
+      if (filter !== "全部" && p.category !== filter) return false;
+      if (searchQ && !p.title.includes(searchQ) && !p.description.includes(searchQ) && !p.keywords.some(k => k.includes(searchQ))) return false;
+      return true;
+    });
+  }, [filter, searchQ]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -20,6 +37,7 @@ export default function BlogIndex() {
           <p className="text-sm text-white/70 max-w-2xl">
             40年二手車專業知識，幫你避開買車地雷、規劃貸款、搞懂過戶手續。
             每篇文章都由崑家汽車資深顧問撰寫，內容實用、不賣弄術語。
+            共 {blogPosts.length} 篇專業攻略。
           </p>
         </div>
       </header>
@@ -37,8 +55,41 @@ export default function BlogIndex() {
 
       {/* Blog Grid */}
       <main className="container py-8">
+        {/* Category filter + search */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex flex-wrap gap-2">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setFilter(cat)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  filter === cat
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+          <div className="relative sm:ml-auto">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="搜尋文章..."
+              value={searchQ}
+              onChange={e => setSearchQ(e.target.value)}
+              className="pl-8 pr-3 py-1.5 text-xs rounded-lg border bg-background w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground mb-4">
+          顯示 {filtered.length} / {blogPosts.length} 篇文章
+        </p>
+
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {blogPosts.map((post) => (
+          {filtered.map((post) => (
             <a key={post.slug} href={`/blog/${post.slug}`} className="group block">
               <Card className="h-full transition-all hover:shadow-lg hover:-translate-y-0.5">
                 <CardContent className="p-5 flex flex-col h-full">

@@ -21,6 +21,7 @@ const BLOG_LINKS = [
   { label: "第三方認證指南", href: "/blog/third-party-inspection-guide" },
   { label: "過戶流程與費用", href: "/blog/used-car-transfer-guide" },
   { label: "高雄二手車行推薦比較 2026", href: "/blog/kaohsiung-used-car-dealers-comparison" },
+  { label: "二手車行情價格查詢", href: "/blog/used-car-price-guide" },
 ];
 
 const LOCAL_AREA_LINKS = [
@@ -116,6 +117,21 @@ export default function SeoFooter() {
               <li>
                 <a href="/faq" className="text-xs text-white/60 hover:text-white transition-colors">
                   常見問題 FAQ
+                </a>
+              </li>
+              <li>
+                <a href="/loan-inquiry" className="text-xs text-white/60 hover:text-white transition-colors">
+                  貸款試算
+                </a>
+              </li>
+              <li>
+                <a href="/book-visit" className="text-xs text-white/60 hover:text-white transition-colors">
+                  預約看車
+                </a>
+              </li>
+              <li>
+                <a href="/chat" className="text-xs text-white/60 hover:text-white transition-colors">
+                  AI 智慧問答
                 </a>
               </li>
             </ul>

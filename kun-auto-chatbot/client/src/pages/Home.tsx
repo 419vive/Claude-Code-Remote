@@ -445,6 +445,8 @@ export default function Home() {
                 alt="崑家二手汽車經銷商 KUN MOTORS"
                 className="h-28 w-auto sm:h-[9.5rem] md:h-[10.8rem]"
                 style={{ mixBlendMode: "screen" }}
+                fetchPriority="high"
+                decoding="sync"
               />
               <h1 className="text-[11px] sm:text-xs tracking-[0.15em] text-white/75 font-medium mt-1">
                 台灣南部在地 40 年老口碑·正派經營
