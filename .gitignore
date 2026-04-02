@@ -4,3 +4,14 @@ node_modules/
 package-lock.json
 .understand-anything/
 tools/goviralbro/.env
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
