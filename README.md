@@ -805,6 +805,26 @@ FORCE_RULE_BASED_REPLY=1                 # Skip LLM, use pattern matching
 NODE_ENV=production
 PORT=3000
 BASE_URL=https://kuncar.tw
+
+# ── VideoDB (Video AI) ───────────────────────
+VIDEO_DB_API_KEY=your_videodb_api_key    # Get from https://console.videodb.io
+```
+
+---
+
+## VideoDB — Video AI Integration
+
+AI-powered video infrastructure for vehicle walkthrough videos. Enables transcription, semantic search, clip generation, and streaming.
+
+- **Console:** https://console.videodb.io
+- **Plan:** Free tier (50 uploads, no credit card)
+- **Full setup guide:** [`docs/videodb-setup.md`](docs/videodb-setup.md)
+
+```bash
+# Quick start
+pip install -r scripts/videodb/requirements.txt
+python scripts/videodb/test_connection.py
+python scripts/videodb/upload_vehicle.py https://example.com/video.mp4
 ```
 
 ---

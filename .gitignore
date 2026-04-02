@@ -3,3 +3,14 @@
 node_modules/
 package-lock.json
 .understand-anything/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
