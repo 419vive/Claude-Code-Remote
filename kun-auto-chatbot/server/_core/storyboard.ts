@@ -69,13 +69,20 @@ export async function generateStoryboard(
 - 溫暖但專業的氛圍
 - 高雄在地感（崑家汽車位於高雄三民區）
 
-你需要產出一個完整的分鏡腳本 JSON，包含 5-7 個場景。
+你需要產出一個完整的分鏡腳本 JSON，包含 **25-35 個場景**，總片長約 **5 分鐘（300 秒）**。
+
+影片結構（五幕劇）：
+- 第一幕「引子」(30秒, 3-4場景)：日常生活中的需求/痛點，引起共鳴
+- 第二幕「相遇」(60秒, 6-8場景)：主角發現崑家汽車、走進展廳、看到這台車
+- 第三幕「體驗」(90秒, 8-10場景)：試駕、感受車輛細節、業務介紹、貸款諮詢
+- 第四幕「決定」(60秒, 5-7場景)：交車、感動時刻、開上路
+- 第五幕「新生活」(60秒, 5-7場景)：主角用車的美好日常 + 崑家汽車品牌收尾
 
 每個場景需要：
-1. imagePrompt: 英文，給 AI 圖像生成器（要描述人物外觀、場景、光影、構圖）
-2. motionPrompt: 英文，給 AI 影片生成器（描述鏡頭運動：pan, dolly, zoom 等）
-3. narration: 繁體中文旁白（溫暖、有感情、口語化）
-4. durationSec: 該場景持續秒數（通常 5-10 秒）
+1. imagePrompt: 英文，給 AI 圖像生成器（詳細描述人物外觀、服裝、表情、場景環境、光影、構圖。人物要保持一致性）
+2. motionPrompt: 英文，給 AI 影片生成器（描述鏡頭運動：slow pan, dolly in, tracking shot, crane up, close-up, wide establishing shot 等）
+3. narration: 繁體中文旁白（溫暖、有感情、口語化，像紀錄片旁白）
+4. durationSec: 該場景持續秒數（8-12 秒）
 
 故事類型可以是：
 - 年輕人買第一台車的興奮
@@ -83,7 +90,10 @@ export async function generateStoryboard(
 - 創業者需要一台可靠的車
 - 情侶假日兜風
 - 退休長輩享受生活
+- 單親媽媽需要安全接送孩子的車
+- 剛出社會的上班族圓夢
 
+重要：人物外觀描述要在所有場景保持一致（同一個人穿同樣的衣服、同樣的髮型）。
 請根據車型特性選擇最適合的故事。回覆必須是純 JSON。`;
 
   const features = vehicle.features?.length
@@ -134,7 +144,7 @@ ${features}
       },
       body: JSON.stringify({
         model: CLAUDE_MODEL,
-        max_tokens: 4096,
+        max_tokens: 8192,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       }),

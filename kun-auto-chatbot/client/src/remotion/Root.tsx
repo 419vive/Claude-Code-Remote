@@ -77,7 +77,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="CinematicAd"
         component={CinematicAd}
-        durationInFrames={30 * (3 + 8 + 7 + 8 + 4)}
+        durationInFrames={30 * 307} /* ~5 min: 3s title + 300s scenes + 4s CTA */
         fps={30}
         width={1920}
         height={1080}
