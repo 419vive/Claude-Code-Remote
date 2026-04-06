@@ -40,13 +40,13 @@ export async function generateVideoPrompt(
     throw new Error("ANTHROPIC_API_KEY is not configured");
   }
 
-  const systemPrompt = `你是坤佳汽車的影片創意總監。你專門撰寫 cinematic 二手車展示影片的 prompt，
+  const systemPrompt = `你是崑家汽車的影片創意總監。你專門撰寫 cinematic 二手車展示影片的 prompt，
 用於 AI 影片生成工具。你的風格是高級、專業、有電影感的。
 
 你需要產出：
 1. cinematicPrompt: 給 AI 影片生成器的英文 prompt（描述鏡頭運動、光影、氛圍）
 2. title: YouTube 影片標題（繁體中文，包含車款、年份）
-3. description: YouTube 影片描述（繁體中文，含車輛亮點、坤佳汽車聯絡資訊）
+3. description: YouTube 影片描述（繁體中文，含車輛亮點、崑家汽車聯絡資訊）
 4. tags: YouTube 標籤陣列（中英文混合）
 
 回覆必須是 JSON 格式。`;
