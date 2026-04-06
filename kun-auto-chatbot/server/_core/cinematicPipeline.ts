@@ -15,7 +15,7 @@
  */
 import { generateStoryboard, type Storyboard } from "./storyboard";
 import { generateAllSceneImages } from "./sceneImageGen";
-import { generateVideo } from "./higgsfield";
+import { generateVideo, type VideoModel } from "./higgsfield";
 import { generateSceneNarrations } from "./elevenlabs";
 import { generateMusic } from "./sunoMusic";
 import { uploadToYouTube, type YouTubeUploadResult } from "./youtubeUpload";
@@ -32,6 +32,8 @@ export type CinematicPipelineOptions = {
   uploadToYouTube?: boolean;
   /** YouTube privacy setting */
   privacyStatus?: "public" | "unlisted" | "private";
+  /** Video generation model (default: auto-selects cheapest available) */
+  videoModel?: VideoModel;
 };
 
 export type SceneAssets = {
@@ -95,6 +97,8 @@ export async function runCinematicPipeline(
     const video = await generateVideo({
       prompt: scene.motionPrompt,
       imageUrl: sceneImages[i].imageUrl,
+      model: options.videoModel,
+      durationSec: scene.durationSec,
     });
     sceneVideos.push(video);
   }

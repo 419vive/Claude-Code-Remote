@@ -21,8 +21,10 @@ export const ENV = {
   adminPassword: process.env.ADMIN_PASSWORD ?? "",
   // Anthropic Claude — used for generating cinematic video prompts
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
-  // Higgsfield AI — cinematic video generation
+  // Higgsfield AI — DoP Turbo cinematic video (fallback)
   higgsFieldCredentials: process.env.HIGGSFIELD_CREDENTIALS ?? "", // KEY_ID:KEY_SECRET
+  // Seedance 2.0 — ByteDance video model via third-party API (primary, cheaper)
+  seedanceApiKey: process.env.SEEDANCE_API_KEY ?? "",
   // YouTube Data API — upload generated videos
   youtubeClientId: process.env.YOUTUBE_CLIENT_ID ?? "",
   youtubeClientSecret: process.env.YOUTUBE_CLIENT_SECRET ?? "",

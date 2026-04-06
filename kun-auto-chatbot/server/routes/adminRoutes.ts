@@ -526,6 +526,7 @@ export const adminRouter = router({
   generateCinematicVideo: adminProcedure
     .input(z.object({
       vehicleId: z.number(),
+      videoModel: z.enum(["seedance-2.0-fast", "seedance-2.0-pro", "dop-turbo"]).default("seedance-2.0-fast"),
       uploadToYouTube: z.boolean().default(false),
       privacyStatus: z.enum(["public", "unlisted", "private"]).default("private"),
     }))
@@ -553,6 +554,7 @@ export const adminRouter = router({
           imageUrls: photoUrls,
         },
         vehicleImageUrl: photoUrls[0],
+        videoModel: input.videoModel,
         uploadToYouTube: input.uploadToYouTube,
         privacyStatus: input.privacyStatus,
       });
