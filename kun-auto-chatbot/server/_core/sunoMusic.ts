@@ -71,16 +71,21 @@ async function generateViaSunoApi(
   const timeout = setTimeout(() => controller.abort(), SUNO_TIMEOUT_MS);
 
   try {
-    const submitRes = await fetch(`${baseUrl}/api/generate/v2`, {
+    // sunoapi.org third-party wrapper format
+    const submitRes = await fetch(`${baseUrl}/api/v1/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${ENV.sunoApiKey}`,
       },
       body: JSON.stringify({
-        prompt: input.prompt,
-        make_instrumental: input.instrumental ?? true,
-        wait_audio: false, // async mode
+        customMode: true,
+        instrumental: input.instrumental ?? true,
+        model: "V5_5",
+        style: input.prompt,
+        title: "BGM",
+        prompt: "", // empty for instrumental
+        negativeTags: "vocals, singing, lyrics",
       }),
       signal: controller.signal,
     });
@@ -92,19 +97,19 @@ async function generateViaSunoApi(
       throw new Error(`Suno API submit failed (${submitRes.status}): ${detail.substring(0, 500)}`);
     }
 
-    const submitData = (await submitRes.json()) as Array<{
-      id: string;
-      status: string;
-      audio_url?: string;
-      title?: string;
-      duration?: number;
-    }>;
+    const submitData = (await submitRes.json()) as {
+      code: number;
+      data?: {
+        taskId: string;
+        status?: string;
+      };
+    };
 
-    if (!submitData.length) {
-      throw new Error("Suno API returned no results");
+    if (!submitData.data?.taskId) {
+      throw new Error("Suno API returned no taskId");
     }
 
-    const jobId = submitData[0].id;
+    const jobId = submitData.data.taskId;
     logger.info("SunoMusic", `Job submitted: ${jobId}`);
 
     // Poll for completion
@@ -113,31 +118,38 @@ async function generateViaSunoApi(
     while (Date.now() - startTime < MAX_POLL_TIME_MS) {
       await sleep(POLL_INTERVAL_MS);
 
-      const statusRes = await fetch(`${baseUrl}/api/get?ids=${jobId}`, {
+      const statusRes = await fetch(`${baseUrl}/api/v1/task/${jobId}`, {
         headers: { Authorization: `Bearer ${ENV.sunoApiKey}` },
       });
 
       if (!statusRes.ok) continue;
 
-      const statusData = (await statusRes.json()) as Array<{
-        id: string;
-        status: string;
-        audio_url?: string;
-        title?: string;
-        duration?: number;
-      }>;
+      const statusData = (await statusRes.json()) as {
+        code: number;
+        data?: {
+          response?: Array<{
+            id: string;
+            audio_url?: string;
+            title?: string;
+            duration?: number;
+            tags?: string;
+          }>;
+          status?: string;
+        };
+      };
 
-      const job = statusData[0];
-      if (job?.status === "complete" && job.audio_url) {
-        logger.info("SunoMusic", `Music ready: ${job.title || jobId}`);
+      const songs = statusData.data?.response;
+      if (songs?.[0]?.audio_url) {
+        const song = songs[0];
+        logger.info("SunoMusic", `Music ready: ${song.title || jobId}`);
         return {
-          audioUrl: job.audio_url,
-          title: job.title || "BGM",
-          duration: job.duration || input.durationSec || 60,
+          audioUrl: song.audio_url,
+          title: song.title || "BGM",
+          duration: song.duration || input.durationSec || 60,
         };
       }
 
-      if (job?.status === "error") {
+      if (statusData.data?.status === "error") {
         throw new Error(`Suno music generation failed: ${jobId}`);
       }
     }

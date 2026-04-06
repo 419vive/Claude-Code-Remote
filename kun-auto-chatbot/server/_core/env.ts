@@ -29,7 +29,9 @@ export const ENV = {
   youtubeRefreshToken: process.env.YOUTUBE_REFRESH_TOKEN ?? "",
   // ElevenLabs — AI voiceover
   elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? "",
-  // Suno AI — background music generation
+  // Suno AI — background music generation (third-party wrapper, no official API)
   sunoApiKey: process.env.SUNO_API_KEY ?? "",
-  sunoBaseUrl: process.env.SUNO_BASE_URL ?? "https://studio-api.suno.ai",
+  sunoBaseUrl: process.env.SUNO_BASE_URL ?? "https://api.sunoapi.org",
+  // Black Forest Labs — FLUX.2 Pro image generation (primary, better than via Higgsfield)
+  bflApiKey: process.env.BFL_API_KEY ?? "",
 };

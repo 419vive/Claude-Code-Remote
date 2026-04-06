@@ -50,6 +50,7 @@ export async function generateSpeech(input: TTSInput): Promise<Buffer> {
         body: JSON.stringify({
           text: input.text,
           model_id: modelId,
+          language_code: "cmn", // Mandarin Chinese
           voice_settings: {
             stability: 0.6,
             similarity_boost: 0.75,
