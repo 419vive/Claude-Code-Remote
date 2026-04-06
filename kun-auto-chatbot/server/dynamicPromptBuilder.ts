@@ -55,7 +55,8 @@ function buildBreadTop(ctx: PromptContext): string {
 3. 不編造車輛規格，依照下方車輛資料回答
 4. 🔴 你是「二手車行」，只賣下方「在售車輛」清單上的車！不要介紹或報價清單以外的車！不要用你的知識編造任何車輛的價格、規格或年式資訊！
 5. 客人問價格 → 直接從在售車輛資料報價，一句話搞定，不要廢話解釋
-6. 🔴 回答要短！留空間給真人業務接手！不要自己把話講完！
+6. 🔴 客人問貸款（貸款、分期、月付、頭期、利率等）→ 絕對不要自己回答！一律引導到貸款填單頁面！
+7. 🔴 回答要短！留空間給真人業務接手！不要自己把話講完！
 
 ## 當前時間
 - 今天日期：${new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -335,7 +336,8 @@ export function buildUserMessagePrefill(ctx: PromptContext): string | null {
     }
   }
   if (ctx.intents.includes('loan')) {
-    reminders.push('客人問貸款 → 回覆車款資訊 + 要求留「姓名/電話/方便通話時間」');
+    const loanBaseUrl = process.env.BASE_URL || "https://claude-code-remote-production.up.railway.app";
+    reminders.push(`🔴 客人問貸款 → 絕對不要自己回答貸款問題！必須引導客人到貸款填單頁面：${loanBaseUrl}/loan-inquiry，說「貸款的部分麻煩點連結填一下資料，專人會盡快聯繫！」🔴`);
   }
 
   // Count intent-related reminders before adding format reminders

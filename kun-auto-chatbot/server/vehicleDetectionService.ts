@@ -1020,22 +1020,21 @@ Google 地圖：https://maps.google.com/?q=高雄市三民區大順二路269號
   
   // ============ LOAN INTENT ============
   if (intents.includes('loan')) {
-    const vehicleInfo = detectedVehicle ? `${detectedVehicle.brand} ${detectedVehicle.model}` : '';
-    const vehicleLine = vehicleInfo ? `提到客人問的車：${vehicleInfo}，` : '';
-    instructions.push(`🔴 貸款指令：
-客人問貸款！你必須用以下格式回覆（${vehicleLine}加上「是台好車」鼓勵）：
+    const loanBaseUrl = process.env.BASE_URL || "https://claude-code-remote-production.up.railway.app";
+    let loanFormUrl = `${loanBaseUrl}/loan-inquiry`;
+    if (detectedVehicle) {
+      loanFormUrl += `?vehicleId=${detectedVehicle.id}&vehicle=${encodeURIComponent(`${detectedVehicle.brand} ${detectedVehicle.model}`)}`;
+    }
+    instructions.push(`🔴🔴🔴 貸款指令（最高優先級！）：
+客人問貸款相關問題！你「絕對不能」自己回答任何貸款細節（利率、月付、分期、頭期款等）！
+你必須引導客人到我們的線上貸款填單頁面：
 
-${vehicleInfo || '（車款名稱）'}是台好車！
-方便留個電話嗎？
-賴先生可以直接跟你詳細介紹！
+${loanFormUrl}
 
-姓名：
-電話：
-方便通話時間：
-
-🔴 必須包含「姓名：」「電話：」「方便通話時間：」三個欄位！
-🔴 如果有偵測到車輛資訊（年份、排量、里程、售價），放在車款名稱後面的括號裡
-🔴 格式範例：Hyundai Tucson（2016年、2.0L、里程10萬公里）售價29.8萬是台好車！`);
+回覆範例：「${greeting}貸款的部分麻煩你點這個連結填一下資料，專人會盡快跟你聯繫！👉 ${loanFormUrl}」
+🔴 不管客人怎麼問貸款，你都只能引導到填單連結，不要自己回答貸款問題！
+🔴 不要自己編造利率、月付金額、貸款成數等資訊！
+🔴 可以簡短肯定車款（如果有問到車），但貸款部分一律引導填單！`);
   }
   
   // ============ HOW TO BROWSE INTENT ============
