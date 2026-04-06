@@ -21,7 +21,7 @@ export function trackLoanSubmit(vehicleName?: string) {
   }
   if (window.gtag) {
     window.gtag("event", "conversion", {
-      send_to: "AW-PLACEHOLDER/loan_submit",
+      send_to: "AW-8142635893/loan_submit",
       event_category: "lead",
       event_label: vehicleName || "loan_inquiry",
     });
@@ -38,7 +38,7 @@ export function trackAppointmentSubmit(vehicleName?: string) {
   }
   if (window.gtag) {
     window.gtag("event", "conversion", {
-      send_to: "AW-PLACEHOLDER/appointment_submit",
+      send_to: "AW-8142635893/appointment_submit",
       event_category: "lead",
       event_label: vehicleName || "appointment",
     });
@@ -54,7 +54,7 @@ export function trackPhoneClick() {
   }
   if (window.gtag) {
     window.gtag("event", "conversion", {
-      send_to: "AW-PLACEHOLDER/phone_click",
+      send_to: "AW-8142635893/phone_click",
       event_category: "contact",
       event_label: "phone_call",
     });

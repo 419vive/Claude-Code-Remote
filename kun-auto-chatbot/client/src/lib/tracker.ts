@@ -61,14 +61,14 @@ export function initTracker() {
     if (!link) return;
     const href = link.getAttribute("href") || "";
     if (href.startsWith("tel:")) {
-      // Meta Pixel: Contact event
       if ((window as any).fbq) (window as any).fbq("track", "Contact", { content_category: "phone_call" });
+      if ((window as any).gtag) (window as any).gtag("event", "conversion", { send_to: "AW-8142635893/phone_click", event_category: "contact" });
     } else if (href.includes("maps.google") || href.includes("goo.gl/maps")) {
-      // Meta Pixel: FindLocation event
       if ((window as any).fbq) (window as any).fbq("track", "FindLocation");
+      if ((window as any).gtag) (window as any).gtag("event", "conversion", { send_to: "AW-8142635893/map_click", event_category: "contact" });
     } else if (href.includes("page.line.me") || href.includes("line.me")) {
-      // Meta Pixel: Contact event for LINE
       if ((window as any).fbq) (window as any).fbq("track", "Contact", { content_category: "line_add" });
+      if ((window as any).gtag) (window as any).gtag("event", "conversion", { send_to: "AW-8142635893/line_click", event_category: "contact" });
     }
   });
 
