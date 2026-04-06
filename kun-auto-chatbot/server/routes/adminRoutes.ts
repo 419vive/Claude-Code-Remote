@@ -9,6 +9,8 @@ import { generateVideoPrompt } from "../_core/claude";
 import { generateVideo } from "../_core/higgsfield";
 import { uploadToYouTube } from "../_core/youtubeUpload";
 import { runVideoGenerationPipeline } from "../_core/videoGeneration";
+import { generateStoryboard } from "../_core/storyboard";
+import { runCinematicPipeline } from "../_core/cinematicPipeline";
 import { logger } from "../logger";
 
 export const adminRouter = router({
@@ -491,6 +493,97 @@ export const adminRouter = router({
       return {
         prompt: result.promptResult,
         video: result.videoResult,
+        youtube: result.youtubeResult ?? null,
+      };
+    }),
+
+  // ============ CINEMATIC VIDEO PIPELINE (Full Story) ============
+
+  /** Generate a storyboard script only (preview before full render) */
+  generateStoryboard: adminProcedure
+    .input(z.object({
+      vehicleId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const allVehicles = await db.getAllVehicles();
+      const vehicle = allVehicles.find(v => v.id === input.vehicleId);
+      if (!vehicle) throw new Error(`Vehicle ${input.vehicleId} not found`);
+
+      const storyboard = await generateStoryboard({
+        make: vehicle.brand,
+        model: vehicle.model,
+        year: parseInt(vehicle.modelYear || vehicle.manufactureYear || "0", 10),
+        color: vehicle.color ?? undefined,
+        mileage: vehicle.mileage ? parseInt(vehicle.mileage.replace(/\D/g, ""), 10) : undefined,
+        price: vehicle.price ? Number(vehicle.price) : undefined,
+        features: vehicle.features ? JSON.parse(vehicle.features) : undefined,
+      });
+
+      return storyboard;
+    }),
+
+  /** Run the full cinematic pipeline: storyboard → images → video → voiceover → BGM */
+  generateCinematicVideo: adminProcedure
+    .input(z.object({
+      vehicleId: z.number(),
+      uploadToYouTube: z.boolean().default(false),
+      privacyStatus: z.enum(["public", "unlisted", "private"]).default("private"),
+    }))
+    .mutation(async ({ input }) => {
+      const allVehicles = await db.getAllVehicles();
+      const vehicle = allVehicles.find(v => v.id === input.vehicleId);
+      if (!vehicle) throw new Error(`Vehicle ${input.vehicleId} not found`);
+
+      const photoUrls: string[] = vehicle.photoUrls ? JSON.parse(vehicle.photoUrls) : [];
+      if (!photoUrls.length) {
+        throw new Error(`Vehicle ${input.vehicleId} has no photos`);
+      }
+
+      logger.info("CinematicAdmin", `Starting cinematic pipeline for vehicle #${input.vehicleId}`);
+
+      const result = await runCinematicPipeline({
+        vehicle: {
+          make: vehicle.brand,
+          model: vehicle.model,
+          year: parseInt(vehicle.modelYear || vehicle.manufactureYear || "0", 10),
+          color: vehicle.color ?? undefined,
+          mileage: vehicle.mileage ? parseInt(vehicle.mileage.replace(/\D/g, ""), 10) : undefined,
+          price: vehicle.price ? Number(vehicle.price) : undefined,
+          features: vehicle.features ? JSON.parse(vehicle.features) : undefined,
+          imageUrls: photoUrls,
+        },
+        vehicleImageUrl: photoUrls[0],
+        uploadToYouTube: input.uploadToYouTube,
+        privacyStatus: input.privacyStatus,
+      });
+
+      // Save video URL to vehicle record if YouTube uploaded
+      if (result.youtubeResult) {
+        try {
+          const db2 = await db.getDb();
+          if (db2) {
+            const { vehicles: vTable } = await import("../../drizzle/schema");
+            await db2.update(vTable)
+              .set({ videoUrl: result.youtubeResult.youtubeUrl })
+              .where(eq(vTable.id, input.vehicleId));
+          }
+        } catch (err) {
+          logger.warn("CinematicAdmin", `Failed to save YouTube URL: ${err}`);
+        }
+      }
+
+      return {
+        concept: result.storyboard.concept,
+        sceneCount: result.scenes.length,
+        scenes: result.scenes.map(s => ({
+          sceneNumber: s.sceneNumber,
+          description: s.description,
+          videoUrl: s.videoUrl,
+          imageUrl: s.imageUrl,
+          durationSec: s.durationSec,
+        })),
+        musicUrl: result.musicUrl,
+        localVideoPath: result.localVideoPath,
         youtube: result.youtubeResult ?? null,
       };
     }),

@@ -27,4 +27,9 @@ export const ENV = {
   youtubeClientId: process.env.YOUTUBE_CLIENT_ID ?? "",
   youtubeClientSecret: process.env.YOUTUBE_CLIENT_SECRET ?? "",
   youtubeRefreshToken: process.env.YOUTUBE_REFRESH_TOKEN ?? "",
+  // ElevenLabs — AI voiceover
+  elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? "",
+  // Suno AI — background music generation
+  sunoApiKey: process.env.SUNO_API_KEY ?? "",
+  sunoBaseUrl: process.env.SUNO_BASE_URL ?? "https://studio-api.suno.ai",
 };
