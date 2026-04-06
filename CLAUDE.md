@@ -1,188 +1,123 @@
-# Claude Code Configuration - RuFlo V3
+# 崑家汽車 AI 聊天機器人 — Claude Code 配置
 
-## Behavioral Rules (Always Enforced)
+## 專案概述
 
-- Do what has been asked; nothing more, nothing less
-- NEVER create files unless they're absolutely necessary for achieving your goal
-- ALWAYS prefer editing an existing file to creating a new one
-- NEVER proactively create documentation files (*.md) or README files unless explicitly requested
-- NEVER save working files, text/mds, or tests to the root folder
-- Never continuously check status after spawning a swarm — wait for results
-- ALWAYS read a file before editing it
-- NEVER commit secrets, credentials, or .env files
+崑家汽車（Kun-Auto）AI 客服聊天機器人，整合 LINE Official Account，提供車輛查詢、預約看車、貸款諮詢等功能。從 8891 同步車輛庫存，具備智慧意圖偵測與潛在客戶評分系統。
 
-## File Organization
+## 技術棧
 
-- NEVER save to root folder — use the directories below
-- Use `/src` for source code files
-- Use `/tests` for test files
-- Use `/docs` for documentation and markdown files
-- Use `/config` for configuration files
-- Use `/scripts` for utility scripts
-- Use `/examples` for example code
+- **前端**：React 19 + TypeScript + Tailwind CSS 4 + Radix UI + wouter (路由)
+- **後端**：Express + tRPC + Node.js (ESM)
+- **資料庫**：MySQL + Drizzle ORM
+- **AI/LLM**：Google AI API (Gemini)
+- **訊息平台**：LINE Messaging API（Webhook + Rich Menu）
+- **建置工具**：Vite 7 + esbuild
+- **測試**：Vitest
+- **套件管理**：pnpm
+- **部署**：Railway / Render + Docker
 
-## Project Architecture
+## 專案結構
 
-- Follow Domain-Driven Design with bounded contexts
-- Keep files under 500 lines
-- Use typed interfaces for all public APIs
-- Prefer TDD London School (mock-first) for new code
-- Use event sourcing for state changes
-- Ensure input validation at system boundaries
-
-### Project Config
-
-- **Topology**: hierarchical-mesh
-- **Max Agents**: 15
-- **Memory**: hybrid
-- **HNSW**: Enabled
-- **Neural**: Enabled
-
-## Build & Test
-
-```bash
-# Build
-npm run build
-
-# Test
-npm test
-
-# Lint
-npm run lint
+```
+kun-auto-chatbot/
+├── client/src/         # React 前端
+│   ├── components/     # UI 元件
+│   ├── pages/          # 頁面（Home, Chat, Dashboard, VehicleManagement...）
+│   ├── hooks/          # 自訂 hooks
+│   ├── contexts/       # React Context
+│   └── lib/            # 工具函式
+├── server/             # Express + tRPC 後端
+│   ├── _core/          # 核心模組（env, trpc, llm, auth, context）
+│   ├── routes/         # 額外路由（admin, leadScoring）
+│   └── *.ts            # 功能模組（lineWebhook, sync8891, security...）
+├── shared/             # 前後端共用型別與常數
+├── drizzle/            # DB schema 與 migration
+├── scripts/            # 工具腳本
+└── public/             # 靜態資源
 ```
 
-- ALWAYS run tests after making code changes
-- ALWAYS verify build succeeds before committing
+## 路徑別名
 
-## Security Rules
+- `@/*` → `client/src/*`
+- `@shared/*` → `shared/*`
 
-- NEVER hardcode API keys, secrets, or credentials in source files
-- NEVER commit .env files or any file containing secrets
-- Always validate user input at system boundaries
-- Always sanitize file paths to prevent directory traversal
-- Run `npx @claude-flow/cli@latest security scan` after security-related changes
-
-## Concurrency: 1 MESSAGE = ALL RELATED OPERATIONS
-
-- All operations MUST be concurrent/parallel in a single message
-- Use Claude Code's Task tool for spawning agents, not just MCP
-- ALWAYS batch ALL todos in ONE TodoWrite call (5-10+ minimum)
-- ALWAYS spawn ALL agents in ONE message with full instructions via Task tool
-- ALWAYS batch ALL file reads/writes/edits in ONE message
-- ALWAYS batch ALL Bash commands in ONE message
-
-## Swarm Orchestration
-
-- MUST initialize the swarm using CLI tools when starting complex tasks
-- MUST spawn concurrent agents using Claude Code's Task tool
-- Never use CLI tools alone for execution — Task tool agents do the actual work
-- MUST call CLI tools AND Task tool in ONE message for complex work
-
-### 3-Tier Model Routing (ADR-026)
-
-| Tier | Handler | Latency | Cost | Use Cases |
-|------|---------|---------|------|-----------|
-| **1** | Agent Booster (WASM) | <1ms | $0 | Simple transforms (var→const, add types) — Skip LLM |
-| **2** | Haiku | ~500ms | $0.0002 | Simple tasks, low complexity (<30%) |
-| **3** | Sonnet/Opus | 2-5s | $0.003-0.015 | Complex reasoning, architecture, security (>30%) |
-
-- Always check for `[AGENT_BOOSTER_AVAILABLE]` or `[TASK_MODEL_RECOMMENDATION]` before spawning agents
-- Use Edit tool directly when `[AGENT_BOOSTER_AVAILABLE]`
-
-## Swarm Configuration & Anti-Drift
-
-- ALWAYS use hierarchical topology for coding swarms
-- Keep maxAgents at 6-8 for tight coordination
-- Use specialized strategy for clear role boundaries
-- Use `raft` consensus for hive-mind (leader maintains authoritative state)
-- Run frequent checkpoints via `post-task` hooks
-- Keep shared memory namespace for all agents
+## Build & Test 指令
 
 ```bash
-npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --strategy specialized
+# 開發模式
+pnpm dev
+
+# 建置
+pnpm build
+
+# 測試
+pnpm test
+
+# 型別檢查
+pnpm check
+
+# 資料庫遷移
+pnpm db:push
 ```
 
-## Swarm Execution Rules
+- ALWAYS 在修改程式碼後跑測試 (`pnpm test`)
+- ALWAYS 在 commit 前確認建置成功 (`pnpm build`)
 
-- ALWAYS use `run_in_background: true` for all agent Task calls
-- ALWAYS put ALL agent Task calls in ONE message for parallel execution
-- After spawning, STOP — do NOT add more tool calls or check status
-- Never poll TaskOutput or check swarm status — trust agents to return
-- When agent results arrive, review ALL results before proceeding
+## 行為規則
 
-## V3 CLI Commands
+- 做被要求的事，不多不少
+- NEVER 建立不必要的檔案 — 優先編輯現有檔案
+- NEVER 主動建立 *.md 或 README 檔案（除非明確要求）
+- NEVER 把工作檔案或測試存到專案根目錄
+- ALWAYS 先讀取檔案再編輯
+- NEVER commit .env 或含有密鑰的檔案
 
-### Core Commands
+## 檔案組織
 
-| Command | Subcommands | Description |
-|---------|-------------|-------------|
-| `init` | 4 | Project initialization |
-| `agent` | 8 | Agent lifecycle management |
-| `swarm` | 6 | Multi-agent swarm coordination |
-| `memory` | 11 | AgentDB memory with HNSW search |
-| `task` | 6 | Task creation and lifecycle |
-| `session` | 7 | Session state management |
-| `hooks` | 17 | Self-learning hooks + 12 workers |
-| `hive-mind` | 6 | Byzantine fault-tolerant consensus |
+- 前端程式碼放 `client/src/`
+- 後端程式碼放 `server/`
+- 共用型別放 `shared/`
+- 資料庫相關放 `drizzle/`
+- 工具腳本放 `scripts/`
+- 測試檔案放在對應模組旁邊（`*.test.ts`）
 
-### Quick CLI Examples
+## 安全規則
 
-```bash
-npx @claude-flow/cli@latest init --wizard
-npx @claude-flow/cli@latest agent spawn -t coder --name my-coder
-npx @claude-flow/cli@latest swarm init --v3-mode
-npx @claude-flow/cli@latest memory search --query "authentication patterns"
-npx @claude-flow/cli@latest doctor --fix
-```
+- NEVER 在原始碼中硬編碼 API 金鑰、密鑰或憑證
+- NEVER commit .env 檔案
+- 使用 `server/security.ts` 的函式處理輸入消毒（sanitizeChatMessage, sanitizeSearchQuery）
+- 使用 `maskPhone`, `maskName`, `maskPIIInText` 保護個人資料
+- 使用 `xss-filters` 防止 XSS 攻擊
+- 使用 `helmet` 和 `express-rate-limit` 保護 API
 
-## Available Agents (60+ Types)
+## 環境變數（.env）
 
-### Core Development
-`coder`, `reviewer`, `tester`, `planner`, `researcher`
+必要變數定義在 `server/_core/env.ts`：
+- `DATABASE_URL` — MySQL 連線字串
+- `GOOGLE_AI_API_KEY` — Google AI (Gemini) API 金鑰
+- `JWT_SECRET` — Cookie/JWT 簽名密鑰（production 必填）
 
-### Specialized
-`security-architect`, `security-auditor`, `memory-specialist`, `performance-engineer`
+## 核心業務模組
 
-### Swarm Coordination
-`hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`
+| 模組 | 檔案 | 功能 |
+|------|------|------|
+| LINE 整合 | `lineWebhook.ts`, `lineUtils.ts`, `lineRichMenu.ts` | LINE 訊息收發、Rich Menu |
+| 車輛偵測 | `vehicleDetectionService.ts` | 從對話中辨識客戶感興趣的車輛 |
+| 意圖偵測 | `vehicleDetectionService.ts` | 偵測客戶意圖（詢價、預約、貸款等） |
+| 8891 同步 | `sync8891.ts` | 從 8891 爬取並同步車輛庫存 |
+| 潛客評分 | `routers.ts`, `routes/leadScoring.ts` | 8 維度潛在客戶評分模型 |
+| LLM 回覆 | `_core/llm.ts`, `dynamicPromptBuilder.ts` | AI 對話產生 |
+| 規則回覆 | `ruleBasedReply.ts` | 不經 LLM 的快速規則回覆 |
+| 安全防護 | `security.ts` | 輸入消毒、PII 遮罩、安全事件紀錄 |
+| 管理後台 | `_core/adminAuth.ts`, `routes/adminRoutes.ts` | 管理員認證與後台 API |
 
-### GitHub & Repository
-`pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`
+## 編碼慣例
 
-### SPARC Methodology
-`sparc-coord`, `sparc-coder`, `specification`, `pseudocode`, `architecture`
-
-## Memory Commands Reference
-
-```bash
-# Store (REQUIRED: --key, --value; OPTIONAL: --namespace, --ttl, --tags)
-npx @claude-flow/cli@latest memory store --key "pattern-auth" --value "JWT with refresh" --namespace patterns
-
-# Search (REQUIRED: --query; OPTIONAL: --namespace, --limit, --threshold)
-npx @claude-flow/cli@latest memory search --query "authentication patterns"
-
-# List (OPTIONAL: --namespace, --limit)
-npx @claude-flow/cli@latest memory list --namespace patterns --limit 10
-
-# Retrieve (REQUIRED: --key; OPTIONAL: --namespace)
-npx @claude-flow/cli@latest memory retrieve --key "pattern-auth" --namespace patterns
-```
-
-## Quick Setup
-
-```bash
-claude mcp add claude-flow -- npx -y @claude-flow/cli@latest
-npx @claude-flow/cli@latest daemon start
-npx @claude-flow/cli@latest doctor --fix
-```
-
-## Claude Code vs CLI Tools
-
-- Claude Code's Task tool handles ALL execution: agents, file ops, code generation, git
-- CLI tools handle coordination via Bash: swarm init, memory, hooks, routing
-- NEVER use CLI tools as a substitute for Task tool agents
-
-## Support
-
-- Documentation: https://github.com/ruvnet/claude-flow
-- Issues: https://github.com/ruvnet/claude-flow/issues
+- 使用 TypeScript strict mode
+- 使用 ESM（`"type": "module"`）
+- tRPC router 定義在 `server/routers.ts`，使用 `publicProcedure` / `protectedProcedure` / `adminProcedure`
+- 資料庫操作透過 `server/db.ts` 封裝
+- 前端路由使用 wouter
+- UI 元件使用 Radix UI + Tailwind CSS
+- 使用 Zod 做輸入驗證
+- 保持檔案在 500 行以內
