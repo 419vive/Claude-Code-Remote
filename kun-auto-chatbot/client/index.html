@@ -67,6 +67,29 @@
   </head>
 
   <body>
+    <!-- Facebook Pixel -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      // Pixel ID is injected at build time via Vite env var
+      var _fbPixelId = '%VITE_FB_PIXEL_ID%';
+      if (_fbPixelId && !_fbPixelId.startsWith('%')) {
+        fbq('init', _fbPixelId);
+        fbq('track', 'PageView');
+      }
+    </script>
+    <noscript>
+      <img height="1" width="1" style="display:none"
+        src="https://www.facebook.com/tr?id=%VITE_FB_PIXEL_ID%&ev=PageView&noscript=1" />
+    </noscript>
+    <!-- End Facebook Pixel -->
+
     <div id="root"></div>
     <noscript>
       <div itemscope itemtype="https://schema.org/AutoDealer" style="max-width:800px;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;">

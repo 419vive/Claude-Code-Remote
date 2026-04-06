@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import { addPageView, updatePageViewDuration } from "./db";
 import { logger } from "./logger";
+import { sendPageView as sendFbPageView } from "./facebookConversionsApi";
 
 const trackingRouter = Router();
 
@@ -64,7 +65,7 @@ function generateSessionHash(ip: string, ua: string): string {
 // POST /api/track - Record a page view
 trackingRouter.post("/api/track", async (req: Request, res: Response) => {
   try {
-    const { path, referrer, language, screenWidth, duration, pageViewId } = req.body || {};
+    const { path, referrer, language, screenWidth, duration, pageViewId, fbclid, fbp, fbEventId } = req.body || {};
 
     // Update duration for existing page view
     if (pageViewId && duration) {
@@ -114,6 +115,17 @@ trackingRouter.post("/api/track", async (req: Request, res: Response) => {
       language: language?.slice(0, 16) || null,
       screenWidth: screenWidth || null,
     });
+
+    // Fire Facebook Conversions API PageView (non-blocking)
+    const siteUrl = `${req.protocol}://${req.get("host")}${sanitizedPath}`;
+    sendFbPageView({
+      url: siteUrl,
+      ip,
+      userAgent: ua,
+      fbclid: fbclid || undefined,
+      fbp: fbp || undefined,
+      eventId: fbEventId || undefined,
+    }).catch(() => {}); // never block response
 
     res.json({ ok: true, sessionHash });
   } catch (err) {
