@@ -25,6 +25,8 @@ export const ENV = {
   higgsFieldCredentials: process.env.HIGGSFIELD_CREDENTIALS ?? "", // KEY_ID:KEY_SECRET
   // Seedance 2.0 — ByteDance video model via third-party API (primary, cheaper)
   seedanceApiKey: process.env.SEEDANCE_API_KEY ?? "",
+  // Luma AI Dream Machine — high-quality motion, keyframe control
+  lumaApiKey: process.env.LUMA_API_KEY ?? "",
   // YouTube Data API — upload generated videos
   youtubeClientId: process.env.YOUTUBE_CLIENT_ID ?? "",
   youtubeClientSecret: process.env.YOUTUBE_CLIENT_SECRET ?? "",
