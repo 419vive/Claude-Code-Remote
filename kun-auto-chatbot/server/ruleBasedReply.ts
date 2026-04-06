@@ -101,6 +101,18 @@ export function generateRuleBasedReply(ctx: RuleContext): string {
     return `${greeting}崑家汽車賴先生電話 ${STORE_PHONE}，LINE ${LINE_ID}，地址${STORE_ADDRESS}，直接打電話或加LINE都可以！`;
   }
 
+  // Loan intent — always redirect to loan form, never answer directly
+  if (intents.includes("loan") || /貸款|分期|月付|頭期|零利率|利率|車貸|信貸|全額|付款方式/.test(lower)) {
+    const loanBaseUrl = process.env.BASE_URL || "https://claude-code-remote-production.up.railway.app";
+    const vehicleName = detection.vehicle ? `${detection.vehicle.brand} ${detection.vehicle.model}` : '';
+    let loanUrl = `${loanBaseUrl}/loan-inquiry`;
+    if (detection.vehicle) {
+      loanUrl += `?vehicleId=${detection.vehicle.id}&vehicle=${encodeURIComponent(vehicleName)}`;
+    }
+    const vehiclePrefix = vehicleName ? `${vehicleName}是台好車！` : '';
+    return `${greeting}${vehiclePrefix}貸款的部分麻煩你點這個連結填一下資料，專人會盡快跟你聯繫！👉 ${loanUrl}`;
+  }
+
   // Price/budget related (no specific vehicle)
   if (intents.includes("budget") || /預算|多少錢|價格|幾萬/.test(lower)) {
     return `${greeting}請問你的預算大概在多少呢？這樣我比較好幫你推薦適合的車款，或者告訴我想找什麼品牌、用途是通勤還是家庭用車，我能更精準推薦！`;

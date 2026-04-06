@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Car, Phone, MapPin, Clock, CheckCircle2, Loader2, Check, AlertCircle, X } from "lucide-react";
 import { useFormAutosave } from "@/hooks/useFormAutosave";
+import { trackAppointmentSubmit } from "@/lib/pixels";
 
 type TimeMode = "flexible" | "specific";
 
@@ -60,6 +61,7 @@ export default function BookVisit() {
   const mutation = trpc.appointment.submit.useMutation({
     onSuccess: () => {
       clearDraft();
+      trackAppointmentSubmit(vehicleName || interestedVehicle || undefined);
       setSubmitted(true);
     },
   });
