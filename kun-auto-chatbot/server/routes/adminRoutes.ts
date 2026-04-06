@@ -13,9 +13,17 @@ export const adminRouter = router({
       endDate: z.date().optional(),
     }).optional())
     .query(async ({ input }) => {
-      const stats = await db.getDashboardStats(input?.startDate, input?.endDate);
-      const allVehicles = await db.getAllVehicles();
-      return { stats, vehicleCount: allVehicles.length };
+      const [stats, allVehicles, fbEvents] = await Promise.all([
+        db.getDashboardStats(input?.startDate, input?.endDate),
+        db.getAllVehicles(),
+        db.getAnalyticsEvents({ eventCategory: "fb_capi", limit: 500 }),
+      ]);
+      // Aggregate FB CAPI events by action (PageView, Lead, Contact, ViewContent)
+      const fbStats: Record<string, number> = {};
+      for (const e of fbEvents) {
+        fbStats[e.eventAction] = (fbStats[e.eventAction] || 0) + 1;
+      }
+      return { stats, vehicleCount: allVehicles.length, fbPixelStats: fbStats };
     }),
 
   conversations: adminProcedure

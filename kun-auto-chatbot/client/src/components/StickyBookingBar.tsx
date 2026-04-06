@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { trackLead, trackContact } from "@/lib/fbPixel";
 
 interface StickyBookingBarProps {
   vehicleId?: number | string;
@@ -35,6 +36,7 @@ export default function StickyBookingBar({ vehicleId, vehicleName }: StickyBooki
     >
       <a
         href={bookUrl}
+        onClick={() => trackLead({ contentName: vehicleName || "預約看車" })}
         className="flex flex-1 items-center justify-center gap-2 py-4 min-h-[44px] text-sm font-bold text-white transition-opacity hover:opacity-90 active:opacity-75"
         style={{ backgroundColor: "#06C755" }}
       >
@@ -42,6 +44,7 @@ export default function StickyBookingBar({ vehicleId, vehicleName }: StickyBooki
       </a>
       <a
         href="tel:0936812818"
+        onClick={() => trackContact()}
         className="flex flex-1 items-center justify-center gap-2 py-4 min-h-[44px] text-sm font-bold text-white transition-opacity hover:opacity-90 active:opacity-75"
         style={{ backgroundColor: "#1a237e" }}
       >

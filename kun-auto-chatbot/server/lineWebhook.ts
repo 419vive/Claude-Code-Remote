@@ -12,6 +12,7 @@ import { isRuleBasedMode, generateRuleBasedReply } from "./ruleBasedReply";
 import { sanitizeChatMessage } from "./security";
 
 import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting } from "./lineUtils";
+import { sendLeadEvent as sendFbLeadEvent } from "./facebookConversionsApi";
 import { getAssistantContentForTrigger, buildOwnerNotificationFlex, getMilestoneLevel, checkAndNotifyOwner, buildHumanHandoffFlex, sendHumanHandoffNotification } from "./lineNotification";
 import { updateConversationTracker, sendFollowUpMessages } from "./lineRecovery";
 
@@ -290,6 +291,12 @@ async function processLineEvent(
       eventAction: "follow",
       channel: "line",
     });
+    // Facebook CAPI: send Lead event for new LINE follower
+    sendFbLeadEvent({
+      ip: "0.0.0.0",
+      userAgent: "LINE Webhook",
+      leadSource: "line_follow",
+    }).catch(() => {});
     if (userId) {
       try {
         // Get profile for name
@@ -857,11 +864,21 @@ async function processLineEvent(
   }
 
   if (scoreDelta > 0) {
-    const newScore = (conversation!.leadScore || 0) + scoreDelta;
+    const oldScore = conversation!.leadScore || 0;
+    const newScore = oldScore + scoreDelta;
     const newStatus = newScore >= 80 ? "hot" : newScore >= 50 ? "qualified" : "new";
     await db.updateConversation(convId, { leadScore: newScore, leadStatus: newStatus });
     conversation = { ...conversation!, leadScore: newScore };
     console.log(`[LINE] Lead score updated: +${scoreDelta} = ${newScore} (${newStatus})`);
+
+    // Facebook CAPI: fire Lead event when customer crosses qualified threshold
+    if (oldScore < 50 && newScore >= 50) {
+      sendFbLeadEvent({
+        ip: "0.0.0.0",
+        userAgent: "LINE Webhook",
+        leadSource: `line_${newStatus}`,
+      }).catch(() => {});
+    }
   }
 
   // ============ CHECK IF THIS IS A PHOTO TRIGGER ============

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, MessageCircle } from "lucide-react";
+import { trackContact } from "@/lib/fbPixel";
 
 interface ProactiveChatTriggerProps {
   /** Delay in ms before showing the trigger */
@@ -75,6 +76,7 @@ export default function ProactiveChatTrigger({
             href={ctaHref}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackContact()}
             className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-[#06C755] px-3 py-2 text-xs font-bold text-white hover:bg-[#05b04c] transition-colors"
           >
             <MessageCircle className="w-3.5 h-3.5" />

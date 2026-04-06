@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { logger } from "./logger";
+import { addAnalyticsEvent } from "./db";
 
 /**
  * Facebook Conversions API (CAPI) — server-side event relay.
@@ -114,6 +115,18 @@ export async function sendConversionsEvent(events: ServerEvent[]): Promise<boole
     }
 
     logger.info("FacebookCAPI", `Sent ${events.length} event(s) — ${events.map((e) => e.eventName).join(", ")}`);
+
+    // Record each event in analytics DB for dashboard reporting
+    for (const e of events) {
+      addAnalyticsEvent({
+        conversationId: null,
+        userId: null,
+        eventCategory: "fb_capi",
+        eventAction: e.eventName,
+        channel: (e.actionSource === "chat" ? "line" : "web") as any,
+      }).catch(() => {});
+    }
+
     return true;
   } catch (err) {
     logger.error("FacebookCAPI", "Network error:", err);

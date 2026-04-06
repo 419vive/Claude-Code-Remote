@@ -20,6 +20,7 @@ import WishlistDrawer from "@/components/WishlistDrawer";
 import { TodayActivity } from "@/components/SocialProof";
 import { useScrollReveal, revealClass, staggerDelay } from "@/hooks/useScrollReveal";
 import { nanoid } from "nanoid";
+import { trackContact, trackLead } from "@/lib/fbPixel";
 
 const FullscreenGallery = lazy(() => import("@/components/FullscreenGallery"));
 
@@ -263,7 +264,7 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
             href={`https://page.line.me/825oftez?openQrCodeReader=false&msg=${encodeURIComponent(`我想了解這台 ${vehicle.brand} ${vehicle.model} ${vehicle.modelYear}年款 ${vehicle.priceDisplay || vehicle.price + '萬'}`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); trackContact(); }}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#06C755] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#05b04c] active:bg-[#049a43]"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">

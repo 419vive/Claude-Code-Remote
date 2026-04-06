@@ -2,7 +2,12 @@
  * Lightweight page view tracker (like Umami's script)
  * Sends page views to /api/track on navigation
  * Privacy-friendly: no cookies, no localStorage, server-side session hashing
+ *
+ * Also fires Facebook Pixel PageView for SPA route changes
+ * and passes fbclid/fbp to the server for Conversions API deduplication.
  */
+
+import { trackPageView as fbTrackPageView, generateEventId, getFbclid, getFbp } from "./fbPixel";
 
 let lastPath = "";
 let pageEntryTime = Date.now();
@@ -13,6 +18,9 @@ function getPageData() {
     referrer: document.referrer || undefined,
     language: navigator.language,
     screenWidth: window.screen.width,
+    fbclid: getFbclid(),
+    fbp: getFbp(),
+    fbEventId: generateEventId(),
   };
 }
 
@@ -21,6 +29,9 @@ async function sendPageView() {
   if (data.path === lastPath) return; // skip duplicate
   lastPath = data.path;
   pageEntryTime = Date.now();
+
+  // Fire client-side Facebook Pixel PageView (dedup via eventId)
+  fbTrackPageView(data.fbEventId);
 
   try {
     await fetch("/api/track", {

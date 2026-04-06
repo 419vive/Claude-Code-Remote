@@ -12,6 +12,7 @@ import {
   BarChart3,
   ArrowRight,
   Bell,
+  Target,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
@@ -302,6 +303,75 @@ export default function Dashboard() {
               <span className="text-sm text-muted-foreground">/ 100</span>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Facebook Pixel / Conversions API stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="h-4 w-4" />
+            Facebook 像素追蹤
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-8 w-full" />
+              ))}
+            </div>
+          ) : (() => {
+            const fb = (data as any)?.fbPixelStats as Record<string, number> | undefined;
+            const entries = fb ? Object.entries(fb) : [];
+            const labels: Record<string, string> = {
+              PageView: "頁面瀏覽",
+              ViewContent: "看車詳情",
+              Lead: "潛在客戶",
+              Contact: "聯繫行為",
+              Search: "搜尋行為",
+            };
+            const total = entries.reduce((s, [, c]) => s + c, 0);
+
+            if (total === 0) {
+              return (
+                <div className="py-6 text-center">
+                  <p className="text-sm text-muted-foreground mb-2">尚無 Pixel 事件資料</p>
+                  <p className="text-xs text-muted-foreground">
+                    設定 <code className="bg-muted px-1 rounded">VITE_FB_PIXEL_ID</code> 和{" "}
+                    <code className="bg-muted px-1 rounded">FB_CAPI_TOKEN</code> 環境變數後即可開始追蹤
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-3">
+                {entries.map(([action, count]) => {
+                  const pct = Math.round((count / Math.max(total, 1)) * 100);
+                  return (
+                    <div key={action} className="flex items-center gap-3">
+                      <span className="w-24 text-sm font-medium">
+                        {labels[action] || action}
+                      </span>
+                      <div className="flex-1 h-6 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-blue-500/80 transition-all"
+                          style={{ width: `${Math.max(pct, 5)}%` }}
+                        />
+                      </div>
+                      <span className="w-12 text-right text-sm text-muted-foreground">
+                        {count}
+                      </span>
+                    </div>
+                  );
+                })}
+                <p className="text-xs text-muted-foreground pt-1">
+                  共 {total} 筆 Conversions API 事件
+                </p>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
     </div>

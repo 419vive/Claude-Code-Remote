@@ -24,6 +24,7 @@ import { ViewingNow } from "@/components/SocialProof";
 import ProactiveChatTrigger from "@/components/ProactiveChatTrigger";
 import WishlistButton from "@/components/WishlistButton";
 import SeoFooter from "@/components/SeoFooter";
+import { trackViewContent, trackLead, trackContact } from "@/lib/fbPixel";
 
 const FullscreenGallery = lazy(() => import("@/components/FullscreenGallery"));
 const Vehicle360Viewer = lazy(() => import("@/components/Vehicle360Viewer"));
@@ -207,7 +208,7 @@ export default function VehicleLanding() {
     setTouchEnd(null);
   };
 
-  // Set page title for OG preview + track recently viewed
+  // Set page title for OG preview + track recently viewed + FB Pixel ViewContent
   useEffect(() => {
     if (vehicle) {
       document.title = `${vehicle.brand} ${vehicle.model} ${vehicle.modelYear || ""}年 ${vehicle.priceDisplay || vehicle.price + "萬"} | 崑家汽車`;
@@ -218,6 +219,14 @@ export default function VehicleLanding() {
         model: vehicle.model,
         price: vehicle.priceDisplay || `${vehicle.price}萬`,
         photo: photoList[0] || undefined,
+      });
+      // Facebook Pixel: ViewContent for vehicle detail page
+      trackViewContent({
+        contentName: `${vehicle.brand} ${vehicle.model} ${vehicle.modelYear || ""}`,
+        contentCategory: vehicle.brand,
+        contentIds: [String(vehicle.id)],
+        value: vehicle.price ? Number(vehicle.price) * 10000 : undefined,
+        currency: "TWD",
       });
     }
   }, [vehicle]);
@@ -265,6 +274,9 @@ export default function VehicleLanding() {
   if (vehicle.transmission) specs.push({ icon: <Gauge className="w-3.5 h-3.5" />, text: vehicle.transmission });
 
   const handleQuestionClick = (question: ReturnType<typeof getIntentQuestions>[number]) => {
+    // FB Pixel: track Lead event for all question clicks
+    trackLead({ contentName: `${name} - ${question.label}` });
+
     // Loan inquiry → redirect to form page
     if ((question as any).loanUrl) {
       window.location.href = `/loan-inquiry?vehicleId=${vehicle.id}&vehicle=${encodeURIComponent(name)}`;
@@ -277,6 +289,7 @@ export default function VehicleLanding() {
     }
     if (device === "mobile") {
       // Mobile → open LINE OA with pre-filled message
+      trackContact(); // FB Pixel: Contact event for LINE click
       window.location.href = buildLineDeepLink(question.lineMessage);
     } else {
       // Desktop → go to website chat with vehicle context
