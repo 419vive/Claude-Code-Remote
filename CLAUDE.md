@@ -70,6 +70,13 @@ pnpm db:push
 - ALWAYS 在修改程式碼後跑測試 (`pnpm test`)
 - ALWAYS 在 commit 前確認建置成功 (`pnpm build`)
 
+## 效率規則：並行操作
+
+- 所有獨立操作 MUST 在同一個 message 內並行執行
+- ALWAYS 把所有 file reads/writes/edits 批次放在同一個 message
+- ALWAYS 把所有獨立的 Bash 指令批次放在同一個 message
+- 使用 `run_in_background: true` 執行背景 agent，不要輪詢狀態 — 等結果回來再處理
+
 ## 行為規則
 
 - 做被要求的事，不多不少
