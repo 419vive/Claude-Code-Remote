@@ -730,6 +730,71 @@ async function processLineEvent(
 
   const convId = conversation!.id;
 
+  // ============ 8891 SOURCE TRACKING ============
+  // When customer sends "8891", tag them as coming from 8891 and reply with special offer
+  if (/^8891$/.test(userMessage.trim())) {
+    console.log(`[LINE] 🏷️ Customer from 8891 detected! Conv: ${convId}`);
+    // Tag conversation with 8891 source
+    const existingTags = (conversation as any)?.tags || '';
+    if (!existingTags.includes('8891')) {
+      const newTags = existingTags ? `${existingTags},source:8891` : 'source:8891';
+      await db.updateConversation(convId, { tags: newTags });
+    }
+    // Record as analytics event
+    db.addAnalyticsEvent({
+      conversationId: convId,
+      userId,
+      eventCategory: "source_tracking",
+      eventAction: "8891_referral",
+      channel: "line",
+    });
+    // Record as lead event for scoring
+    await db.addLeadEvent({
+      conversationId: convId,
+      eventType: "purchase_intent",
+      scoreChange: 15,
+      reason: "8891 referral — high intent customer",
+    });
+    // Save messages
+    await db.addMessage({ conversationId: convId, role: "user", content: userMessage });
+    const greeting = getNameGreeting(customerName, customerGender);
+    const offerReply = `${greeting}你好！歡迎從8891過來 🎉 你說出通關密語了！到店賞車時跟賴先生說「8891來的」就有專屬優惠喔 💪 請問你對哪台車有興趣呢？還是想看看我們目前的庫存？`;
+    await db.addMessage({ conversationId: convId, role: "assistant", content: offerReply });
+    // Reply via LINE
+    await fetch("https://api.line.me/v2/bot/message/reply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+      body: JSON.stringify({
+        replyToken,
+        messages: [{
+          type: "text",
+          text: offerReply,
+          quickReply: {
+            items: [
+              { type: "action", action: { type: "message", label: "🚗 看車庫存", text: "我想看車，有什麼車可以推薦？" } },
+              { type: "action", action: { type: "message", label: "💰 50萬以下", text: "50萬以下有什麼好車？" } },
+              { type: "action", action: { type: "message", label: "📅 預約看車", text: "我想預約看車" } },
+            ],
+          },
+        }],
+      }),
+    });
+    // Notify owner about 8891 referral
+    if (ownerUserId) {
+      try {
+        await fetch("https://api.line.me/v2/bot/message/push", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+          body: JSON.stringify({
+            to: ownerUserId,
+            messages: [{ type: "text", text: `🏷️ 8891客人來了！\n客人：${customerName || '未知'}\n已標記 source:8891，已發送專屬優惠訊息` }],
+          }),
+        });
+      } catch {}
+    }
+    return;
+  }
+
   // ============ HUMAN HANDOFF MODE: AI should not respond ============
   // Exception: Rich Menu triggers (看車庫存, 預約賞車 etc.) and new vehicle inquiries
   // should reactivate AI — customer is starting a new interaction
