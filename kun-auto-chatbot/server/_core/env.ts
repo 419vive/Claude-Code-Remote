@@ -19,4 +19,12 @@ export const ENV = {
   forgeApiKey: process.env.FORGE_API_KEY ?? "",
   adminUsername: process.env.ADMIN_USERNAME ?? "admin",
   adminPassword: process.env.ADMIN_PASSWORD ?? "",
+  // Anthropic Claude — used for generating cinematic video prompts
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
+  // Higgsfield AI — cinematic video generation
+  higgsFieldCredentials: process.env.HIGGSFIELD_CREDENTIALS ?? "", // KEY_ID:KEY_SECRET
+  // YouTube Data API — upload generated videos
+  youtubeClientId: process.env.YOUTUBE_CLIENT_ID ?? "",
+  youtubeClientSecret: process.env.YOUTUBE_CLIENT_SECRET ?? "",
+  youtubeRefreshToken: process.env.YOUTUBE_REFRESH_TOKEN ?? "",
 };

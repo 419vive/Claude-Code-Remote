@@ -5,6 +5,11 @@ import * as db from "../db";
 import { sync8891, getSyncStatus } from "../sync8891";
 import { deployRichMenu, getRichMenuStatus, cancelDefaultRichMenu } from "../lineRichMenu";
 import { logSecurityEvent, getSecurityEvents } from "../security";
+import { generateVideoPrompt } from "../_core/claude";
+import { generateVideo } from "../_core/higgsfield";
+import { uploadToYouTube } from "../_core/youtubeUpload";
+import { runVideoGenerationPipeline } from "../_core/videoGeneration";
+import { logger } from "../logger";
 
 export const adminRouter = router({
   dashboard: adminProcedure
@@ -407,4 +412,86 @@ export const adminRouter = router({
       ga4Url: "https://analytics.google.com",
     };
   }),
+
+  // ============ HIGGSFIELD AI VIDEO GENERATION ============
+
+  /** Generate a cinematic video prompt using Claude for a specific vehicle */
+  generateVideoPrompt: adminProcedure
+    .input(z.object({
+      vehicleId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const allVehicles = await db.getAllVehicles();
+      const vehicle = allVehicles.find(v => v.id === input.vehicleId);
+      if (!vehicle) throw new Error(`Vehicle ${input.vehicleId} not found`);
+
+      const result = await generateVideoPrompt({
+        make: vehicle.brand,
+        model: vehicle.model,
+        year: parseInt(vehicle.modelYear || vehicle.manufactureYear || "0", 10),
+        color: vehicle.color ?? undefined,
+        mileage: vehicle.mileage ? parseInt(vehicle.mileage.replace(/\D/g, ""), 10) : undefined,
+        price: vehicle.price ? Number(vehicle.price) : undefined,
+        features: vehicle.features ? JSON.parse(vehicle.features) : undefined,
+        imageUrls: vehicle.photoUrls ? JSON.parse(vehicle.photoUrls) : undefined,
+      });
+
+      return result;
+    }),
+
+  /** Generate a cinematic video for a vehicle (Claude → Higgsfield pipeline) */
+  generateVideo: adminProcedure
+    .input(z.object({
+      vehicleId: z.number(),
+      uploadToYouTube: z.boolean().default(false),
+      privacyStatus: z.enum(["public", "unlisted", "private"]).default("private"),
+    }))
+    .mutation(async ({ input }) => {
+      const allVehicles = await db.getAllVehicles();
+      const vehicle = allVehicles.find(v => v.id === input.vehicleId);
+      if (!vehicle) throw new Error(`Vehicle ${input.vehicleId} not found`);
+
+      // Get the first photo URL as the primary image
+      const photoUrls: string[] = vehicle.photoUrls ? JSON.parse(vehicle.photoUrls) : [];
+      if (!photoUrls.length) {
+        throw new Error(`Vehicle ${input.vehicleId} has no photos for video generation`);
+      }
+
+      logger.info("VideoGen", `Starting pipeline for vehicle #${input.vehicleId}: ${vehicle.brand} ${vehicle.model}`);
+
+      const result = await runVideoGenerationPipeline({
+        vehicle: {
+          make: vehicle.brand,
+          model: vehicle.model,
+          year: parseInt(vehicle.modelYear || vehicle.manufactureYear || "0", 10),
+          color: vehicle.color ?? undefined,
+          mileage: vehicle.mileage ? parseInt(vehicle.mileage.replace(/\D/g, ""), 10) : undefined,
+          price: vehicle.price ? Number(vehicle.price) : undefined,
+          features: vehicle.features ? JSON.parse(vehicle.features) : undefined,
+          imageUrls: photoUrls,
+        },
+        imageUrl: photoUrls[0],
+        uploadToYouTube: input.uploadToYouTube,
+        privacyStatus: input.privacyStatus,
+      });
+
+      // Save the video URL back to the vehicle record
+      try {
+        const db2 = await db.getDb();
+        if (db2) {
+          const { vehicles: vTable } = await import("../../drizzle/schema");
+          await db2.update(vTable)
+            .set({ videoUrl: result.videoResult.videoUrl })
+            .where(eq(vTable.id, input.vehicleId));
+        }
+      } catch (err) {
+        logger.warn("VideoGen", `Failed to save video URL to DB: ${err}`);
+      }
+
+      return {
+        prompt: result.promptResult,
+        video: result.videoResult,
+        youtube: result.youtubeResult ?? null,
+      };
+    }),
 });
