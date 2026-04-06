@@ -369,4 +369,42 @@ export const adminRouter = router({
     );
     return { csv: [header, ...csvRows].join("\n"), filename: `vehicles_${new Date().toISOString().split('T')[0]}.csv` };
   }),
+
+  // ============ AD TRACKING DASHBOARD ============
+
+  /** Conversion summary (total loans, appointments, page views, visitors) */
+  conversionSummary: adminProcedure
+    .input(z.object({
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const start = input?.startDate ? new Date(input.startDate) : undefined;
+      const end = input?.endDate ? new Date(input.endDate) : undefined;
+      return db.getConversionSummary(start, end);
+    }),
+
+  /** Daily conversions (loans + appointments by day) */
+  dailyConversions: adminProcedure
+    .input(z.object({
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const start = input?.startDate ? new Date(input.startDate) : undefined;
+      const end = input?.endDate ? new Date(input.endDate) : undefined;
+      return db.getDailyConversions(start, end);
+    }),
+
+  /** Ad tracking pixel config (for dashboard display) */
+  adPixelConfig: adminProcedure.query(async () => {
+    return {
+      metaPixelId: "936259169015798",
+      googleAdsId: "AW-8142635893",
+      ga4Id: "G-18X1ENYHP8",
+      metaEventsManagerUrl: "https://business.facebook.com/events_manager2/list/dataset/936259169015798",
+      googleAdsUrl: "https://ads.google.com/aw/overview?ocid=8142635893",
+      ga4Url: "https://analytics.google.com",
+    };
+  }),
 });

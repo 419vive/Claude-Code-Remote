@@ -685,3 +685,90 @@ export async function updateAppointmentStatus(id: number, status: "new" | "confi
   if (!db) return;
   await db.update(appointments).set({ status }).where(eq(appointments.id, id));
 }
+
+// ============ AD TRACKING / CONVERSION STATS ============
+
+/** Daily conversion counts (loans + appointments) for ad tracking dashboard */
+export async function getDailyConversions(startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const loanConditions: any[] = [];
+  const apptConditions: any[] = [];
+  if (startDate) {
+    loanConditions.push(gte(loanInquiries.createdAt, startDate));
+    apptConditions.push(gte(appointments.createdAt, startDate));
+  }
+  if (endDate) {
+    loanConditions.push(lte(loanInquiries.createdAt, endDate));
+    apptConditions.push(lte(appointments.createdAt, endDate));
+  }
+
+  const [loansByDay, apptsByDay] = await Promise.all([
+    db.select({
+      date: sql<string>`DATE(${loanInquiries.createdAt})`.as('date'),
+      count: sql<number>`count(*)`.as('count'),
+    }).from(loanInquiries)
+      .where(loanConditions.length ? and(...loanConditions) : undefined)
+      .groupBy(sql`DATE(${loanInquiries.createdAt})`)
+      .orderBy(sql`DATE(${loanInquiries.createdAt})`),
+    db.select({
+      date: sql<string>`DATE(${appointments.createdAt})`.as('date'),
+      count: sql<number>`count(*)`.as('count'),
+    }).from(appointments)
+      .where(apptConditions.length ? and(...apptConditions) : undefined)
+      .groupBy(sql`DATE(${appointments.createdAt})`)
+      .orderBy(sql`DATE(${appointments.createdAt})`),
+  ]);
+
+  // Merge into a unified date series
+  const dateMap: Record<string, { loans: number; appointments: number }> = {};
+  for (const row of loansByDay) {
+    const d = String(row.date);
+    if (!dateMap[d]) dateMap[d] = { loans: 0, appointments: 0 };
+    dateMap[d].loans = Number(row.count);
+  }
+  for (const row of apptsByDay) {
+    const d = String(row.date);
+    if (!dateMap[d]) dateMap[d] = { loans: 0, appointments: 0 };
+    dateMap[d].appointments = Number(row.count);
+  }
+
+  return Object.entries(dateMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, counts]) => ({ date, ...counts, total: counts.loans + counts.appointments }));
+}
+
+/** Conversion summary for ad tracking dashboard */
+export async function getConversionSummary(startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return { totalLoans: 0, totalAppointments: 0, totalPageViews: 0, uniqueVisitors: 0 };
+
+  const loanConds: any[] = [];
+  const apptConds: any[] = [];
+  const pvConds: any[] = [];
+  if (startDate) {
+    loanConds.push(gte(loanInquiries.createdAt, startDate));
+    apptConds.push(gte(appointments.createdAt, startDate));
+    pvConds.push(gte(pageViews.createdAt, startDate));
+  }
+  if (endDate) {
+    loanConds.push(lte(loanInquiries.createdAt, endDate));
+    apptConds.push(lte(appointments.createdAt, endDate));
+    pvConds.push(lte(pageViews.createdAt, endDate));
+  }
+
+  const [loans, appts, pvs, visitors] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(loanInquiries).where(loanConds.length ? and(...loanConds) : undefined),
+    db.select({ count: sql<number>`count(*)` }).from(appointments).where(apptConds.length ? and(...apptConds) : undefined),
+    db.select({ count: sql<number>`count(*)` }).from(pageViews).where(pvConds.length ? and(...pvConds) : undefined),
+    db.select({ count: sql<number>`count(DISTINCT ${pageViews.sessionHash})` }).from(pageViews).where(pvConds.length ? and(...pvConds) : undefined),
+  ]);
+
+  return {
+    totalLoans: Number(loans[0]?.count ?? 0),
+    totalAppointments: Number(appts[0]?.count ?? 0),
+    totalPageViews: Number(pvs[0]?.count ?? 0),
+    uniqueVisitors: Number(visitors[0]?.count ?? 0),
+  };
+}
