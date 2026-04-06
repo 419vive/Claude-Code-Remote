@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Car, Phone, CheckCircle2, Loader2, X } from "lucide-react";
 import { useFormAutosave } from "@/hooks/useFormAutosave";
+import { trackLoanSubmit } from "@/lib/pixels";
 
 type FormData = {
   customerName: string;
@@ -160,6 +161,7 @@ export default function LoanInquiry() {
   const mutation = trpc.loan.submit.useMutation({
     onSuccess: () => {
       clearDraft();
+      trackLoanSubmit(vehicleName || undefined);
       setSubmitted(true);
     },
   });

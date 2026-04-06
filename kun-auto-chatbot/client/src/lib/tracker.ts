@@ -55,6 +55,23 @@ export function initTracker() {
   // Initial page view
   sendPageView();
 
+  // Track phone clicks and map clicks globally via delegation
+  document.addEventListener("click", (e) => {
+    const link = (e.target as HTMLElement).closest("a");
+    if (!link) return;
+    const href = link.getAttribute("href") || "";
+    if (href.startsWith("tel:")) {
+      // Meta Pixel: Contact event
+      if ((window as any).fbq) (window as any).fbq("track", "Contact", { content_category: "phone_call" });
+    } else if (href.includes("maps.google") || href.includes("goo.gl/maps")) {
+      // Meta Pixel: FindLocation event
+      if ((window as any).fbq) (window as any).fbq("track", "FindLocation");
+    } else if (href.includes("page.line.me") || href.includes("line.me")) {
+      // Meta Pixel: Contact event for LINE
+      if ((window as any).fbq) (window as any).fbq("track", "Contact", { content_category: "line_add" });
+    }
+  });
+
   // Track SPA navigation via History API
   const originalPushState = history.pushState;
   history.pushState = function (...args) {
