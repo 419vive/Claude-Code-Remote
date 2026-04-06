@@ -4,6 +4,12 @@
  * Privacy-friendly: no cookies, no localStorage, server-side session hashing
  */
 
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
+
 let lastPath = "";
 let pageEntryTime = Date.now();
 
@@ -21,6 +27,11 @@ async function sendPageView() {
   if (data.path === lastPath) return; // skip duplicate
   lastPath = data.path;
   pageEntryTime = Date.now();
+
+  // Facebook Pixel: fire PageView on SPA navigation
+  if (typeof window.fbq === "function") {
+    window.fbq("track", "PageView");
+  }
 
   try {
     await fetch("/api/track", {
