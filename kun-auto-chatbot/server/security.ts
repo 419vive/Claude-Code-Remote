@@ -389,3 +389,123 @@ export function isValidSessionId(sessionId: string): boolean {
   // Max 128 chars
   return /^[a-zA-Z0-9_-]{1,128}$/.test(sessionId);
 }
+
+// ============================================================
+// 8. LLM OUTPUT GUARDRAILS — OWASP LLM02 (Insecure Output Handling)
+// ============================================================
+// Based on the Guardrails pattern from Agentic Design Patterns.
+// Complements input-side sanitizeChatMessage() by validating
+// what the LLM returns BEFORE it reaches the customer on LINE.
+//
+// Business rationale (Taiwan car dealership):
+// - 消保法: hallucinated prices create legal liability
+// - 廣告法: absolute claims ("保證最低價") are prohibited
+// - PDPA:   LLM must not echo third-party PII back to users
+// - OWASP LLM02: never trust model output verbatim
+
+export interface LLMOutputValidation {
+  safe: boolean;
+  sanitized: string;
+  violations: string[];
+}
+
+// Phrases that create legal/regulatory exposure in TW automotive advertising.
+// Keep this list conservative — false positives are cheap, legal fines are not.
+const UNSAFE_PROMISE_PATTERNS: RegExp[] = [
+  /保證(最低價|過件|核准|通過)/,
+  /100\s*%\s*(過件|核准|通過|滿意)/,
+  /絕對(最便宜|最低|零風險)/,
+  /無息(免手續費)?貸款/,
+  /免(審核|對保|保人)(.*?)核准/,
+];
+
+// Patterns that look like a hallucinated price quote (NT$ amounts).
+// We don't block — we flag for the caller to cross-check against inventory.
+const PRICE_QUOTE_PATTERN = /(?:NT\$|新台幣|\$)\s*[\d,]+(?:\.\d+)?\s*(?:萬|元|k|K)?|\d+(?:\.\d+)?\s*萬/g;
+
+// Prompt/system-rule leakage indicators (signs injection succeeded).
+const SYSTEM_LEAK_PATTERNS: RegExp[] = [
+  /system\s*prompt\s*[:：]/i,
+  /你的\s*(系統)?指令是/,
+  /I am an? (AI|LLM|language model) (trained|developed)/i,
+  /ignore (all )?previous instructions/i,
+  /<\|.*?\|>/,  // chat template tokens
+];
+
+/**
+ * Validate and sanitize LLM output before sending to the user.
+ *
+ * @param llmOutput   Raw text returned by the LLM
+ * @param options.allowedPrices  If provided, any price quote NOT in this set
+ *                               is flagged as a potential hallucination.
+ *                               Pass the real inventory prices from the DB.
+ * @returns { safe, sanitized, violations }
+ *          - safe:       true if no critical violations (caller may still
+ *                        review `violations` for warnings)
+ *          - sanitized:  output with system-leak fragments stripped
+ *          - violations: human-readable list for audit logging
+ */
+export function validateLLMOutput(
+  llmOutput: string,
+  options: { allowedPrices?: string[] } = {}
+): LLMOutputValidation {
+  const violations: string[] = [];
+  let sanitized = llmOutput ?? "";
+
+  if (!sanitized) {
+    return { safe: true, sanitized, violations };
+  }
+
+  // 1. Unsafe promises (廣告法) — CRITICAL, block the phrase.
+  for (const pattern of UNSAFE_PROMISE_PATTERNS) {
+    if (pattern.test(sanitized)) {
+      violations.push(`unsafe_promise:${pattern.source}`);
+      sanitized = sanitized.replace(pattern, "[依實際狀況為準]");
+    }
+  }
+
+  // 2. System prompt leakage — CRITICAL, strip the line.
+  for (const pattern of SYSTEM_LEAK_PATTERNS) {
+    if (pattern.test(sanitized)) {
+      violations.push(`system_leak:${pattern.source}`);
+      sanitized = sanitized.replace(pattern, "");
+    }
+  }
+
+  // 3. PII echo — LLM should never return phone/email in responses.
+  //    If it does, mask it rather than leak.
+  const piiBefore = sanitized;
+  sanitized = maskPIIInText(sanitized);
+  if (piiBefore !== sanitized) {
+    violations.push("pii_echo");
+  }
+
+  // 4. Hallucinated price detection (advisory).
+  //    Only flag — caller decides whether to fall back to ruleBasedReply.
+  if (options.allowedPrices && options.allowedPrices.length > 0) {
+    const normalize = (s: string) => s.replace(/[\s,NT$新台幣元]/g, "").toLowerCase();
+    const allowedSet = new Set(options.allowedPrices.map(normalize));
+    const matches = sanitized.match(PRICE_QUOTE_PATTERN) ?? [];
+    for (const quote of matches) {
+      if (!allowedSet.has(normalize(quote))) {
+        violations.push(`price_not_in_inventory:${quote}`);
+      }
+    }
+  }
+
+  // Classify: system-leak and unsafe-promise are hard fails.
+  const critical = violations.some(
+    v => v.startsWith("system_leak:") || v.startsWith("unsafe_promise:")
+  );
+
+  if (violations.length > 0) {
+    logSecurityEvent({
+      eventType: "suspicious_activity",
+      severity: critical ? "high" : "medium",
+      source: "llm_output_guardrail",
+      details: `LLM output violations: ${violations.join(", ")}`,
+    });
+  }
+
+  return { safe: !critical, sanitized, violations };
+}
