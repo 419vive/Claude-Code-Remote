@@ -414,14 +414,16 @@ export interface LLMOutputValidation {
  * - "enforce":  rewrite/strip unsafe content and fall back on critical violations
  * - "log_only": log violations but return the original text unchanged
  *
- * Controlled via env var LLM_GUARDRAIL_MODE. Defaults to "log_only" so
- * rolling out the guardrail never breaks production on day one.
+ * Controlled via env var LLM_GUARDRAIL_MODE. Defaults to "enforce"
+ * so the guardrail actively protects users against 廣告法 / PDPA /
+ * OWASP LLM02 violations. Set LLM_GUARDRAIL_MODE=log_only to
+ * temporarily disable enforcement (e.g. for debugging false positives).
  */
 export type GuardrailMode = "enforce" | "log_only";
 
 export function getGuardrailMode(): GuardrailMode {
-  const raw = (process.env.LLM_GUARDRAIL_MODE || "log_only").toLowerCase();
-  return raw === "enforce" ? "enforce" : "log_only";
+  const raw = (process.env.LLM_GUARDRAIL_MODE || "enforce").toLowerCase();
+  return raw === "log_only" ? "log_only" : "enforce";
 }
 
 // Phrases that create legal/regulatory exposure in TW automotive advertising.

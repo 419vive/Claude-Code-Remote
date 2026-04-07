@@ -586,23 +586,23 @@ describe("Guardrail Mode Configuration", () => {
     }
   });
 
-  it("should default to log_only when env var is unset", () => {
+  it("should default to enforce when env var is unset (secure by default)", () => {
     delete process.env.LLM_GUARDRAIL_MODE;
-    expect(getGuardrailMode()).toBe("log_only");
-  });
-
-  it("should return enforce when env var is 'enforce'", () => {
-    process.env.LLM_GUARDRAIL_MODE = "enforce";
     expect(getGuardrailMode()).toBe("enforce");
   });
 
-  it("should return log_only for unknown values (fail-safe)", () => {
-    process.env.LLM_GUARDRAIL_MODE = "banana";
+  it("should return log_only when explicitly set to 'log_only'", () => {
+    process.env.LLM_GUARDRAIL_MODE = "log_only";
     expect(getGuardrailMode()).toBe("log_only");
+  });
+
+  it("should return enforce for unknown values (fail-secure)", () => {
+    process.env.LLM_GUARDRAIL_MODE = "banana";
+    expect(getGuardrailMode()).toBe("enforce");
   });
 
   it("should be case-insensitive", () => {
-    process.env.LLM_GUARDRAIL_MODE = "ENFORCE";
-    expect(getGuardrailMode()).toBe("enforce");
+    process.env.LLM_GUARDRAIL_MODE = "LOG_ONLY";
+    expect(getGuardrailMode()).toBe("log_only");
   });
 });

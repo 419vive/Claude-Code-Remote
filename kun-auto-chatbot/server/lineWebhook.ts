@@ -1327,8 +1327,9 @@ async function processLineEvent(
       // - Flags price quotes not matching real inventory (消保法)
       //
       // Rollout controlled by LLM_GUARDRAIL_MODE env var:
-      //   log_only (default) — record violations, keep original text
-      //   enforce            — rewrite unsafe text; fall back on critical violations
+      //   enforce (default)  — rewrite unsafe text; fall back on critical violations
+      //   log_only           — record violations only (debug/canary mode)
+      // Fail-secure: unknown values are treated as "enforce".
       const allowedPrices: string[] = [];
       for (const v of allVehicles) {
         if (v?.price != null) allowedPrices.push(String(v.price));
