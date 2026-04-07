@@ -190,19 +190,12 @@ function buildVehicleBubble(v: Vehicle): any {
         },
         // Price — emphasized, large, gold accent
         {
-          type: "box",
-          layout: "horizontal",
+          type: "text",
+          text: priceText,
+          size: "xxl",
+          weight: "bold",
+          color: KUN.gold,
           margin: "md",
-          contents: [
-            {
-              type: "text",
-              text: priceText,
-              size: "xxl",
-              weight: "bold",
-              color: KUN.gold,
-              flex: 0,
-            },
-          ],
         },
         // Slim divider before trust line
         {
@@ -731,7 +724,7 @@ export function buildAppointmentCard(): any {
           // Eyebrow + heading combo for proper hierarchy
           {
             type: "text",
-            text: "PREDICTABLE  ·  APPOINTMENT",
+            text: "BOOKING  ·  APPOINTMENT",
             size: "xxs",
             color: KUN.gold,
             weight: "bold",
