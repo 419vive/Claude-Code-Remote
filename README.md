@@ -1196,7 +1196,7 @@ A comprehensive suite of conversion and engagement features added based on resea
 
 ## Security Hardening
 
-Three critical security upgrades implemented (2026-03-18):
+Critical security upgrades implemented across multiple phases:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -1225,7 +1225,53 @@ Three critical security upgrades implemented (2026-03-18):
   │  ├── Admin sessions: 24 hours (was 365 days)          │
   │  └── OAuth sessions: 7 days (was 365 days)            │
   └───────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────┐
+  │  4. LLM OUTPUT GUARDRAILS (security.ts)                │
+  │     OWASP LLM02 / 廣告法 / PDPA / 消保法 (2026-04-07)  │
+  │                                                        │
+  │  ├── Validates every LLM reply before customer sees  │
+  │  ├── Wired into 3 paths:                              │
+  │  │   • LINE webhook text reply                        │
+  │  │   • LINE image recognition (Gemini Vision)         │
+  │  │   • Web chat widget (tRPC chat procedure)          │
+  │  ├── Blocks unsafe promises (保證最低價, 100%過件)    │
+  │  ├── Strips prompt-injection / system prompt leaks   │
+  │  ├── Masks PII echoes (phone, email, LINE ID)        │
+  │  ├── Flags hallucinated prices not in inventory      │
+  │  ├── Critical violations → fallback to ruleBasedReply │
+  │  └── Mode controlled by LLM_GUARDRAIL_MODE env var   │
+  │      (default: enforce, fail-secure)                  │
+  └───────────────────────────────────────────────────────┘
 ```
+
+### LLM Guardrail — Operator Runbook
+
+**Default behavior:** `LLM_GUARDRAIL_MODE=enforce` (set in `render.yaml`).
+Every customer-facing LLM reply is scanned; violations are rewritten,
+masked, or fall back to `generateRuleBasedReply()`.
+
+**Emergency disable** (if a legitimate reply gets false-positived):
+1. Render Dashboard → `kunjia-autos` → Environment
+2. Set `LLM_GUARDRAIL_MODE=log_only`
+3. Save → Render auto-redeploys (~2 min)
+4. Enforcement off, violation logging still active
+
+**Audit violations** (admin dashboard):
+```ts
+import { getSecurityEvents } from "./server/security";
+getSecurityEvents(50)
+  .filter(e => e.source === "llm_output_guardrail");
+```
+
+**Log pattern to watch** in Render logs:
+```
+[LINE] 🛡️ Guardrail [enforce] violations: unsafe_promise:...
+[LINE] 🛡️ Guardrail enforced fallback to rule-based reply
+[Chat] 🛡️ Guardrail [enforce] violations: ...
+```
+
+Inspired by the Guardrails pattern from *Agentic Design Patterns* (Part 3, Production Concerns).
 
 ---
 
