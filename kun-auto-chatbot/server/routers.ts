@@ -13,7 +13,7 @@ import { formatTimeSlotsForPrompt } from "./timeSlotHelper";
 import { nanoid } from "nanoid";
 import { sync8891, getSyncStatus } from "./sync8891";
 import { deployRichMenu, getRichMenuStatus, cancelDefaultRichMenu } from "./lineRichMenu";
-import { sanitizeChatMessage, sanitizeSearchQuery, maskPhone, maskName, maskPIIInText, logSecurityEvent, getSecurityEvents } from "./security";
+import { sanitizeChatMessage, sanitizeSearchQuery, maskPhone, maskName, maskPIIInText, logSecurityEvent, getSecurityEvents, validateLLMOutput, getGuardrailMode } from "./security";
 import { adminRouter } from "./routes/adminRoutes";
 import { detectVehicleFromMessage, buildSmartVehicleKB, buildTargetVehiclePrompt, detectCustomerIntents, buildIntentInstructions, buildVehicleIndex } from "./vehicleDetectionService";
 import { isRuleBasedMode, generateRuleBasedReply } from "./ruleBasedReply";
@@ -853,7 +853,42 @@ ${targetVehiclePromptWeb}${intentInstructionsWeb}`;
           let assistantContent = typeof response.choices[0]?.message?.content === 'string'
             ? response.choices[0].message.content
             : '抱歉，我暫時無法回應，請稍後再試。';
-          
+
+          // ============ LLM OUTPUT GUARDRAIL (OWASP LLM02) ============
+          // Same guardrail as the LINE webhook path — validates LLM output
+          // against 廣告法 / PDPA / 消保法 / prompt-injection rules.
+          // Mode controlled by LLM_GUARDRAIL_MODE env var (default: enforce).
+          {
+            const allowedPrices: string[] = [];
+            for (const v of allVehiclesForDetection) {
+              if ((v as any)?.price != null) allowedPrices.push(String((v as any).price));
+              if ((v as any)?.priceDisplay) allowedPrices.push(String((v as any).priceDisplay));
+            }
+            const guardrail = validateLLMOutput(assistantContent, { allowedPrices });
+            const guardrailMode = getGuardrailMode();
+            if (guardrail.violations.length > 0) {
+              logger.warn(
+                "Chat",
+                `🛡️ Guardrail [${guardrailMode}] violations: ${guardrail.violations.join(", ")}`
+              );
+            }
+            if (guardrailMode === "enforce") {
+              if (!guardrail.safe) {
+                logger.warn("Chat", "🛡️ Guardrail enforced fallback to rule-based reply");
+                assistantContent = generateRuleBasedReply({
+                  userMessage: sanitizedMessage,
+                  greeting: '人客',
+                  detection: detectionWeb,
+                  intents: customerIntentsWeb,
+                  customerContact: conversation!.customerContact,
+                  leadScore: conversation!.leadScore ?? undefined,
+                });
+              } else {
+                assistantContent = guardrail.sanitized;
+              }
+            }
+          }
+
           // ============ HUMAN HANDOFF DETECTION (Web) ============
           let isHumanHandoff = false;
           if (assistantContent.includes('[HUMAN_HANDOFF]')) {

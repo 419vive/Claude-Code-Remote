@@ -470,9 +470,39 @@ async function processLineEvent(
           ? `\n你看到的那台售價 ${(identified as any).price}，馬上幫你查詳細資訊 👇`
           : "";
 
+        // ============ IMAGE-PATH GUARDRAIL (Tool Use Safety) ============
+        // Gemini Vision extracts text from customer-uploaded images. That text
+        // is user-controlled, so we must treat it as untrusted data before
+        // interpolating into the reply. Prevents prompt-injection-via-image
+        // (e.g. uploaded image containing "保證最低價 100%過件").
+        let imageReplyText = `我看到你傳了一張 ${identified.brand} ${identified.model}${extraStr} 的照片！🚗\n我們剛好有 ${matches.length} 台${identified.brand} ${identified.model} 可以看，幫你列出來 👇${priceNote}`;
+        {
+          const allowedPricesImg: string[] = [];
+          for (const v of allVehicles) {
+            if ((v as any)?.price != null) allowedPricesImg.push(String((v as any).price));
+            if ((v as any)?.priceDisplay) allowedPricesImg.push(String((v as any).priceDisplay));
+          }
+          const imgGuardrail = validateLLMOutput(imageReplyText, { allowedPrices: allowedPricesImg });
+          const imgMode = getGuardrailMode();
+          if (imgGuardrail.violations.length > 0) {
+            console.warn(
+              `[LINE Image] 🛡️ Guardrail [${imgMode}] violations: ${imgGuardrail.violations.join(", ")}`
+            );
+          }
+          if (imgMode === "enforce") {
+            if (!imgGuardrail.safe) {
+              // Critical violation in image-extracted text — drop the suspicious
+              // content and use a safe templated reply.
+              imageReplyText = `我看到你傳了 ${identified.brand} ${identified.model} 的照片！🚗\n我們剛好有 ${matches.length} 台可以看，幫你列出來 👇`;
+            } else {
+              imageReplyText = imgGuardrail.sanitized;
+            }
+          }
+        }
+
         const textMsg = {
           type: "text" as const,
-          text: `我看到你傳了一張 ${identified.brand} ${identified.model}${extraStr} 的照片！🚗\n我們剛好有 ${matches.length} 台${identified.brand} ${identified.model} 可以看，幫你列出來 👇${priceNote}`,
+          text: imageReplyText,
         };
 
         // LINE reply max 5 messages
