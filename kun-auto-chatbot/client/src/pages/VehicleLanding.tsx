@@ -14,11 +14,21 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  ShieldCheck,
   Expand,
   Camera,
   Video,
   RotateCw,
+  Wallet,
+  CalendarCheck,
+  Repeat,
+  Truck,
+  Zap,
+  Percent,
 } from "lucide-react";
+
+// Lucide icon component type for intent buttons
+type LucideIconCmp = React.ComponentType<{ className?: string; strokeWidth?: number }>;
 import StickyBookingBar from "@/components/StickyBookingBar";
 import { ViewingNow } from "@/components/SocialProof";
 import ProactiveChatTrigger from "@/components/ProactiveChatTrigger";
@@ -54,39 +64,39 @@ function getIntentQuestions(vehicle: any) {
   return [
     {
       id: "price",
-      icon: "💰",
+      Icon: Wallet as LucideIconCmp,
       label: "這台多少錢？有優惠嗎？",
       color: "#C4A265",
-      bgColor: "rgba(196, 162, 101, 0.1)",
-      borderColor: "rgba(196, 162, 101, 0.25)",
+      bgColor: "rgba(196, 162, 101, 0.10)",
+      borderColor: "rgba(196, 162, 101, 0.28)",
       lineMessage: `我看到這台 ${name} ${year}，網頁上標 ${price}，有什麼優惠嗎？`,
     },
     {
       id: "visit",
-      icon: "🚗",
+      Icon: CalendarCheck as LucideIconCmp,
       label: "我想預約看這台車",
       color: "#06C755",
-      bgColor: "rgba(6, 199, 85, 0.1)",
-      borderColor: "rgba(6, 199, 85, 0.25)",
+      bgColor: "rgba(6, 199, 85, 0.10)",
+      borderColor: "rgba(6, 199, 85, 0.28)",
       lineMessage: `我想預約看這台 ${name} ${year}，什麼時候方便？`,
       bookUrl: true,
     },
     {
       id: "trade",
-      icon: "🔄",
+      Icon: Repeat as LucideIconCmp,
       label: "我有舊車想換這台",
-      color: "#9B59B6",
-      bgColor: "rgba(155, 89, 182, 0.1)",
-      borderColor: "rgba(155, 89, 182, 0.25)",
+      color: "#A78BFA",
+      bgColor: "rgba(167, 139, 250, 0.10)",
+      borderColor: "rgba(167, 139, 250, 0.28)",
       lineMessage: `我有一台舊車想換這台 ${name} ${year}，可以幫我估價折抵嗎？`,
     },
     {
       id: "loan",
-      icon: "💰",
+      Icon: Percent as LucideIconCmp,
       label: "貸款利率怎麼算？",
-      color: "#E67E22",
-      bgColor: "rgba(230, 126, 34, 0.1)",
-      borderColor: "rgba(230, 126, 34, 0.25)",
+      color: "#F59E0B",
+      bgColor: "rgba(245, 158, 11, 0.10)",
+      borderColor: "rgba(245, 158, 11, 0.28)",
       lineMessage: "",
       loanUrl: true,
     },
@@ -658,23 +668,39 @@ export default function VehicleLanding() {
             </p>
 
             <div className="space-y-2.5">
-              {questions.map((q) => (
-                <button
-                  key={q.id}
-                  onClick={() => handleQuestionClick(q)}
-                  className="flex items-center gap-3 w-full p-3.5 rounded-2xl border transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  style={{
-                    backgroundColor: q.bgColor,
-                    borderColor: q.borderColor,
-                  }}
-                >
-                  <span className="text-2xl flex-shrink-0">{q.icon}</span>
-                  <span className="text-white font-medium text-sm text-left flex-1">
-                    {q.label}
-                  </span>
-                  <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: q.color }} />
-                </button>
-              ))}
+              {questions.map((q) => {
+                const Icon = q.Icon;
+                return (
+                  <button
+                    key={q.id}
+                    onClick={() => handleQuestionClick(q)}
+                    className="group flex items-center gap-3 w-full p-3.5 rounded-2xl border transition-all duration-300 ease-quart hover:scale-[1.015] hover:-translate-y-px active:scale-[0.98] active:translate-y-0"
+                    style={{
+                      backgroundColor: q.bgColor,
+                      borderColor: q.borderColor,
+                    }}
+                  >
+                    <span
+                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
+                      style={{
+                        backgroundColor: q.bgColor,
+                        // @ts-ignore — CSS var for dynamic ring
+                        ["--tw-ring-color" as any]: q.borderColor,
+                        color: q.color,
+                      }}
+                    >
+                      <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                    </span>
+                    <span className="text-white font-medium text-sm text-left flex-1">
+                      {q.label}
+                    </span>
+                    <ArrowRight
+                      className="w-4 h-4 flex-shrink-0 transition-transform duration-300 ease-quart group-hover:translate-x-0.5"
+                      style={{ color: q.color }}
+                    />
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -691,13 +717,28 @@ export default function VehicleLanding() {
         </div>
 
         {/* Trust badges — mini version of 5 guarantees */}
-        <div className="bg-white/[0.05] rounded-2xl border border-white/[0.06] px-4 py-3 mb-4">
-          <div className="flex items-center justify-between flex-wrap gap-y-1 text-xs text-white/40">
-            <span>🛡️ 第三方認證</span>
-            <span>💰 超強貸款</span>
-            <span>🚗 免費接駁</span>
-            <span>⚡ 快速交車</span>
-            <span>🔄 高價收購</span>
+        <div className="bg-white/[0.04] rounded-2xl border border-white/[0.07] px-4 py-3 mb-4">
+          <div className="grid grid-cols-5 gap-1 text-[11px] text-white/55">
+            <span className="flex flex-col items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-white/65" strokeWidth={1.75} />
+              <span>第三方認證</span>
+            </span>
+            <span className="flex flex-col items-center gap-1.5">
+              <Wallet className="h-4 w-4 text-white/65" strokeWidth={1.75} />
+              <span>超強貸款</span>
+            </span>
+            <span className="flex flex-col items-center gap-1.5">
+              <Truck className="h-4 w-4 text-white/65" strokeWidth={1.75} />
+              <span>免費接駁</span>
+            </span>
+            <span className="flex flex-col items-center gap-1.5">
+              <Zap className="h-4 w-4 text-white/65" strokeWidth={1.75} />
+              <span>快速交車</span>
+            </span>
+            <span className="flex flex-col items-center gap-1.5">
+              <Repeat className="h-4 w-4 text-white/65" strokeWidth={1.75} />
+              <span>高價收購</span>
+            </span>
           </div>
         </div>
 

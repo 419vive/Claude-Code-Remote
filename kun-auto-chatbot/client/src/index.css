@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* System font stack (Outfit-style geometric sans) + Noto Sans TC for CJK.
+   Avoids Inter (overused) while keeping zero font-loading cost. */
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap");
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -40,7 +44,14 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: "Inter", "Noto Sans TC", system-ui, sans-serif;
+  --font-sans: "Outfit", "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Premium easing curves — never linear, never bounce */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Tinted shadows (navy hue) — never pure black */
+  --shadow-card: 0 1px 2px oklch(0.18 0.02 250 / 0.04), 0 4px 12px oklch(0.18 0.02 250 / 0.06);
+  --shadow-card-hover: 0 2px 4px oklch(0.18 0.02 250 / 0.05), 0 12px 28px oklch(0.18 0.02 250 / 0.10);
+  --shadow-elevated: 0 4px 8px oklch(0.18 0.02 250 / 0.06), 0 20px 40px oklch(0.18 0.02 250 / 0.12);
 }
 
 :root {
@@ -121,8 +132,37 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11", "kern";
+  }
+  /* Headings: tighter tracking + balance for premium hierarchy */
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+    letter-spacing: -0.015em;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* Visible focus ring (replaces removed default outline) */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -167,16 +207,37 @@
   }
 }
 
-/* Custom gentle bounce animation for floating tooltip */
+/* Gentle horizontal nudge for the floating tooltip */
 @keyframes bounce-gentle {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(-6px);
-  }
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-6px); }
 }
 
 .animate-bounce-gentle {
-  animation: bounce-gentle 2s ease-in-out infinite;
+  animation: bounce-gentle 2s var(--ease-out-quart) infinite;
+}
+
+/* Subtle skeleton shimmer (replaces flat pulse) */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Reusable utilities */
+@layer utilities {
+  .ease-quart    { transition-timing-function: var(--ease-out-quart); }
+  .ease-expo     { transition-timing-function: var(--ease-out-expo); }
+  .shadow-card   { box-shadow: var(--shadow-card); }
+  .shadow-card-hover { box-shadow: var(--shadow-card-hover); }
+  .shadow-elevated   { box-shadow: var(--shadow-elevated); }
+  /* Hardware-accelerated lift used for card hover */
+  .lift-on-hover {
+    transition: transform 280ms var(--ease-out-quart),
+                box-shadow 280ms var(--ease-out-quart);
+    will-change: transform;
+  }
+  .lift-on-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+  }
 }

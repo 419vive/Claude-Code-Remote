@@ -5,6 +5,30 @@
 
 import type { Vehicle } from "../drizzle/schema";
 
+// ============ BRAND DESIGN TOKENS ============
+// Single source of truth for LINE Flex visual identity.
+// Tweak here, propagate everywhere.
+
+const KUN = {
+  // Primary navy — trust, automotive depth (深藍)
+  navy:        "#1B3A5C",
+  navyDeep:    "#13294A",
+  // Brand gold accent (金色) — used for price + primary CTA
+  gold:        "#C4A265",
+  goldSoft:    "#E0C695",
+  // LINE brand green (only for LINE-related actions)
+  lineGreen:   "#06C755",
+  // Neutrals — tinted to match navy hue, never pure black/gray
+  ink:         "#1F2937", // body text
+  inkSoft:     "#4B5563", // secondary text
+  hint:        "#94A3B8", // tertiary / metadata
+  divider:     "#E5E7EB",
+  surface:     "#FFFFFF",
+  surfaceAlt:  "#F8FAFC",
+} as const;
+
+const TRUST_LINE = "第三方認證  ·  實車實價  ·  支援貸款";
+
 // ============ HELPER: Parse photo URLs from vehicle ============
 
 function parsePhotoUrls(v: Vehicle): string[] {
@@ -48,11 +72,11 @@ function buildVehicleBubble(v: Vehicle): any {
       type: "button",
       action: {
         type: "message",
-        label: "👉 了解車子細節/規格",
+        label: "了解車子細節/規格",
         text: `我想了解 ${v.brand} ${v.model} 的詳細規格`,
       },
       style: "primary",
-      color: "#C4A265",
+      color: KUN.gold,
       height: "md",
     },
   ];
@@ -134,44 +158,67 @@ function buildVehicleBubble(v: Vehicle): any {
       type: "box",
       layout: "vertical",
       spacing: "sm",
+      paddingAll: "16px",
       contents: [
+        // Brand label (small, hint color) — adds typographic hierarchy
         {
           type: "text",
-          text: `${v.brand} ${v.model}`,
+          text: v.brand,
+          size: "xxs",
+          color: KUN.hint,
+          weight: "regular",
+        },
+        // Model name (the hero of the bubble)
+        {
+          type: "text",
+          text: v.model,
           weight: "bold",
-          size: "lg",
+          size: "xl",
+          color: KUN.ink,
           wrap: true,
           maxLines: 2,
         },
+        // Specs row with bullet separator (· not |)
         {
           type: "text",
-          text: specs.slice(0, 4).join(" · "),
+          text: specs.slice(0, 4).join("  ·  "),
           size: "xs",
-          color: "#999999",
+          color: KUN.inkSoft,
           wrap: true,
           maxLines: 2,
+          margin: "sm",
         },
+        // Price — emphasized, large, gold accent
         {
           type: "box",
           layout: "horizontal",
+          margin: "md",
           contents: [
             {
               type: "text",
               text: priceText,
-              size: "xl",
+              size: "xxl",
               weight: "bold",
-              color: "#C4A265",
+              color: KUN.gold,
+              flex: 0,
             },
           ],
-          margin: "md",
         },
+        // Slim divider before trust line
+        {
+          type: "separator",
+          margin: "md",
+          color: KUN.divider,
+        },
+        // Trust line — bullet separators, balanced spacing
         {
           type: "text",
-          text: "🔒 第三方認證 | 實車實價 | 支援貸款",
+          text: TRUST_LINE,
           size: "xxs",
-          color: "#999999",
+          color: KUN.hint,
           wrap: true,
-          margin: "sm",
+          margin: "md",
+          align: "center",
         },
       ],
     },
@@ -462,9 +509,9 @@ export function buildVideoShowcaseCard(vehicle: Vehicle): any {
           // Trust line
           {
             type: "text",
-            text: "🔒 第三方認證 · 實車實價 · 支援貸款",
+            text: TRUST_LINE,
             size: "xxs",
-            color: "#999999",
+            color: KUN.hint,
             margin: "sm",
           },
           // Second photo preview strip
@@ -549,58 +596,58 @@ export function buildWelcomeCard(): any {
     contents: {
       type: "bubble",
       size: "mega",
+      // Slim navy header strip — establishes brand instantly
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: KUN.navy,
+        paddingAll: "20px",
+        spacing: "xs",
+        contents: [
+          {
+            type: "text",
+            text: "KUN MOTORS",
+            size: "xxs",
+            color: KUN.goldSoft,
+            weight: "bold",
+          },
+          {
+            type: "text",
+            text: "崑家汽車",
+            size: "xxl",
+            weight: "bold",
+            color: "#FFFFFF",
+          },
+          {
+            type: "text",
+            text: "高雄在地 40 年  ·  正派經營",
+            size: "xs",
+            color: "#FFFFFF",
+            margin: "xs",
+          },
+        ],
+      },
       body: {
         type: "box",
         layout: "vertical",
         spacing: "lg",
+        paddingAll: "20px",
         contents: [
           {
-            type: "box",
-            layout: "horizontal",
-            contents: [
-              {
-                type: "text",
-                text: "🚗",
-                size: "3xl",
-                flex: 0,
-              },
-              {
-                type: "box",
-                layout: "vertical",
-                contents: [
-                  {
-                    type: "text",
-                    text: "崑家汽車",
-                    weight: "bold",
-                    size: "xl",
-                    color: "#1B3A5C",
-                  },
-                  {
-                    type: "text",
-                    text: "高雄優質中古車商 · 誠信經營40年老口碑",
-                    size: "xs",
-                    color: "#999999",
-                  },
-                ],
-                margin: "lg",
-              },
-            ],
+            type: "text",
+            text: "人客你好！我是高雄阿家 👋\n在高雄車界打滾 40 年，專門幫你找到最適合的好車。有什麼需要儘管問，阿家 24 小時都在！",
+            wrap: true,
+            size: "sm",
+            color: KUN.inkSoft,
           },
           {
             type: "separator",
-          },
-          {
-            type: "text",
-            text: "人客你好！我是高雄阿家 👋\n在高雄車界打滾40年，專門幫你找到最適合的好車！有什麼需要儘管問，阿家24小時都在！",
-            wrap: true,
-            size: "sm",
-            color: "#555555",
+            color: KUN.divider,
           },
           {
             type: "box",
             layout: "vertical",
             spacing: "sm",
-            margin: "lg",
             contents: [
               {
                 type: "button",
@@ -610,7 +657,8 @@ export function buildWelcomeCard(): any {
                   text: "我想看車，有什麼車可以推薦？",
                 },
                 style: "primary",
-                color: "#1B3A5C",
+                color: KUN.navy,
+                height: "md",
               },
               {
                 type: "button",
@@ -620,7 +668,8 @@ export function buildWelcomeCard(): any {
                   text: "50萬以下有什麼好車？",
                 },
                 style: "primary",
-                color: "#C4A265",
+                color: KUN.gold,
+                height: "md",
               },
               {
                 type: "button",
@@ -630,30 +679,32 @@ export function buildWelcomeCard(): any {
                   text: "我想預約看車",
                 },
                 style: "secondary",
+                height: "md",
               },
             ],
           },
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        paddingAll: "16px",
+        backgroundColor: KUN.surfaceAlt,
+        contents: [
           {
-            type: "box",
-            layout: "horizontal",
-            margin: "lg",
-            contents: [
-              {
-                type: "text",
-                text: "📍 三民區大順二路269號",
-                size: "xs",
-                color: "#AAAAAA",
-                flex: 2,
-              },
-              {
-                type: "text",
-                text: "📞 0936-812-818 賴先生",
-                size: "xs",
-                color: "#AAAAAA",
-                flex: 2,
-                align: "end",
-              },
-            ],
+            type: "text",
+            text: "📍 三民區大順二路269號",
+            size: "xxs",
+            color: KUN.hint,
+            align: "center",
+          },
+          {
+            type: "text",
+            text: "📞 0936-812-818  賴先生",
+            size: "xxs",
+            color: KUN.hint,
+            align: "center",
           },
         ],
       },
@@ -675,43 +726,64 @@ export function buildAppointmentCard(): any {
         type: "box",
         layout: "vertical",
         spacing: "lg",
+        paddingAll: "20px",
         contents: [
+          // Eyebrow + heading combo for proper hierarchy
           {
             type: "text",
-            text: "📅 預約到店賞車",
+            text: "PREDICTABLE  ·  APPOINTMENT",
+            size: "xxs",
+            color: KUN.gold,
             weight: "bold",
-            size: "xl",
-            color: "#1B3A5C",
+          },
+          {
+            type: "text",
+            text: "預約到店賞車",
+            weight: "bold",
+            size: "xxl",
+            color: KUN.navy,
           },
           {
             type: "separator",
+            color: KUN.divider,
+            margin: "sm",
           },
           {
             type: "text",
-            text: "歡迎來崑家汽車看車！\n📍 地址：高雄市三民區大順二路269號（肯德基斜對面）\n賴先生親自為你服務。\n\n來之前先跟我們約個時間，\n阿家幫你把車準備好，讓你看得舒服！",
+            text: "歡迎來崑家汽車看車！\n地址：高雄市三民區大順二路 269 號（肯德基斜對面），賴先生親自為你服務。\n\n來之前先跟我們約個時間，阿家幫你把車準備好，讓你看得舒服！",
             wrap: true,
             size: "sm",
-            color: "#555555",
+            color: KUN.inkSoft,
           },
+          // Hours block — boxed with subtle background for emphasis
           {
             type: "box",
             layout: "vertical",
-            spacing: "md",
-            margin: "lg",
+            spacing: "xs",
+            paddingAll: "12px",
+            backgroundColor: KUN.surfaceAlt,
+            cornerRadius: "8px",
+            margin: "md",
             contents: [
               {
                 type: "text",
-                text: "⏰ 營業時間",
+                text: "⏰  營業時間",
                 weight: "bold",
-                size: "sm",
-                color: "#1B3A5C",
+                size: "xs",
+                color: KUN.navy,
               },
               {
                 type: "text",
-                text: "週一至週六 09:00 - 20:00\n週日 預約制",
-                size: "sm",
-                color: "#555555",
-                wrap: true,
+                text: "週一至週六  09:00 – 20:00",
+                size: "xs",
+                color: KUN.inkSoft,
+                margin: "xs",
+              },
+              {
+                type: "text",
+                text: "週日  預約制",
+                size: "xs",
+                color: KUN.inkSoft,
               },
             ],
           },
@@ -723,7 +795,7 @@ export function buildAppointmentCard(): any {
               text: "我想預約看車",
             },
             style: "primary",
-            color: "#C4A265",
+            color: KUN.gold,
             margin: "lg",
             height: "md",
           },
@@ -761,20 +833,25 @@ export function buildSimpleCard(
         type: "box",
         layout: "vertical",
         spacing: "md",
+        paddingAll: "20px",
         contents: [
           {
             type: "text",
             text: title,
             weight: "bold",
             size: "lg",
-            color: "#1B3A5C",
+            color: KUN.navy,
             wrap: true,
+          },
+          {
+            type: "separator",
+            color: KUN.divider,
           },
           {
             type: "text",
             text: body,
             size: "sm",
-            color: "#555555",
+            color: KUN.inkSoft,
             wrap: true,
           },
         ],
@@ -783,11 +860,13 @@ export function buildSimpleCard(
         type: "box",
         layout: "vertical",
         spacing: "sm",
+        paddingAll: "16px",
         contents: actions.map((a: any) => ({
           type: "button",
           action: a,
           style: "primary",
-          color: "#1B3A5C",
+          color: KUN.navy,
+          height: "md",
         })),
       },
     },

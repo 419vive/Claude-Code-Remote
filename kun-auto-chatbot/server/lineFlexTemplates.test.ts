@@ -509,8 +509,8 @@ describe("LINE Flex Message Templates", () => {
     it("should contain 崑家汽車 branding", () => {
       const card = buildWelcomeCard();
       expect(card.altText).toContain("崑家汽車");
-      const body = card.contents.body;
-      const brandText = JSON.stringify(body);
+      // Brand may live in header (preferred) or body — check the whole bubble
+      const brandText = JSON.stringify(card.contents);
       expect(brandText).toContain("崑家汽車");
       expect(brandText).toContain("高雄阿家");
     });

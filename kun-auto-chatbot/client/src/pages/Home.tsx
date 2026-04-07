@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Car, MessageCircle, MapPin, Fuel, Gauge, Calendar, Search, ChevronLeft, ChevronRight, Shield, X, ExternalLink, GitCompareArrows, Expand } from "lucide-react";
+import { Car, MessageCircle, MapPin, Fuel, Gauge, Calendar, Search, ChevronLeft, ChevronRight, Shield, ShieldCheck, X, ExternalLink, GitCompareArrows, Expand, Camera, Users, Star, Wallet, Truck, Zap, Repeat } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -83,7 +83,7 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
   };
 
   return (
-    <Card className="group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5">
+    <Card className="group overflow-hidden border-border/60 lift-on-hover shadow-card">
       <div
         className="relative aspect-[16/10] overflow-hidden bg-muted"
         onTouchStart={handleTouchStart}
@@ -95,44 +95,46 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
             <ProgressiveImage
               src={photos[currentPhoto]}
               alt={`${vehicle.brand} ${vehicle.model} - 照片 ${currentPhoto + 1}`}
-              className="transition-transform group-hover:scale-105"
+              className="transition-transform duration-[600ms] ease-quart group-hover:scale-[1.04]"
               containerClassName="h-full w-full"
               aspectRatio="16/10"
             />
+            {/* Subtle bottom gradient for badge legibility */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-950/40 to-transparent" />
             {/* Navigation arrows - only show if multiple photos */}
             {totalPhotos > 1 && (
               <>
                 <button
                   onClick={goPrev}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white shadow-md hover:bg-black/70 active:bg-black/80 transition-colors"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/55 text-white backdrop-blur-sm ring-1 ring-white/10 transition-all duration-200 ease-quart hover:bg-slate-950/75 active:scale-95"
                   aria-label="上一張"
                 >
-                  <ChevronLeft className="h-5 w-5" />
+                  <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
                 </button>
                 <button
                   onClick={goNext}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white shadow-md hover:bg-black/70 active:bg-black/80 transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/55 text-white backdrop-blur-sm ring-1 ring-white/10 transition-all duration-200 ease-quart hover:bg-slate-950/75 active:scale-95"
                   aria-label="下一張"
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-5 w-5" strokeWidth={2.25} />
                 </button>
                 {/* Dot indicators */}
-                <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
                   {totalPhotos <= 10 ? (
                     photos.map((_: string, i: number) => (
                       <button
                         key={i}
                         onClick={(e) => { e.stopPropagation(); setCurrentPhoto(i); }}
-                        className={`h-1.5 rounded-full transition-all ${
+                        className={`h-1.5 rounded-full transition-all duration-300 ease-quart ${
                           i === currentPhoto
-                            ? "w-4 bg-white"
-                            : "w-1.5 bg-white/50 hover:bg-white/70"
+                            ? "w-5 bg-white"
+                            : "w-1.5 bg-white/55 hover:bg-white/80"
                         }`}
                         aria-label={`照片 ${i + 1}`}
                       />
                     ))
                   ) : (
-                    <span className="rounded-full bg-black/50 px-2 py-0.5 text-[10px] text-white">
+                    <span className="rounded-full bg-slate-950/60 px-2 py-0.5 text-[10px] text-white backdrop-blur-sm tabular-nums">
                       {currentPhoto + 1} / {totalPhotos}
                     </span>
                   )}
@@ -185,14 +187,15 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
             />
           )}
           {totalPhotos > 1 && (
-            <span className="flex items-center gap-0.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
-              📷 {totalPhotos}
+            <span className="flex items-center gap-1 rounded-md bg-slate-950/55 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm ring-1 ring-white/10 tabular-nums">
+              <Camera className="h-3 w-3" strokeWidth={2} />
+              {totalPhotos}
             </span>
           )}
           {photos.length > 0 && onOpenGallery && (
             <button
               onClick={(e) => { e.stopPropagation(); onOpenGallery(photos, currentPhoto, `${vehicle.brand} ${vehicle.model}`); }}
-              className="flex items-center justify-center w-6 h-6 rounded bg-black/50 text-white hover:bg-black/70 transition-colors"
+              className="flex items-center justify-center w-6 h-6 rounded-md bg-slate-950/55 text-white backdrop-blur-sm ring-1 ring-white/10 transition-all duration-200 ease-quart hover:bg-slate-950/75 active:scale-95"
               aria-label="全螢幕瀏覽"
             >
               <Expand className="w-3 h-3" />
@@ -254,7 +257,7 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
           <a
             href={`/vehicle/${vehicle.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-all duration-200 ease-quart hover:bg-primary/92 active:scale-[0.98] active:translate-y-px"
           >
             <ExternalLink className="h-3.5 w-3.5" />
             看詳情
@@ -264,7 +267,7 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#06C755] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#05b04c] active:bg-[#049a43]"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#06C755] px-3 py-2 text-xs font-semibold text-white shadow-sm shadow-[#06C755]/20 transition-all duration-200 ease-quart hover:bg-[#05b04c] active:scale-[0.98] active:translate-y-px"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
@@ -330,7 +333,7 @@ export default function Home() {
         if (userCount === 3 && !prev.some(m => m.content.includes("@825oftez"))) {
           updated.push({
             role: "assistant" as const,
-            content: "\n\n---\n\n📣 **想要更詳盡的專人諮詢服務？**\n\n加入我們的 LINE 官方帳號 **@825oftez**，專人為您服務，讓您買車更安心！\n\n👉 [點此加 LINE 好友](https://lin.ee/825oftez)"
+            content: "\n\n---\n\n**想要更詳盡的專人諮詢服務？**\n\n加入我們的 LINE 官方帳號 **@825oftez**，專人為您服務，讓您買車更安心！\n\n[點此加 LINE 好友 →](https://lin.ee/825oftez)"
           });
         }
         return updated;
@@ -473,12 +476,27 @@ export default function Home() {
 
       {/* Trust Signal Strip */}
       <div className="border-b bg-white">
-        <div className="container py-2.5">
-          <div className="grid grid-cols-2 gap-y-1.5 sm:flex sm:flex-row sm:flex-nowrap sm:items-center sm:justify-center sm:gap-x-6 text-xs sm:text-sm text-gray-600 text-center">
-            <span>✅ 累計服務 2,000+ 位車主</span>
-            <span>⭐ Google 評分 4.8</span>
-            <span>🔐 全車第三方認證</span>
-            <span>📍 高雄在地 40 年</span>
+        <div className="container py-3">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:flex sm:flex-row sm:flex-nowrap sm:items-center sm:justify-center sm:gap-x-7 text-xs sm:text-[13px] text-slate-600">
+            <span className="flex items-center justify-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-primary/70" strokeWidth={2} />
+              <span>累計服務 <span className="font-semibold text-slate-900 tabular-nums">2,000+</span> 位車主</span>
+            </span>
+            <span className="hidden sm:block w-px h-3.5 bg-slate-200" />
+            <span className="flex items-center justify-center gap-1.5">
+              <Star className="h-3.5 w-3.5 text-amber-500" strokeWidth={2} fill="currentColor" />
+              <span>Google 評分 <span className="font-semibold text-slate-900 tabular-nums">4.8</span></span>
+            </span>
+            <span className="hidden sm:block w-px h-3.5 bg-slate-200" />
+            <span className="flex items-center justify-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary/70" strokeWidth={2} />
+              <span>全車第三方認證</span>
+            </span>
+            <span className="hidden sm:block w-px h-3.5 bg-slate-200" />
+            <span className="flex items-center justify-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 text-primary/70" strokeWidth={2} />
+              <span>高雄在地 <span className="font-semibold text-slate-900 tabular-nums">40</span> 年</span>
+            </span>
           </div>
         </div>
       </div>
@@ -532,28 +550,28 @@ export default function Home() {
       <div className="border-b bg-muted/30">
         <div className="container py-3">
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs sm:text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5 font-medium">
-              <Shield className="h-4 w-4 text-primary" />
+            <span className="flex items-center gap-1.5 font-medium text-foreground/85">
+              <ShieldCheck className="h-4 w-4 text-primary" strokeWidth={2} />
               全車第三方認證
             </span>
             <span className="hidden sm:block w-px h-4 bg-border" />
             <span className="flex items-center gap-1.5">
-              <span className="text-base">💰</span>
+              <Wallet className="h-4 w-4 text-primary/75" strokeWidth={2} />
               超強貸款團隊
             </span>
             <span className="hidden sm:block w-px h-4 bg-border" />
             <span className="flex items-center gap-1.5">
-              <span className="text-base">🚗</span>
+              <Truck className="h-4 w-4 text-primary/75" strokeWidth={2} />
               外縣市免費接駁
             </span>
             <span className="hidden sm:block w-px h-4 bg-border" />
             <span className="flex items-center gap-1.5">
-              <span className="text-base">⚡</span>
-              最快3小時交車
+              <Zap className="h-4 w-4 text-primary/75" strokeWidth={2} />
+              最快 <span className="tabular-nums">3</span> 小時交車
             </span>
             <span className="hidden sm:block w-px h-4 bg-border" />
             <span className="flex items-center gap-1.5">
-              <span className="text-base">🔄</span>
+              <Repeat className="h-4 w-4 text-primary/75" strokeWidth={2} />
               舊車高價收購
             </span>
           </div>
@@ -710,18 +728,24 @@ export default function Home() {
       {/* Floating Chat Button with Tooltip */}
       <div className="fixed bottom-20 md:bottom-6 right-6 z-50 flex items-center gap-3">
         {!chatOpen && (
-          <div className="rounded-full bg-primary/90 px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg backdrop-blur-sm">
+          <div className="relative rounded-full bg-primary/95 px-4 py-2 text-sm font-medium text-primary-foreground shadow-elevated backdrop-blur-sm ring-1 ring-white/10">
             <span>有問題？阿家線上回答你</span>
-            <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 rotate-45 bg-primary/90" />
+            <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 rotate-45 bg-primary/95" />
           </div>
         )}
         <button
           onClick={() => setChatOpen((prev) => !prev)}
-          className="relative flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition-transform hover:scale-110 active:scale-95"
+          className="relative flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-elevated ring-1 ring-white/10 transition-all duration-300 ease-quart hover:scale-[1.06] active:scale-95"
           aria-label={chatOpen ? "關閉聊天" : "開始聊天"}
         >
-          {chatOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-          {!chatOpen && <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />}
+          {chatOpen ? <X className="h-6 w-6" strokeWidth={2.25} /> : <MessageCircle className="h-6 w-6" strokeWidth={2} />}
+          {!chatOpen && (
+            <>
+              {/* Subtle breathing halo — replaces aggressive ping */}
+              <span className="absolute inset-0 -z-10 rounded-full bg-primary/20 blur-md animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-background" aria-hidden />
+            </>
+          )}
         </button>
       </div>
     </div>
