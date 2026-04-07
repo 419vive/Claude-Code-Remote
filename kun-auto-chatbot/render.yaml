@@ -16,5 +16,12 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         sync: false
+      # LLM output guardrail mode (OWASP LLM02 / 廣告法 / PDPA / 消保法).
+      # "enforce"  = validate every LLM reply, rewrite unsafe content,
+      #              fall back to rule-based reply on critical violations.
+      # "log_only" = log violations only (safety valve for debugging
+      #              false positives — redeploy to flip).
+      - key: LLM_GUARDRAIL_MODE
+        value: enforce
     healthCheckPath: /
     autoDeploy: true
