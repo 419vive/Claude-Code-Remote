@@ -122,17 +122,16 @@ export default function Chat() {
       </header>
 
       {/* Chat Area */}
-      <div className="container py-4">
+      <div className="container py-6">
         <div className="mx-auto max-w-3xl">
           <AIChatBox
             messages={messages}
             onSendMessage={handleSend}
             isLoading={chatMutation.isPending}
             placeholder={vehicleContext ? `詢問 ${vehicleContext} 的問題...` : "請輸入您想詢問的車輛問題..."}
-            height="calc(100vh - 8rem)"
+            height="calc(100vh - 9rem)"
             emptyStateMessage={vehicleContext ? `想了解 ${vehicleContext} 嗎？選個問題或直接打字！` : "歡迎來到崑家汽車！有什麼我可以幫您的嗎？"}
             suggestedPrompts={suggestedPrompts}
-            className="border-0 shadow-none"
           />
         </div>
       </div>

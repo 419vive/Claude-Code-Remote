@@ -203,7 +203,7 @@ export function AIChatBox({
     <div
       ref={containerRef}
       className={cn(
-        "flex flex-col bg-card text-card-foreground rounded-lg border shadow-sm",
+        "flex flex-col bg-card text-card-foreground rounded-2xl border border-border/60 shadow-card overflow-hidden",
         className
       )}
       style={{ height }}
@@ -213,9 +213,14 @@ export function AIChatBox({
         {displayMessages.length === 0 ? (
           <div className="h-full overflow-y-auto p-3 pb-4">
             <div className="flex min-h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-              <div className="flex flex-col items-center gap-2">
-                <Sparkles className="size-8 opacity-20" />
-                <p className="text-sm">{emptyStateMessage}</p>
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <div className="absolute inset-0 -m-2 rounded-full bg-primary/15 blur-xl" aria-hidden="true" />
+                  <div className="relative flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-inset ring-primary/20">
+                    <Sparkles className="size-7 text-primary" strokeWidth={1.75} />
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-foreground/70">{emptyStateMessage}</p>
               </div>
 
               {suggestedPrompts && suggestedPrompts.length > 0 && (
@@ -234,7 +239,7 @@ export function AIChatBox({
                         key={index}
                         onClick={() => onSendMessage(prompt)}
                         disabled={isLoading}
-                        className={`rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 ${colorStyles[index % colorStyles.length]}`}
+                        className={`rounded-full border px-4 py-2 text-sm font-medium transition-all duration-280 ease-quart hover:shadow-card-hover hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${colorStyles[index % colorStyles.length]}`}
                       >
                         {prompt}
                       </button>
@@ -247,7 +252,7 @@ export function AIChatBox({
                       href={action.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 no-underline ${
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-280 ease-quart hover:shadow-card-hover hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] no-underline ${
                         action.colorClass || "bg-gradient-to-r from-[#06C755]/15 to-[#06C755]/25 border-[#06C755]/40 text-[#06C755] hover:from-[#06C755]/25 hover:to-[#06C755]/35 hover:border-[#06C755]/60 hover:shadow-[#06C755]/10"
                       }`}
                     >
@@ -284,17 +289,17 @@ export function AIChatBox({
                     }
                   >
                     {message.role === "assistant" && (
-                      <div className="size-8 shrink-0 mt-1 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="size-4 text-primary" />
+                      <div className="size-8 shrink-0 mt-1 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-inset ring-primary/20 flex items-center justify-center">
+                        <Sparkles className="size-4 text-primary" strokeWidth={2} />
                       </div>
                     )}
 
                     <div
                       className={cn(
-                        "max-w-[80%] rounded-lg px-4 py-2.5",
+                        "max-w-[80%] px-4 py-2.5 shadow-card",
                         message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground"
+                          ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md"
+                          : "bg-muted/70 text-foreground ring-1 ring-inset ring-border/50 rounded-2xl rounded-bl-md"
                       )}
                     >
                       {message.role === "assistant" ? (
@@ -309,8 +314,8 @@ export function AIChatBox({
                     </div>
 
                     {message.role === "user" && (
-                      <div className="size-8 shrink-0 mt-1 rounded-full bg-secondary flex items-center justify-center">
-                        <User className="size-4 text-secondary-foreground" />
+                      <div className="size-8 shrink-0 mt-1 rounded-full bg-secondary ring-1 ring-inset ring-border/60 flex items-center justify-center">
+                        <User className="size-4 text-secondary-foreground" strokeWidth={2} />
                       </div>
                     )}
                   </div>
@@ -326,14 +331,14 @@ export function AIChatBox({
                       : undefined
                   }
                 >
-                  <div className="size-8 shrink-0 mt-1 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Sparkles className="size-4 text-primary" />
+                  <div className="size-8 shrink-0 mt-1 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-inset ring-primary/20 flex items-center justify-center">
+                    <Sparkles className="size-4 text-primary animate-pulse" strokeWidth={2} />
                   </div>
-                  <div className="rounded-lg bg-muted px-4 py-3.5">
-                    <div className="flex items-center gap-1">
-                      <span className="size-2 rounded-full bg-muted-foreground/60 animate-[bounce_1.2s_ease-in-out_infinite]" />
-                      <span className="size-2 rounded-full bg-muted-foreground/60 animate-[bounce_1.2s_ease-in-out_0.2s_infinite]" />
-                      <span className="size-2 rounded-full bg-muted-foreground/60 animate-[bounce_1.2s_ease-in-out_0.4s_infinite]" />
+                  <div className="rounded-2xl rounded-bl-md bg-muted/70 ring-1 ring-inset ring-border/50 shadow-card px-4 py-3.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-primary/60 animate-[bounce_1.2s_ease-in-out_infinite]" />
+                      <span className="size-1.5 rounded-full bg-primary/60 animate-[bounce_1.2s_ease-in-out_0.2s_infinite]" />
+                      <span className="size-1.5 rounded-full bg-primary/60 animate-[bounce_1.2s_ease-in-out_0.4s_infinite]" />
                     </div>
                   </div>
                 </div>
@@ -347,7 +352,7 @@ export function AIChatBox({
       <form
         ref={inputAreaRef}
         onSubmit={handleSubmit}
-        className="flex gap-2 p-4 border-t bg-background/50 items-end"
+        className="flex gap-2 p-4 border-t border-border/60 bg-background/60 backdrop-blur-sm items-end"
       >
         <Textarea
           ref={textareaRef}
@@ -355,14 +360,14 @@ export function AIChatBox({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 max-h-32 resize-none min-h-9"
+          className="flex-1 max-h-32 resize-none min-h-9 rounded-xl"
           rows={1}
         />
         <Button
           type="submit"
           size="icon"
           disabled={!input.trim() || isLoading}
-          className="shrink-0 h-[38px] w-[38px]"
+          className="shrink-0 h-[38px] w-[38px] rounded-xl ease-quart hover:bg-primary/92 active:scale-[0.96] shadow-card"
         >
           {isLoading ? (
             <Loader2 className="size-4 animate-spin" />
