@@ -409,6 +409,21 @@ export interface LLMOutputValidation {
   violations: string[];
 }
 
+/**
+ * Enforcement mode for the LLM output guardrail.
+ * - "enforce":  rewrite/strip unsafe content and fall back on critical violations
+ * - "log_only": log violations but return the original text unchanged
+ *
+ * Controlled via env var LLM_GUARDRAIL_MODE. Defaults to "log_only" so
+ * rolling out the guardrail never breaks production on day one.
+ */
+export type GuardrailMode = "enforce" | "log_only";
+
+export function getGuardrailMode(): GuardrailMode {
+  const raw = (process.env.LLM_GUARDRAIL_MODE || "log_only").toLowerCase();
+  return raw === "enforce" ? "enforce" : "log_only";
+}
+
 // Phrases that create legal/regulatory exposure in TW automotive advertising.
 // Keep this list conservative — false positives are cheap, legal fines are not.
 const UNSAFE_PROMISE_PATTERNS: RegExp[] = [

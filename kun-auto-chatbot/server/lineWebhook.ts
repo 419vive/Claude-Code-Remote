@@ -9,7 +9,7 @@ import { formatTimeSlotsForPrompt } from "./timeSlotHelper";
 import { detectVehicleFromMessage, buildSmartVehicleKB, buildTargetVehiclePrompt, detectCustomerIntents, buildIntentInstructions, buildVehicleIndex } from "./vehicleDetectionService";
 import { buildLLMMessages, type PromptContext } from "./dynamicPromptBuilder";
 import { isRuleBasedMode, generateRuleBasedReply } from "./ruleBasedReply";
-import { sanitizeChatMessage } from "./security";
+import { sanitizeChatMessage, validateLLMOutput, getGuardrailMode } from "./security";
 
 import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting } from "./lineUtils";
 import { getAssistantContentForTrigger, buildOwnerNotificationFlex, getMilestoneLevel, checkAndNotifyOwner, buildHumanHandoffFlex, sendHumanHandoffNotification } from "./lineNotification";
@@ -1318,6 +1318,48 @@ async function processLineEvent(
           leadScore: conversation!.leadScore ?? undefined,
         });
       }
+
+      // ============ LLM OUTPUT GUARDRAIL (OWASP LLM02) ============
+      // Validate the LLM reply against legal/compliance rules before sending.
+      // - Blocks 廣告法 unsafe promises (保證最低價, 100% 過件)
+      // - Strips PDPA PII echoes (phones, emails, LINE IDs)
+      // - Strips OWASP LLM02 prompt/system leakage
+      // - Flags price quotes not matching real inventory (消保法)
+      //
+      // Rollout controlled by LLM_GUARDRAIL_MODE env var:
+      //   log_only (default) — record violations, keep original text
+      //   enforce            — rewrite unsafe text; fall back on critical violations
+      const allowedPrices: string[] = [];
+      for (const v of allVehicles) {
+        if (v?.price != null) allowedPrices.push(String(v.price));
+        if (v?.priceDisplay) allowedPrices.push(String(v.priceDisplay));
+      }
+      const guardrail = validateLLMOutput(replyText, { allowedPrices });
+      const guardrailMode = getGuardrailMode();
+      if (guardrail.violations.length > 0) {
+        console.warn(
+          `[LINE] 🛡️ Guardrail [${guardrailMode}] violations: ${guardrail.violations.join(", ")}`
+        );
+      }
+      if (guardrailMode === "enforce") {
+        if (!guardrail.safe) {
+          // Critical violation (unsafe promise / system leak) — fall back
+          console.warn("[LINE] 🛡️ Guardrail enforced fallback to rule-based reply");
+          replyText = generateRuleBasedReply({
+            userMessage,
+            greeting,
+            detection,
+            intents: customerIntents,
+            customerContact: conversation!.customerContact,
+            leadScore: conversation!.leadScore ?? undefined,
+          });
+        } else {
+          // Non-critical (PII echo, suspicious price) — use sanitized version
+          replyText = guardrail.sanitized;
+        }
+      }
+      // log_only mode: keep original replyText, only logged the violations above
+
       console.log("[LINE] LLM response:", replyText.substring(0, 100));
     } catch (err) {
       console.error("[LINE] LLM error, falling back to rule-based reply:", err);
