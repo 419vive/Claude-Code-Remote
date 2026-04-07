@@ -21,6 +21,7 @@ A full-stack TypeScript application that powers an AI-driven LINE chatbot for cu
 - [Authentication](#authentication)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
+- [Cinematic AI Video Pipeline — YouTube Ad Factory](#cinematic-ai-video-pipeline--youtube-ad-factory)
 - [Deployment](#deployment)
 - [Agent Reach — AI Agent Internet Access](#agent-reach--ai-agent-internet-access)
 - [Security Audit — Agent Reach](#security-audit--agent-reach)
@@ -826,6 +827,164 @@ pip install -r scripts/videodb/requirements.txt
 python scripts/videodb/test_connection.py
 python scripts/videodb/upload_vehicle.py https://example.com/video.mp4
 ```
+
+---
+
+## Cinematic AI Video Pipeline — YouTube Ad Factory
+
+End-to-end automated production of cinematic vehicle ads for YouTube. Given a vehicle in inventory, the system writes a multi-scene script, generates AI characters and environments, animates them into video clips, adds Mandarin voiceover and background music, composites everything, and uploads to YouTube — all in one admin click.
+
+### Pipeline Flow
+
+```
+┌──────────────────┐
+│  Vehicle in DB   │
+│  (8891 sync)     │
+└────────┬─────────┘
+         │
+         ▼
+┌────────────────────────────────────────────────────────────────────┐
+│  ① Claude Sonnet — Storyboard Generator                            │
+│  • 25-35 scenes across 5-act drama structure                       │
+│  • Characters, settings, narration, camera directions              │
+│  • YouTube title / description / tags                              │
+│  • Output: storyboard.json                                          │
+└────────┬───────────────────────────────────────────────────────────┘
+         │
+         ├──────────────────────┬─────────────────┬─────────────────┐
+         ▼                      ▼                 ▼                 ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────┐  ┌──────────────┐
+│ ② BFL FLUX.2 Pro │  │ ④ ElevenLabs TTS │  │ ⑤ Mubert │  │ Higgsfield   │
+│   Scene Images   │  │   Mandarin VO    │  │  BGM     │  │ Flux (fall-  │
+│   (1920×1080)    │  │   per scene      │  │  (auto)  │  │  back)       │
+└────────┬─────────┘  └────────┬─────────┘  └─────┬────┘  └──────────────┘
+         │                     │                  │
+         ▼                     │                  │
+┌──────────────────────────┐   │                  │
+│ ③ Image → Video          │   │                  │
+│   (one of three engines) │   │                  │
+│  ┌────────────────────┐  │   │                  │
+│  │ Seedance 2.0 Fast  │  │   │                  │
+│  │ ~$0.02/sec ⭐      │  │   │                  │
+│  ├────────────────────┤  │   │                  │
+│  │ Luma Dream Machine │  │   │                  │
+│  │ ~$0.40-0.80/clip   │  │   │                  │
+│  ├────────────────────┤  │   │                  │
+│  │ Higgsfield DoP     │  │   │                  │
+│  │ ~$0.08/sec         │  │   │                  │
+│  └────────────────────┘  │   │                  │
+└──────────┬───────────────┘   │                  │
+           │                   │                  │
+           └───────────────────┴──────────────────┘
+                               │
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│  ⑥ Remotion CinematicAd — Video Compositor                         │
+│  • 1920×1080 @ 30fps                                                │
+│  • Title card (3s) + Scenes (300s) + CTA card (4s)                  │
+│  • Stitches scene videos + per-scene narration + BGM + watermark   │
+│  • Server-side render via @remotion/renderer                        │
+└────────┬───────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌────────────────────────────────────────────────────────────────────┐
+│  ⑦ YouTube Data API — Upload                                        │
+│  • OAuth2 refresh-token flow                                        │
+│  • Resumable upload                                                 │
+│  • Auto-fills title/description/tags from storyboard               │
+│  • Privacy: private / unlisted / public                             │
+└────────┬───────────────────────────────────────────────────────────┘
+         │
+         ▼
+   📺 崑家汽車 YouTube Channel
+```
+
+### Pipeline Modules
+
+| File | Purpose |
+|------|---------|
+| `server/_core/storyboard.ts` | Claude Sonnet — generates 25-35 scene 5-act script |
+| `server/_core/sceneImageGen.ts` | BFL FLUX.2 Pro (primary) + Higgsfield Flux (fallback) |
+| `server/_core/higgsfield.ts` | Multi-backend video gen: Seedance / Luma / DoP Turbo |
+| `server/_core/elevenlabs.ts` | ElevenLabs TTS — Mandarin (`cmn`) per-scene voiceover |
+| `server/_core/sunoMusic.ts` | Mubert (primary) + Suno (fallback) BGM generation |
+| `server/_core/cinematicPipeline.ts` | Orchestrator — runs all 7 stages in order |
+| `server/_core/youtubeUpload.ts` | YouTube Data API v3 resumable upload |
+| `client/src/remotion/compositions/CinematicAd.tsx` | Remotion 5-min cinematic composition |
+
+### Admin tRPC Endpoints
+
+```ts
+// Preview only — generate storyboard without burning video credits
+admin.generateStoryboard({ vehicleId })
+
+// Full pipeline: storyboard → images → video → voiceover → BGM → upload
+admin.generateCinematicVideo({
+  vehicleId: 42,
+  videoModel: "seedance-2.0-fast",  // or "luma-dream-machine", "dop-turbo"
+  uploadToYouTube: true,
+  privacyStatus: "private",
+})
+```
+
+### Cost Breakdown — Plan B (Recommended)
+
+**Target:** 5-minute cinematic ad, every 2 days = ~15 videos/month
+
+| Service | Per Video | Monthly (15 videos) |
+|---------|-----------|---------------------|
+| Claude Sonnet (storyboard) | $0.05 | $0.75 |
+| BFL FLUX.2 Pro (30 scene images) | $0.90 | $13.50 |
+| Seedance 2.0 Fast (30 video clips) | $1.10 | $16.50 |
+| ElevenLabs Creator plan | — | $22.00 (flat) |
+| Mubert BGM | $0.05 | $0.75 |
+| YouTube API | $0 | $0 |
+| **Total** | **~$3.60** | **~$54 / NT$1,730** |
+
+Compared to NT$5,000-30,000 per video for traditional production, the AI factory delivers a 95% cost reduction at 15× the volume.
+
+### Required API Keys
+
+```env
+# Script generation
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Scene image generation (primary)
+BFL_API_KEY=...
+
+# Video generation — at least one required (auto-selects cheapest)
+SEEDANCE_API_KEY=...           # Seedance 2.0 Fast — cheapest, native audio
+LUMA_API_KEY=...               # Luma Dream Machine — best motion quality
+HIGGSFIELD_CREDENTIALS=...     # DoP Turbo — cinematic camera (KEY_ID:KEY_SECRET)
+
+# Voiceover (Mandarin)
+ELEVENLABS_API_KEY=...
+
+# Background music — at least one (or skip BGM)
+MUBERT_API_KEY=...             # Primary: fully automated AI music
+SUNO_API_KEY=...               # Fallback: third-party Suno wrapper
+
+# YouTube upload
+YOUTUBE_CLIENT_ID=...
+YOUTUBE_CLIENT_SECRET=...
+YOUTUBE_REFRESH_TOKEN=...
+```
+
+### Pipeline Output
+
+Each run creates a job directory under `output/cinematic/<jobId>/`:
+
+```
+output/cinematic/1712345678-Toyota-Camry/
+├── storyboard.json          # Full multi-scene script
+├── manifest.json            # All asset URLs + metadata
+└── audio/
+    ├── narration-1.mp3      # ElevenLabs voiceover per scene
+    ├── narration-2.mp3
+    └── ...
+```
+
+The final composited video is saved by Remotion when the optional render step runs.
 
 ---
 
