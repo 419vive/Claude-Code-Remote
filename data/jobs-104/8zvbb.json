@@ -1,0 +1,206 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "AI 產品經理 (AI Product Manager)",
+      "appearDate": "2026/03/27",
+      "custName": "一一食薦有限公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bm7dg",
+      "analysisType": 1,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8zvbb",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0
+    },
+    "contact": {
+      "hrName": "詹小姐",
+      "email": "admin.tai@dineoneone.us",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "合適者將於7個工作天內主動聯繫，不合適者將不另行通知"
+    },
+    "environmentPic": {
+      "environmentPic": [],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "2年以上",
+      "edu": "大學以上",
+      "major": [
+        "商業及管理學科類",
+        "數學及電算機科學學科類"
+      ],
+      "language": [
+        {
+          "code": 1,
+          "language": "英文",
+          "ability": {
+            "listening": "精通",
+            "speaking": "精通",
+            "reading": "精通",
+            "writing": "精通"
+          }
+        }
+      ],
+      "localLanguage": [],
+      "specialty": [
+        {
+          "code": "12001008030",
+          "description": "ChatGPT"
+        },
+        {
+          "code": "12001003097",
+          "description": "LLM"
+        },
+        {
+          "code": "12001008036",
+          "description": "Scrum"
+        }
+      ],
+      "skill": [
+        {
+          "code": "11005002010",
+          "description": "產品策略"
+        },
+        {
+          "code": "11009005012",
+          "description": "AI"
+        },
+        {
+          "code": "11005002008",
+          "description": "產品定位"
+        },
+        {
+          "code": "11005001011",
+          "description": "產品營運"
+        },
+        {
+          "code": "11002002007",
+          "description": "專案管理架構及專案說明"
+        },
+        {
+          "code": "11002002005",
+          "description": "專案規劃執行╱範圍管理"
+        },
+        {
+          "code": "11002002006",
+          "description": "專案溝通╱整合管理"
+        },
+        {
+          "code": "11002002002",
+          "description": "專案成本╱品質╱風險管理"
+        },
+        {
+          "code": "11002002003",
+          "description": "專案時間╱進度控管"
+        },
+        {
+          "code": "11005001004",
+          "description": "提案與簡報技巧"
+        }
+      ],
+      "certificate": [],
+      "driverLicense": [
+        "普通重型機車",
+        "普通小型車"
+      ],
+      "other": "申請方式\n請務必先填寫 Google 表單（必要條件）： 我們會提供表單連結，未填寫者恕不納入評估。\nhttps://forms.gle/vgGuBM4SDxYz9YMu9\n\n準備 履歷（或 LinkedIn）。\n如有，請一併提供：\n過往參與的軟體產品案例或 Portfolio（PRD 節錄、Wireframe、產品迭代故事等）。\n產品簡報（Product Deck）或使用者操作指南。"
+    },
+    "welfare": {
+      "tag": [],
+      "welfare": "一一食薦有限公司致力於提供優質的員工福利，確保每位員工都能在一個健康、安全且有保障的工作環境中發展和成長。我們的福利包括：\n\n- 勞健保：公司為每位全職員工提供完善的勞工保險和健康保險，確保員工在工作中的安全與健康。\n- 退休金：公司根據法規為員工提供退休金計劃，保障員工的退休生活。\n- 進修補助：我們支持員工的不斷學習和成長，提供不定期的進修補助，鼓勵員工參加各類專業培訓和學術研討會。\n- 出差補助：對於因公出差的員工，公司提供全面的出差補助，包括交通、住宿和餐飲等費用，確保員工在外出工作時能夠專注於工作。\n- 員工活動：公司定期組織各類員工活動，如團隊建設、運動會、節日慶祝等，增進員工之間的交流與合作，營造積極向上的企業文化。\n- 健康福利：我們關注員工的身心健康，提供年度健康檢查和心理諮詢服務，幫助員工保持良好的身體和心理狀態。\n- 彈性工作時間：為了平衡工作與生活，公司提供彈性工作時間選項，讓員工可以根據個人需求靈活安排工作。",
+      "legalTag": []
+    },
+    "jobDetail": {
+      "jobDescription": "關於我們 About Us\n我們是總部位於舊金山的跨國集團，業務橫跨「高端美式餐飲供應鏈」與「先進 AI 軟體解決方案」。AI 技術事業部 (TailorAI)： 與美國 TailorAI US 聯動，專注於 VLM (視覺語言模型)、AI 代理人與企業私有化知識庫建設。我們將矽谷前沿技術轉化為可落地的商業工具。台灣團隊身為集團的核心，直接參與美國市場的決策與產品研發。我們正在尋找具備跨國協作能力、能操作前沿 AI 工具的夥伴。\n\n我們的核心產品：台樂 One Box\n台樂 One Box 是一個「把 AI 帶到資料身邊」的私有化平台，可在企業內網部署智慧 Agent，結合文件解析、知識庫建構與智慧索引能力，串接 NAS / 檔案伺服器，所有運算皆於防火牆內完成，數小時即可上線見效。\n\n適用於金融、法務、醫療、高科技製造與政府等高度重視資安與合規的場景。\n\n職務需求\n這個角色的使命（Mission）\n你是連接「市場—客戶—技術」的核心橋樑，能將分散的需求與回饋，轉化為可落地的 AI 產品規格。\n\n你不只是寫 PRD，更會參與第一線客戶互動，協助定義問題、設計 PoC 與導入策略，並與工程團隊共創可複製的產品與商業模式。\n\n你將負責的事（Responsibilities）\n1. 需求探索與產品規劃\n參與第一線顧問式訪談，釐清客戶需求、資料現況與知識庫結構\n將需求轉化為 PRD、產品規格與 Roadmap\n2. 跨部門協作與產品落地\n與工程團隊協作，將 AI 技術轉化為具體功能\n推動產品從 PoC 到正式上線\n管理 Backlog 與功能優先級\n3. 產品定價與商業模式設計\n參與產品定價策略制定（如：文件量、節點/GPU、訂閱制等）\n與業務合作設計 PoC → 正式導入的轉換機制\n持續優化產品的商業可擴展性與收入模型\n4. 產品推廣與價值傳遞\n與行銷/業務合作，設計產品定位、Demo 流程與銷售敘事\n協助製作產品簡報、案例與解決方案說明\n將技術能力轉譯為客戶能理解的商業價值\n5. 成效追蹤與產品迭代\n追蹤產品使用數據與客戶回饋\n持續優化產品體驗與導入流程\n建立可複製的導入 Playbook\n\n我們在找的人（Must-haves）\n具備 1–3 年軟體產品經理（PM）或相關經驗\n具備結構化思考與問題拆解能力，能從需求中抽象出產品機會\n對 AI / Generative AI 有基本理解（如 LLM、RAG、Agent 等）\n良好的溝通能力與同理心，能在技術與商業之間取得平衡\n能適應全遠端工作模式，自律且具備跨時區協作能力\n熟悉 Google Workspace 與主流 AI 工具（如 ChatGPT、Claude 等）\n\n加分條件（Nice-to-haves）\n英文流利（可閱讀技術文件、與海外客戶或夥伴溝通）\n具 SaaS / B2B 軟體產品經驗\n熟悉企業知識庫、RAG、文件處理或資料分析場景\n理解私有化部署、資安與合規議題\n有新創或 Agile/Scrum 經驗\n\n你會喜歡這裡的理由（Why Us）\n時間與地點超彈性： 全程遠端（在家工作）、彈性工時、結果導向；你能用最有效率的方式安排一天。\n第一線接觸最新技術與市場： 從企業私有化部署、RAG / VLM 到專屬 AI Agents，跟著客戶實戰，了解產業需求與決策節奏。\n高層連結與人脈擴展： 有機會參與和客戶公司 CIO/CTO/決策高層的對話，建立跨產業關係與個人品牌。\n矽谷式工作風格： 管理扁平、Owner Mindset、快速試錯與迭代，以數據與影響力說話。\n彼此尊重、好相處的團隊文化： 坦誠溝通、零內耗，互相補位、彼此成就，專注把事做成。\n",
+      "jobCategory": [
+        {
+          "code": "2004003009",
+          "description": "產品經理"
+        },
+        {
+          "code": "2004003005",
+          "description": "產品管理師"
+        }
+      ],
+      "salary": "待遇面議",
+      "salaryMin": 0,
+      "salaryMax": 0,
+      "salaryType": 10,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001016002",
+      "addressRegion": "高雄市前金區",
+      "addressArea": "高雄市",
+      "addressDetail": "民權一路251號11樓之1",
+      "industryArea": "",
+      "longitude": "120.3102587",
+      "latitude": "22.6271222",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "需出差，一年累積時間未定",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "週休二日",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "1人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": "全遠端"
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/7076/130000000197076/logo.png?v=20240530160614",
+    "postalCode": "801",
+    "closeDate": "",
+    "industry": "工商顧問服務業",
+    "custNo": "130000000197076",
+    "encodedCustNo": "1a2x6bm7dg",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E4%B8%80%E4%B8%80%E9%A3%9F%E8%96%A6%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=AI+%E7%94%A2%E5%93%81%E7%B6%93%E7%90%86+%28AI+Product+Manager%29",
+    "industryNo": "1008003001",
+    "employees": "暫不提供",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": null,
+      "lastCustReplyTimestamp": null,
+      "nowTimestamp": 1775660128
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

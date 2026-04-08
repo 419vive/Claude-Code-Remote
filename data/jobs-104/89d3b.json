@@ -1,0 +1,230 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "技術行銷工程師",
+      "appearDate": "2026/04/02",
+      "custName": "康泰智能科技股份有限公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bkep9",
+      "analysisType": 1,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/89d3b",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0.8073360919829272
+    },
+    "contact": {
+      "hrName": "李康群",
+      "email": "kc@kontex.io",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "本職務設定6個工作天回覆"
+    },
+    "environmentPic": {
+      "environmentPic": [
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/s_964488071912139494.jpg?v=20231122170706",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/l_964488071912139494.jpg?v=20231122170706",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/s_892440735999617684.jpg?v=20231122170706",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/l_892440735999617684.jpg?v=20231122170706",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/s_964488071912139495.jpg?v=20231122170706",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/l_964488071912139495.jpg?v=20231122170706",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/s_964488071912803787.jpg?v=20231122170706",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/l_964488071912803787.jpg?v=20231122170706",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/s_892440736000283299.jpg?v=20231122170706",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/l_892440736000283299.jpg?v=20231122170706",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/s_964488071912139496.jpg?v=20231122170706",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/l_964488071912139496.jpg?v=20231122170706",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/s_964488071912139497.jpg?v=20231122170706",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/l_964488071912139497.jpg?v=20231122170706",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/s_890328564441368505.jpg?v=20231122170706",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/env/l_890328564441368505.jpg?v=20231122170706",
+          "description": ""
+        }
+      ],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [
+          {
+            "code": 2,
+            "description": "應屆畢業生"
+          },
+          {
+            "code": 4,
+            "description": "日間就讀中"
+          },
+          {
+            "code": 8,
+            "description": "夜間就讀中"
+          },
+          {
+            "code": 65536,
+            "description": "僑生"
+          },
+          {
+            "code": 1024,
+            "description": "學生實習"
+          }
+        ],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "2年以上",
+      "edu": "專科、大學、碩士",
+      "major": [],
+      "language": [
+        {
+          "code": 1,
+          "language": "英文",
+          "ability": {
+            "listening": "精通",
+            "speaking": "精通",
+            "reading": "精通",
+            "writing": "精通"
+          }
+        }
+      ],
+      "localLanguage": [],
+      "specialty": [],
+      "skill": [],
+      "certificate": [],
+      "driverLicense": [],
+      "other": ""
+    },
+    "welfare": {
+      "tag": [
+        "員工紅利",
+        "年終獎金",
+        "三節獎金/禮品",
+        "特殊節日獎金禮品",
+        "零食櫃",
+        "不扣薪病假",
+        "生育津貼",
+        "慶生會",
+        "下午茶",
+        "優於勞基法特休"
+      ],
+      "welfare": "我們不僅致力於提供一個舒適且共榮的工作環境，更注重創造一個讓員工能夠在工作與生活間達到完美平衡的地方。我們深信，只有當員工能夠兼顧個人生活與家庭時，他們才能在工作中發揮最佳表現。\n\n\n彈性工作時間\n\n我們提倡彈性的工作時間制度，讓員工根據自己的生活節奏和工作需求，靈活安排工作時間。這不僅有助於提升工作效率，也讓員工能更好地照顧到家庭與個人需求。\n\n\n優質的辦公環境\n\n我們為員工提供可升降的工作桌和大螢幕，以確保他們在工作時能享有最舒適的環境。此外，我們的辦公空間設計旨在促進創意和協作，並提供寬敞明亮的工作區域，讓員工能在愉悅的環境中工作。\n\n\n員工發展\n\n我們重視員工的職業發展，提供各種培訓和進修機會，幫助員工不斷提升自己的專業技能。我們鼓勵團隊成員追求個人成長，並為此提供必要的支持和資源。\n\n我們致力於創建一個讓員工既能專注工作又能享受生活的理想環境。我們相信，通過提供這些福利，我們的團隊將能更加充滿活力和創造力，共同推動公司的持續成長和成功。",
+      "legalTag": [
+        "週休二日",
+        "勞保",
+        "健保",
+        "產假",
+        "特別休假",
+        "勞退提撥金"
+      ]
+    },
+    "jobDetail": {
+      "jobDescription": "你對生命經科學有熱情，喜歡寫作與思考，也希望技術真的能被應用？我們正在找你！\n\nKonteX 是一家專注於神經科技創新的新創公司，開發用於神經記錄與刺激的高階硬體系統，支援全球頂尖研究機構與實驗室推動腦科學突破。我們結合工程、通訊與生命科學技術，協助神經科學家從想法到實驗落地，加速科學前進的速度。\n我們正在尋找具備生醫、神經科學或相關背景的夥伴，擅長理解複雜技術、善於溝通與寫作，並希望在學術與產業之間建立影響力。這不只是銷售或支援，而是一份深入參與研究與產品應用、真正改變世界科學進程的角色。\n\n你的主要任務\n1. 與國際神經科學家互動：提供產品建議、回答技術問題、建立合作關係，成為客戶信賴的技術窗口。\n2. 撰寫技術文案：從User manual到電子報、社群／網站文案與客製化介紹資料。\n3. 與內部工程團隊協作：參與產品功能驗證。回饋使用者需求，協調產品客製化與功能優化，協助跨部門技術整合。\n4. 參與國際會議與展覽活動：代表公司出席全球神經科學年會（如 SfN、FENS 等）及貿易展，展示產品與建立合作網絡。\n5. 執行 in vivo workshop 與研討會：規劃並執行神經實驗工作坊，現場協助研究人員操作並解決實驗需求。\n6. 追蹤與分析產業趨勢：從客戶互動中萃取市場訊號，提供策略參考與技術洞察。\n\n歡迎你把這裡當作學術探索的跳板, 在這裡，你將有機會：\n1. 與全球頂尖神經科學研究團隊直接互動（包含北美、歐洲與亞洲的知名大學與研究機構）\n2. 深入理解前沿技術如何應用於實驗設計與臨床轉譯\n3. 參與學術提案撰寫與技術轉譯，為日後申請博士與發展研究方向奠定實戰經驗\n4. 在彈性、開放、以研究導向為核心的環境中，繼續累積學術寫作與科學思考能力\n5. 視合作方向與表現情況，KonteX 也有機會贊助你攻讀博士學位（全職或彈性模式皆可探討）\n\n我們希望你具備以下特質\n- 思路清晰、邏輯佳，樂於與人互動，具備主動學習與同理心\n- 有責任感、注重細節\n- 擅長技術型寫作與中英文溝通，能將複雜內容轉化為清楚易懂的說明與行銷語言\n- 有研究經驗、科普寫作經驗 (加分)\n\n你會在這裡獲得的成長\n- 與世界級研究團隊合作，深入了解神經科技的真實應用場景\n- 實際參與產品設計、專案規劃與跨部門合作，建立跨域實戰經驗\n- 強化技術寫作、邏輯思考與策略溝通能力\n- 在新創環境中學會快速解決問題，從每一個挑戰中成長為具有決策力的實踐者\n\nKonteX 是你與國際接軌的起點，也是科研與產業交匯的橋樑。加入我們，把你的技術視野，變成世界科學進步的一部分！",
+      "jobCategory": [
+        {
+          "code": "2004002002",
+          "description": "產品企劃"
+        },
+        {
+          "code": "2008003003",
+          "description": "生物科技研發人員"
+        },
+        {
+          "code": "2016001012",
+          "description": "應用科學研究員"
+        }
+      ],
+      "salary": "待遇面議",
+      "salaryMin": 0,
+      "salaryMax": 0,
+      "salaryType": 10,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001001003",
+      "addressRegion": "台北市中山區",
+      "addressArea": "台北市",
+      "addressDetail": "中山北路二段185號11樓",
+      "industryArea": "",
+      "longitude": "121.5227088",
+      "latitude": "25.0638523",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "無需出差外派",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "依公司規定",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "1人",
+      "landmark": "距捷運民權西路站約320公尺",
+      "remoteWork": {
+        "type": 1,
+        "description": ""
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/3261/130000000113261/logo.png?v=20231122170706",
+    "postalCode": "104",
+    "closeDate": "",
+    "industry": "其他電子零組件相關業",
+    "custNo": "130000000113261",
+    "encodedCustNo": "1a2x6bkep9",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E5%BA%B7%E6%B3%B0%E6%99%BA%E8%83%BD%E7%A7%91%E6%8A%80%E8%82%A1%E4%BB%BD%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=%E6%8A%80%E8%A1%93%E8%A1%8C%E9%8A%B7%E5%B7%A5%E7%A8%8B%E5%B8%AB",
+    "industryNo": "1001005003",
+    "employees": "12人",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": 1775649392,
+      "lastCustReplyTimestamp": 1775646292,
+      "nowTimestamp": 1775660095
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

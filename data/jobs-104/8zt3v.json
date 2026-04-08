@@ -1,0 +1,247 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "AI 內容創作者｜影像 × 影片 × 設計(全遠端工作)",
+      "appearDate": "2026/04/02",
+      "custName": "One Rule_規則王股份有限公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bmmd8",
+      "analysisType": 3,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8zt3v",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0.859331323096543
+    },
+    "contact": {
+      "hrName": "行政工讀",
+      "email": "wuhrpt@gmail.com",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "本職務設定1個工作天回覆"
+    },
+    "environmentPic": {
+      "environmentPic": [
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/s_964488071924188859.jpg?v=20250715110228",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/l_964488071924188859.jpg?v=20250715110228",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/s_892440736011673790.jpg?v=20250715110228",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/l_892440736011673790.jpg?v=20250715110228",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/s_965262117457027034.jpg?v=20250715110228",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/l_965262117457027034.jpg?v=20250715110228",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/s_965262117457027033.jpg?v=20250715110228",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/l_965262117457027033.jpg?v=20250715110228",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/s_893204585577195267.jpg?v=20250715110228",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/l_893204585577195267.jpg?v=20250715110228",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/s_893204585577195266.jpg?v=20250715110228",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/l_893204585577195266.jpg?v=20250715110228",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/s_965262117457027032.jpg?v=20250715110228",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/l_965262117457027032.jpg?v=20250715110228",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/s_965262117457027031.jpg?v=20250715110228",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/l_965262117457027031.jpg?v=20250715110228",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/s_893204585577195265.jpg?v=20250715110228",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/l_893204585577195265.jpg?v=20250715110228",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/s_893204585577195264.jpg?v=20250715110228",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/env/l_893204585577195264.jpg?v=20250715110228",
+          "description": ""
+        }
+      ],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [
+          {
+            "code": 2,
+            "description": "應屆畢業生"
+          },
+          {
+            "code": 4,
+            "description": "日間就讀中"
+          },
+          {
+            "code": 8,
+            "description": "夜間就讀中"
+          },
+          {
+            "code": 16,
+            "description": "研發替代役"
+          },
+          {
+            "code": 65536,
+            "description": "僑生"
+          },
+          {
+            "code": 32,
+            "description": "外籍人士"
+          },
+          {
+            "code": 64,
+            "description": "原住民"
+          },
+          {
+            "code": 131072,
+            "description": "新住民"
+          },
+          {
+            "code": 2048,
+            "description": "二度就業"
+          },
+          {
+            "code": 32768,
+            "description": "中壯齡"
+          },
+          {
+            "code": 4096,
+            "description": "中高齡"
+          },
+          {
+            "code": 8192,
+            "description": "高齡"
+          },
+          {
+            "code": 16384,
+            "description": "更生人"
+          },
+          {
+            "code": 1024,
+            "description": "學生實習"
+          }
+        ],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "不拘",
+      "edu": "不拘",
+      "major": [],
+      "language": [],
+      "localLanguage": [],
+      "specialty": [],
+      "skill": [],
+      "certificate": [],
+      "driverLicense": [],
+      "other": ""
+    },
+    "welfare": {
+      "tag": [],
+      "welfare": "法定項目：\n※依勞基法標準之勞、健保、勞退與休假\n\n福利制度：\n※獎金福利 : 提供生日禮金、三節獎金、績效獎金 \n※節慶福利 : 年度春酒活動 \n※其他福利 : 周末免費員工餐、部門聚餐、年度體檢",
+      "legalTag": []
+    },
+    "jobDetail": {
+      "jobDescription": "關於我們\n\n我們是一個橫跨夜生活、娛樂科技的事業集團，旗下經營多間營業場所與品牌。這個角色負責用最新的 AI 生成工具大幅提升視覺和影音內容的產出速度、品質和可能性。你會跟設計師、行銷和工程師密切協作，把 AI 工具變成團隊的生產力槓桿。\n\n工作內容\n\n負責用 AI 工具產出集團旗下品牌需要的視覺和影音內容。你會接觸的場景包括但不限於：活動主視覺、社群素材（IG / TikTok / LINE）、短影片（宣傳片 / Reels / 幕後花絮）、菜單和品牌設計素材、AI 配樂和音效。品牌多、活動頻繁、需求節奏快。\n\n這份工作不只是出圖和剪片。你需要理解每個品牌的調性和受眾——什麼風格適合酒吧、什麼適合 KTV、什麼適合社群推廣——然後判斷用哪個工具、用什麼風格、怎麼在時間內交出能直接上線的成品。AI 生成的東西很多，但什麼能用什麼不能用是你在決定。你的審美就是品質線。\n\n這個角色在做什麼：\n\n用 AI 生圖工具產出活動海報、社群素材、菜單視覺、品牌形象圖。能快速跑出多種風格選項，也能精準控制特定風格的一致性。\n\n用 AI 影片工具製作短影片——活動宣傳、品牌形象、幕後花絮、社群 Reels。從文字描述或參考圖生出影片片段，處理鏡位控制、風格統一、多鏡頭剪接。\n\n用 AI 音樂和音效工具配樂。能根據場景氛圍快速生成合適的背景音樂和音效，做 AI 配音或音色調整。\n\n把以上這些整合成完成品。AI 生成的素材通常需要用傳統工具修細節、調色、合成文字、轉出符合各平台規格的成品。最後交出來的東西要能直接上線用。\n\n根據不同平台調整——IG 限動、Reels、TikTok、LINE 推播素材，各有各的尺寸、節奏和調性。\n\n持續追蹤最新的 AI 生成工具和模型更新。這個領域每幾週就有新東西出來，你要能快速評估「這個工具能不能用在我們的場景」然後自己上手測試。\n\n工具需求（這些是你日常在用的，不是聽過而已）：\n\nAI 生圖——Midjourney、Stable Diffusion（ComfyUI 或 WebUI）、Nano Banana 2、Flux、DALL-E。知道不同工具的強項：什麼時候用 Midjourney 跑氛圍感、什麼時候用 ComfyUI 做精準控制。有 LoRA 微調、ControlNet、img2img 工作流經驗加分。\n\nAI 影片——Veo 3、Seedance 2.0、Kling、Sora、Runway。能從文字或圖片生成可用的影片片段，理解怎麼控制角色一致性、鏡頭運動、風格延續。知道各工具目前的能力邊界在哪。\n\nAI 音樂/音效——Suno、Udio 做配樂。ElevenLabs、Fish Audio 做 AI 配音和音色調整。能根據影片氛圍快速產出搭配的聲音素材。\n\n傳統工具——Photoshop、Illustrator 做圖片後製和整合。Premiere Pro、DaVinci Resolve 或 CapCut 做影片剪輯。不需要每個都精通，但要能用來收尾 AI 產出的東西、處理細節、輸出成品。\n\n適合這個角色的人大概是這樣的：\n\n已經在自己玩這些工具了。不是上過一堂課知道 Midjourney 怎麼打指令的程度，是自己平常就在出圖、出影片、試新工具的人。\n\n有審美判斷。AI 能生成大量素材，但什麼能用什麼不能用是你在決定。你要能看出「這張差一點」然後知道怎麼調，而不是直接丟出去。\n\n對夜生活、娛樂、餐飲的視覺風格有感覺。不一定要做過這個產業，但你看到一間酒吧的 IG 要能判斷什麼風格適合、什麼不適合。\n\n投遞請附作品連結。 格式不限——IG、Behance、YouTube、Google Drive、個人網站都行。",
+      "jobCategory": [
+        {
+          "code": "2013002019",
+          "description": "剪輯師"
+        },
+        {
+          "code": "2013002021",
+          "description": "影音企劃"
+        },
+        {
+          "code": "2013002010",
+          "description": "影片製作技術人員"
+        }
+      ],
+      "salary": "月薪45,000~50,000元",
+      "salaryMin": 45000,
+      "salaryMax": 50000,
+      "salaryType": 50,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001001007",
+      "addressRegion": "台北市信義區",
+      "addressArea": "台北市",
+      "addressDetail": "",
+      "industryArea": "",
+      "longitude": "121.5720055",
+      "latitude": "25.0409201",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "無需出差外派",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "依公司規定",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "1人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": ""
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/6508/130000000216508/logo.jpg?v=20250715110228",
+    "postalCode": "110",
+    "closeDate": "",
+    "industry": "餐館業",
+    "custNo": "130000000216508",
+    "encodedCustNo": "1a2x6bmmd8",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=One+Rule_%E8%A6%8F%E5%89%87%E7%8E%8B%E8%82%A1%E4%BB%BD%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=AI+%E5%85%A7%E5%AE%B9%E5%89%B5%E4%BD%9C%E8%80%85%EF%BD%9C%E5%BD%B1%E5%83%8F+%C3%97+%E5%BD%B1%E7%89%87+%C3%97+%E8%A8%AD%E8%A8%88%28%E5%85%A8%E9%81%A0%E7%AB%AF%E5%B7%A5%E4%BD%9C%29",
+    "industryNo": "1016002001",
+    "employees": "50人",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": 1775630379,
+      "lastCustReplyTimestamp": 1775629959,
+      "nowTimestamp": 1775660082
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

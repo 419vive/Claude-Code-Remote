@@ -1,0 +1,149 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "AI 影像生成專員（內容產出） AI Content Systems Designer",
+      "appearDate": "2026/03/28",
+      "custName": "拳願格鬥運動股份有限公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bn9b3",
+      "analysisType": 1,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8ygq9",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0
+    },
+    "contact": {
+      "hrName": "邱皓偉",
+      "email": "sigmaxmarketing@gmail.com",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "本職務設定7個工作天回覆"
+    },
+    "environmentPic": {
+      "environmentPic": [],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "不拘",
+      "edu": "不拘",
+      "major": [],
+      "language": [],
+      "localLanguage": [],
+      "specialty": [
+        {
+          "code": "12001003099",
+          "description": "Prompt"
+        },
+        {
+          "code": "12002001046",
+          "description": "CapCut"
+        }
+      ],
+      "skill": [
+        {
+          "code": "11009005012",
+          "description": "AI"
+        }
+      ],
+      "certificate": [],
+      "driverLicense": [],
+      "other": ""
+    },
+    "welfare": {
+      "tag": [],
+      "welfare": "彈性工時\n年終獎金制度\n業務績效獎金或分潤制度\n職涯成長與教育訓練\n勞保、健保、特休假",
+      "legalTag": []
+    },
+    "jobDetail": {
+      "jobDescription": "工作內容\n\n使用AI進行高寫實人物影像生成\n\n維持角色臉部一致性（訓練與優化）\n\n批量產出每日／每月圖像、影像素材\n\n基本後製修圖與檔案整理\n\n管理模型版本與素材資料庫\n\n職務定位\n純內容產出\n\n必要條件\n• 能訓練人物，維持固定臉部角色\n• 理解寫實攝影光影與比例\n• 具備 Prompt 結構設計能力\n• 可接受產能 KPI 制度\n\n工作型態\n• 可遠端\n• 模型與資料歸公司所有\n• 需簽 NDA 與競業條款",
+      "jobCategory": [
+        {
+          "code": "2007001020",
+          "description": "AI工程師"
+        },
+        {
+          "code": "2007001012",
+          "description": "演算法工程師"
+        }
+      ],
+      "salary": "月薪45,000~80,000元",
+      "salaryMin": 45000,
+      "salaryMax": 80000,
+      "salaryType": 50,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001001007",
+      "addressRegion": "台北市信義區",
+      "addressArea": "台北市",
+      "addressDetail": "信義路五段",
+      "industryArea": "",
+      "longitude": "121.5671214",
+      "latitude": "25.0329201",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "無需出差外派",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "依公司規定",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "不限",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": ""
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/6239/130000000246239/logo.jpg?v=20260202055339",
+    "postalCode": "110",
+    "closeDate": "",
+    "industry": "運動服務業",
+    "custNo": "130000000246239",
+    "encodedCustNo": "1a2x6bn9b3",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E6%8B%B3%E9%A1%98%E6%A0%BC%E9%AC%A5%E9%81%8B%E5%8B%95%E8%82%A1%E4%BB%BD%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=AI+%E5%BD%B1%E5%83%8F%E7%94%9F%E6%88%90%E5%B0%88%E5%93%A1%EF%BC%88%E5%85%A7%E5%AE%B9%E7%94%A2%E5%87%BA%EF%BC%89+AI+Content+Systems+Designer",
+    "industryNo": "1007001001",
+    "employees": "30人",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": null,
+      "lastCustReplyTimestamp": 1773582032,
+      "nowTimestamp": 1775660120
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

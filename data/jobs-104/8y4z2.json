@@ -1,0 +1,165 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "Senior Product Manage",
+      "appearDate": "2026/04/03",
+      "custName": "賽輪思股份有限公司",
+      "custUrl": "https://www.104.com.tw/company/10xim8xk",
+      "analysisType": 3,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8y4z2",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0.9553624151580535
+    },
+    "contact": {
+      "hrName": "LiuNora",
+      "email": "junling.liu@cerence.com",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "合適者將於5個工作天內主動聯繫，不合適者將不另行通知"
+    },
+    "environmentPic": {
+      "environmentPic": [],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "不拘",
+      "edu": "大學以上",
+      "major": [],
+      "language": [
+        {
+          "code": 1,
+          "language": "英文",
+          "ability": {
+            "listening": "精通",
+            "speaking": "精通",
+            "reading": "精通",
+            "writing": "精通"
+          }
+        },
+        {
+          "code": 18,
+          "language": "中文",
+          "ability": {
+            "listening": "精通",
+            "speaking": "精通",
+            "reading": "精通",
+            "writing": "精通"
+          }
+        }
+      ],
+      "localLanguage": [],
+      "specialty": [],
+      "skill": [
+        {
+          "code": "11005002011",
+          "description": "產品生命週期"
+        },
+        {
+          "code": "11005002008",
+          "description": "產品定位"
+        },
+        {
+          "code": "11005002009",
+          "description": "產品開發"
+        }
+      ],
+      "certificate": [],
+      "driverLicense": [],
+      "other": ""
+    },
+    "welfare": {
+      "tag": [],
+      "welfare": "周末双休；法定年假/额外年假；团队保险；每年一次体检报销；EAP服务",
+      "legalTag": []
+    },
+    "jobDetail": {
+      "jobDescription": "A Moving Experience.\nCerence has established itself as a renowned industry leader, specializing in the development and delivery of cutting-edge AI voice and agentic products across diverse verticals in automotive and beyond. Our exceptional products are deployed in over 50% of vehicles produced globally each year, proudly serving prestigious brands including Audi, BMW, Chrysler, Ferrari, Geely, Mercedes-Benz, NIO, Renault, Tesla, Volkswagen, and many others.\nOpportunity: xUI is Cerence's flagship product for AI voice assistant and agentic experiences in the car. This role will lead xUI product management for Asian OEMs with primary focus on China, Japan, Korea, and India.\n\nWhat Does Success Look Like? Success in this role is driving successful adoption and launch of xUI and it's latest and greatest capabilities with high velocity, with top Asian OEMs from China, Japan, Korea, and India. This high visibility role requires regular face time with automotive OEM teams and their leadership. Internally, this role entails close collaboration with cross-functional teams across R&D, Marketing, Sales, Sales Engineering, Legal, and Bizdev, as well as the executive team.\n\nRequirements:\n- An ideal candidate will be someone who is entrepreneurial and creative, with strong technical depth and ability to influence externally and internally.\n- 5+ years of product experience managing complex technology products, ideally in the AI space.\n- Strong communication skills - English & Chinese languages skills required (both spoken & written). Japanese language skill preferred (both spoken & written)\n- Past automotive experience is preferable but not a must-have.\nResponsibilities:\n•\tDocument product requirements, user stories, and artifacts to provide clear guidance for the product development process. \n•\tDefine a customer and market driven strategy that sets the direction and guides our investments. Communicate the proposed strategy and value to key stakeholders and define some high-level objectives. \n•\tTranslate product requirements into semantic specifications and collaborate closely with engineering teams to ensure effective implementation and alignment with customer needs. \n•\tDevelop and communicate compelling product roadmaps, refining product positioning and messaging to differentiate our offerings and establish market leadership \n•\tServe as the internal and external product expert, providing comprehensive knowledge and support. \n•\tConduct thorough market research to gain valuable insights into user and OEM customer needs \n•\tEngage with sales and customers to gather market requirements, and prioritize them based on strategic alignment and business objectives \n•\tProvide support to the sales team through training programs, tools, and resources, enabling them to effectively communicate the value of our products, initiate customer conversations, and accelerate the sales cycle. \n•\tCollaborate with sales representatives to devise sales strategies and support them in customer meetings. Proactively track competitors, continually updating information on their strengths and weaknesses \n•\tConduct in-depth analysis to identify opportunities and threats and propose offensive and defensive strategies to maintain our competitive edge.\nAt Cerence, we value thought leadership and mentorship, and we're looking for someone who can contribute to our culture in these areas. If you have a passion for AI, want to work in an exciting, fast-paced environment to shape entire industries, please apply to join our team!",
+      "jobCategory": [
+        {
+          "code": "2004003009",
+          "description": "產品經理"
+        }
+      ],
+      "salary": "月薪120,000~150,000元",
+      "salaryMin": 120000,
+      "salaryMax": 150000,
+      "salaryType": 50,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001001010",
+      "addressRegion": "台北市內湖區",
+      "addressArea": "台北市",
+      "addressDetail": "内湖新世纪大楼",
+      "industryArea": "",
+      "longitude": "121.59036",
+      "latitude": "25.080734",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "無需出差外派",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "依公司規定",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "1人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": ""
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/9000/80390819000/logo.png?v=20260316151008",
+    "postalCode": "114",
+    "closeDate": "",
+    "industry": "電腦軟體服務業",
+    "custNo": "80390819000",
+    "encodedCustNo": "10xim8xk",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E8%B3%BD%E8%BC%AA%E6%80%9D%E8%82%A1%E4%BB%BD%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=Senior+Product+Manage",
+    "industryNo": "1001001002",
+    "employees": "6000人",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": 1775548762,
+      "lastCustReplyTimestamp": 1774928535,
+      "nowTimestamp": 1775660111
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

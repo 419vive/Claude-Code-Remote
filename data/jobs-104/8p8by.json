@@ -1,0 +1,165 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "<擴編>遊戲平台-數據分析師",
+      "appearDate": "2026/02/06",
+      "custName": "谷戈耳科技有限公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6blcqx",
+      "analysisType": 1,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8p8by",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0
+    },
+    "contact": {
+      "hrName": "DKHR",
+      "email": "",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "本職務設定5個工作天回覆"
+    },
+    "environmentPic": {
+      "environmentPic": [],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "不拘",
+      "edu": "專科、大學、碩士",
+      "major": [],
+      "language": [],
+      "localLanguage": [],
+      "specialty": [
+        {
+          "code": "12001003045",
+          "description": "Python"
+        },
+        {
+          "code": "12001008003",
+          "description": "Excel"
+        },
+        {
+          "code": "12001011001",
+          "description": "Tableau"
+        }
+      ],
+      "skill": [
+        {
+          "code": "11005004010",
+          "description": "數據分析"
+        },
+        {
+          "code": "11005001013",
+          "description": "遊戲營運"
+        },
+        {
+          "code": "11009006003",
+          "description": "資料庫軟體應用"
+        }
+      ],
+      "certificate": [],
+      "driverLicense": [],
+      "other": ""
+    },
+    "welfare": {
+      "tag": [],
+      "welfare": "【基本政府要求福利】\n全民健康保險。\n勞工保險(公司依經常性給予薪資投保)。\n勞工退休金(公司依法提撥6%)。\n\n【優於勞基法福利】\n★第一年特休:10天(試用期過後可休)\n★鼓勵休特休，累計點數，兌換獎勵\n\n\n【自由、活潑、溫馨的工作環境】\n★ 免費零食區及現磨咖啡。\n★ 每周定期定額的外送下午茶。\n★ 公司坐落於交通方便的西門商圈逛街約吃飯無限美好！\n★ 溫馨舒適的辦公環境，讓你隨時與夥伴對話交流！\n★配有雙螢幕及MAC電腦及寬桌面\n【我們享有，別人也很想要有的福利】\n★ 年終獎金、三節禮金/禮品。\n★ 於颱風(行政機關公告停止上班上課)出勤者，給予上下班車資全額補助(採實報實銷)\n★ 暢通的升遷管道，只要你肯努力，人人都有機會。\n★ 創意又有趣的尾牙活動，是犒賞員工的最佳時機！\n★ 不定期的公司活動：聚餐、節慶活動....等等。",
+      "legalTag": []
+    },
+    "jobDetail": {
+      "jobDescription": "【我們需要你做什麼】\n1.負責收集、清理、管理平台內外部數據，確保資料完整與正確，打造可供分析使用的數據集\n\n2.監控數據質量與資料庫模型，持續優化數據處理流程\n\n3.分析玩家行為（活躍、留存、付費）、市場活動成效及用戶來源渠道\n\n4.以數據支持產品優化，協助設計及分析A/B測試\n\n5.支持產品及營運部門的數據需求，如潛在玩家名單、用戶畫像、渠道ROI分析\n\n6.使用Tableau/Power BI設計並維護BI報表，推動數據自助化\n\n7.結合業界Knowhow與指標洞察，提出實際可行的解決方案\n\n【我們希望你具備】\n1.大學以上學歷，數據分析、統計、資訊工程等相關背景\n\n2.3年以上數據分析相關經驗（休閒類手遊尤佳）\n\n3.精通Excel、熟練撰寫SQL\n\n4.熟悉Python或R等數據分析工具\n\n5.熟練使用Tableau、Power BI等BI工具進行報表設計\n\n6.具MongoDB等資料庫操作經驗尤佳\n\n7.具備良好的邏輯思考、數據敏感度與跨部門溝通能力\n\n【如果你有以下經驗更棒】\n1.熟悉休閒類手遊類的玩家生命周期指標（ARPU、LTV、Churn率等）\n\n2.具備A/B Test設計與分析經驗\n\n3.有大型遊戲或互動平台數據經驗",
+      "jobCategory": [
+        {
+          "code": "2007001018",
+          "description": "數據分析師／資料分析師"
+        },
+        {
+          "code": "2007001021",
+          "description": "資料科學家"
+        },
+        {
+          "code": "2007001009",
+          "description": "其他資訊專業人員"
+        }
+      ],
+      "salary": "月薪40,000~60,000元",
+      "salaryMin": 40000,
+      "salaryMax": 60000,
+      "salaryType": 50,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001001001",
+      "addressRegion": "台北市中正區",
+      "addressArea": "台北市",
+      "addressDetail": "中華路",
+      "industryArea": "",
+      "longitude": "121.5089086",
+      "latitude": "25.0438353",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "無需出差外派",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "依公司規定",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "2~3人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": "外縣市可遠端"
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/7385/130000000157385/logo.jpg?v=20250326111121",
+    "postalCode": "100",
+    "closeDate": "",
+    "industry": "網際網路相關業",
+    "custNo": "130000000157385",
+    "encodedCustNo": "1a2x6blcqx",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E8%B0%B7%E6%88%88%E8%80%B3%E7%A7%91%E6%8A%80%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=%3C%E6%93%B4%E7%B7%A8%3E%E9%81%8A%E6%88%B2%E5%B9%B3%E5%8F%B0-%E6%95%B8%E6%93%9A%E5%88%86%E6%9E%90%E5%B8%AB",
+    "industryNo": "1001001003",
+    "employees": "10人",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": null,
+      "lastCustReplyTimestamp": null,
+      "nowTimestamp": 1775660132
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

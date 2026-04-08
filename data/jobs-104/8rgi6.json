@@ -1,0 +1,191 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "自動化工程師（台灣南部區域）",
+      "appearDate": "2026/04/08",
+      "custName": "谷林運算股份有限公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bkmhd",
+      "analysisType": 1,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8rgi6",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0.8158365646056126
+    },
+    "contact": {
+      "hrName": "洪玫芳",
+      "email": "",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "本職務設定7個工作天回覆"
+    },
+    "environmentPic": {
+      "environmentPic": [
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3345/130000000123345/env/s_965262117532942026.jpg?v=20260408134958",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3345/130000000123345/env/l_965262117532942026.jpg?v=20260408134958",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3345/130000000123345/env/s_893204585652219869.jpg?v=20260408134958",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3345/130000000123345/env/l_893204585652219869.jpg?v=20260408134958",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3345/130000000123345/env/s_965262117532942027.jpg?v=20260408134958",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3345/130000000123345/env/l_965262117532942027.jpg?v=20260408134958",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3345/130000000123345/env/s_892440735910883393.jpg?v=20260408134958",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3345/130000000123345/env/l_892440735910883393.jpg?v=20260408134958",
+          "description": ""
+        }
+      ],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [
+          {
+            "code": 2,
+            "description": "應屆畢業生"
+          }
+        ],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "1年以上",
+      "edu": "大學、碩士",
+      "major": [],
+      "language": [],
+      "localLanguage": [],
+      "specialty": [
+        {
+          "code": "12004001027",
+          "description": "PLC"
+        }
+      ],
+      "skill": [
+        {
+          "code": "11010006004",
+          "description": "自動化系統設計整合"
+        }
+      ],
+      "certificate": [],
+      "driverLicense": [
+        "普通重型機車",
+        "普通小型車"
+      ],
+      "other": "具備汽車交通工具者尤佳"
+    },
+    "welfare": {
+      "tag": [
+        "年終獎金",
+        "零食櫃",
+        "咖啡吧",
+        "員工進修補助",
+        "部門聚餐",
+        "慶生會",
+        "免費下午茶",
+        "優於勞基法特休"
+      ],
+      "welfare": "1. 特休制度\n到職滿 3 個月即按比例享有特休，首年即有 10 天，讓你安心規劃自己的時間。\n2.成長充電日\n每月可申請 1 天成長充電假，進修、閱讀、參加研討會，充飽電再出發。\n3.進修補助\n每年提供 12,000 元進修及書籍補助，支持你持續學習、提升專業。\n4.三節禮盒\n母親節、中秋節、新年，每年三次節慶禮盒，和團隊一起歡慶特別時刻。\n5.每月壽星慶生會\n生日當然要一起慶祝！每個月固定為當月壽星辦慶生會。\n6.年度健康檢查\n每年一次健康檢查，工作拚勁之外，我們也關心你的身體。\n7.咖啡零食\n手沖咖啡、濾掛咖啡、零食櫃、飲料隨時補滿——休息一下，補充能量再衝刺。\n8.年薪 13 個月\n穩定的年終獎金制度，讓努力有所回報。",
+      "legalTag": [
+        "勞保",
+        "健保",
+        "特別休假"
+      ]
+    },
+    "jobDetail": {
+      "jobDescription": "谷林運算 GoodLinker｜自動化工程師（Automation Engineer）招募職務說明：\n\nGoodLinker（谷林運算）致力於協助製造業數位化、智慧化與自動化升級，透過 GenAIoT 平台連結現場設備、數據採集與 AI 分析，打造高效能智慧工廠。我們正在尋找對自動化技術充滿熱情、具備實務經驗的 自動化工程師（Automation Engineer），協助完成自動化需求分析、PLC 程式開發到現場導入與改善，為產線帶來效能與穩定性。\n\n主要工作內容\n1. 自動化需求與規格制訂\n\n依據生產流程分析，自動化改善需求評估與技術方案規劃。\n\n撰寫設備規格與導入計畫，確保技術可行性與效益。\n\n2. 新技術評估與應用測試\n\n持續關注自動化新技術與新元件，進行導入可行性研究與測試驗證。\n\n3. 與廠商溝通設備設計及應用面問題\n\n協助與供應商/廠商討論設備設計細節，解決現場應用與技術問題，確保交付品質。\n\n4. PLC 控制編寫及程序修改/Debug\n\n撰寫與維護 PLC 控制程式，進行現場程式測試、除錯與優化。\n\n5. 產線自動化佈署與問題解決\n\n參與自動化設備安裝、調試與驗證，排除產線異常，提升稼動率。\n\n6.  其他主管交辦事項\n\n配合專案需求執行主管交付之技術支援與改善任務。\n\n我們希望你具備\n1 年以上自動化系統設計與 PLC 開發相關經驗。\n\n熟悉產線自動化架構與控制系統，具備問題分析與現場改善能力。\n\n具備與廠商溝通協調與跨部門協作能力，能確保專案順利進行。\n\n你將獲得\n參與智慧製造數位與自動化專案，累積產線改善與先進技術應用經驗。\n\n公司提供內部技術培訓與外部進修補助，持續提升專業能力。\n\n與業界領導製造企業合作，打造智慧工廠標竿案例。\n\nReady to automate the future?\n如果你熱衷自動化與智慧製造，想在產業轉型中扮演關鍵角色，GoodLinker 誠摯邀請你加入我們，一起加速產線智慧化！\n\n",
+      "jobCategory": [
+        {
+          "code": "2009002003",
+          "description": "自動控制工程師"
+        },
+        {
+          "code": "2010002016",
+          "description": "FAE工程師"
+        },
+        {
+          "code": "2008001008",
+          "description": "機電技師／工程師"
+        }
+      ],
+      "salary": "待遇面議",
+      "salaryMin": 0,
+      "salaryMax": 0,
+      "salaryType": 10,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001014007",
+      "addressRegion": "台南市永康區",
+      "addressArea": "台南市",
+      "addressDetail": "台南至屏東全區",
+      "industryArea": "",
+      "longitude": "120.262788",
+      "latitude": "23.0211799",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "需出差，一年累積時間未定",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "週休二日",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "1~2人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": "無需進辦公室打卡"
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/3345/130000000123345/logo.gif?v=20260408134958",
+    "postalCode": "710",
+    "closeDate": "",
+    "industry": "電腦軟體服務業",
+    "custNo": "130000000123345",
+    "encodedCustNo": "1a2x6bkmhd",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E8%B0%B7%E6%9E%97%E9%81%8B%E7%AE%97%E8%82%A1%E4%BB%BD%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=%E8%87%AA%E5%8B%95%E5%8C%96%E5%B7%A5%E7%A8%8B%E5%B8%AB%EF%BC%88%E5%8F%B0%E7%81%A3%E5%8D%97%E9%83%A8%E5%8D%80%E5%9F%9F%EF%BC%89",
+    "industryNo": "1001001002",
+    "employees": "暫不提供",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": 1775641305,
+      "lastCustReplyTimestamp": null,
+      "nowTimestamp": 1775660084
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

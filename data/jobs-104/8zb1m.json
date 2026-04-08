@@ -1,0 +1,223 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/custintroduce/image3.jpg?v=20260303171058",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/custintroduce/image2.jpg?v=20260303171058",
+        "link": ""
+      },
+      "jobName": "Algorithm Scientist",
+      "appearDate": "2026/04/03",
+      "custName": "諾威量測設備股份有限公司",
+      "custUrl": "https://www.104.com.tw/company/whrsdbc",
+      "analysisType": 2,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8zb1m",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0
+    },
+    "contact": {
+      "hrName": "莊立薪",
+      "email": "wendy-c@novami.com",
+      "visit": "",
+      "phone": [],
+      "other": "Please submit your application directly through our official career page: https://www.novami.com/comeetitem/28767-2/?coref=1.10.sAD_E19",
+      "reply": "本職務設定10個工作天回覆"
+    },
+    "environmentPic": {
+      "environmentPic": [
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/s_892440735996039659.jpg?v=20260303171058",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/l_892440735996039659.jpg?v=20260303171058",
+          "description": "净灘活動\n#OnePlantOneOcean"
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/s_892440735996039660.jpg?v=20260303171058",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/l_892440735996039660.jpg?v=20260303171058",
+          "description": "7th STEAM @國立陽明交通大學\n\n"
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/s_964488071908578841.jpg?v=20260303171058",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/l_964488071908578841.jpg?v=20260303171058",
+          "description": "Birthday party at Office\n#NotjustaMeetupDay"
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/s_892440735973381442.jpg?v=20260303171058",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/l_892440735973381442.jpg?v=20260303171058",
+          "description": "#CulturalDiversityIsOurDaily\n#NovaVibes\n#PiDays"
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/s_964488071908578842.jpg?v=20260303171058",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/l_964488071908578842.jpg?v=20260303171058",
+          "description": "#NovaTaiwanWeRock\n#諾威日常"
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/s_892440735973381443.jpg?v=20260303171058",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/l_892440735973381443.jpg?v=20260303171058",
+          "description": " #IWD2023\n#HerNova\n"
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/s_892440735947879706.jpg?v=20260303171058",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/l_892440735947879706.jpg?v=20260303171058",
+          "description": "小一新生派對\n"
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/s_892440735947879707.jpg?v=20260303171058",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/l_892440735947879707.jpg?v=20260303171058",
+          "description": "#BeASharer\n#一雙鞋一個夢想\n"
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/s_890328564427713621.jpg?v=20260303171058",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/env/l_890328564427713621.jpg?v=20260303171058",
+          "description": "Team building\n#TeamDiversity\n#RedefiningTheLimits"
+        }
+      ],
+      "corpImageBottom": {
+        "imageUrl": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/custintroduce/image1.jpg?v=20260303171058",
+        "link": "http://www.novami.com/"
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "3年以上",
+      "edu": "碩士以上",
+      "major": [
+        "數學及電算機科學學科類",
+        "工程學科類",
+        "自然科學學科類"
+      ],
+      "language": [
+        {
+          "code": 1,
+          "language": "英文",
+          "ability": {
+            "listening": "精通",
+            "speaking": "精通",
+            "reading": "精通",
+            "writing": "精通"
+          }
+        }
+      ],
+      "localLanguage": [],
+      "specialty": [
+        {
+          "code": "12001003045",
+          "description": "Python"
+        }
+      ],
+      "skill": [],
+      "certificate": [],
+      "driverLicense": [],
+      "other": ""
+    },
+    "welfare": {
+      "tag": [
+        "年終獎金",
+        "零食櫃",
+        "咖啡吧",
+        "不扣薪病假",
+        "結婚禮金",
+        "生育津貼",
+        "交通津貼補助",
+        "部門聚餐",
+        "員工停車位",
+        "配發公務機",
+        "特約商店",
+        "優於勞基法特休",
+        "伙食津貼",
+        "員工團體保險",
+        "可遠端/在家上班"
+      ],
+      "welfare": "•優渥底薪\n•年度績效獎金\n•汽車津貼、伙食補助、個人網路津貼\n•完善職能訓練、海内外培訓\n•團險（包含眷屬及子女），員工個人高額意外險\n•優惠方案自費父母醫療險 \n•優於勞基法的休假，第一年依比例享有14天特休，有薪病假6天\n•三節獎金、五一勞動節獎金\n•年節嚴選禮品\n•不定時放送小確幸\n•員工推薦獎金、生育獎金、結婚津貼、喪葬津貼\n•優於勞基法的退休金提撥&久任獎金\n•資深員工年資獎\n•零食吧，研磨咖啡，冰淇淋，飲品無限提供\n•社會責任計劃：偏鄉give shoes give love，STEAM志工日，run for earth等",
+      "legalTag": [
+        "勞保",
+        "健保",
+        "女性生理假",
+        "勞退提撥金",
+        "員工體檢"
+      ]
+    },
+    "jobDetail": {
+      "jobDescription": "Please submit your application directly through our official career page: https://www.novami.com/comeetitem/28767-2/?coref=1.10.sAD_E19\n\nWhat we are looking for: \n\nNova Algorithm group is looking for an Algorithm scientist to join HQ TW Algorithms team in Hsinchu.\n\nNova 演算法團隊正在尋找優秀的演算法科學家加入位於新竹的台灣總部\n\n\nWhat will you be doing:\n\n• Play a pivotal role in designing, developing, and implementing cutting-edge algorithmic solutions and workflows for the next generation of Optical Critical Dimension (OCD) hardware and applications\n• Work in a diverse range of disciplines, including advanced physical modeling, optimization, machine learning, and more.\n• Evaluate and optimize new algorithms at customer site and support on-going evaluations\n• Become a focal point of knowledge and expertise that supports evaluations and escalations in the field including interaction with the customers\n• Be a part of HQ algorithm group\nThis is a great opportunity to be part of a world-class team that is at the forefront of technological advancement.\n\n• 在設計、開發與實作下一代 光學關鍵尺寸 (OCD) 硬體及應用的尖端演算法方案與工作流中扮演關鍵角色。\n• 主導設計與實作尖端演算法，涵蓋領域包括：高階物理建模 (Physical Modeling)、最佳化演算法 (Optimization) 以及機器學習 (Machine Learning)。\n• 在客戶現場評估與優化新演算法，並支援持續進行的技術評估任務。\n• 成為團隊中的知識核心，支援第一線的技術升級與評估，並直接與客戶進行技術溝通。\n• 作為總部演算法團隊的核心成員，參與技術前沿的突破。\n\n\nRequirements:\n\n• M.Sc. in Physics/ Electrical Engineering/ Math or similar - Mandatory\n• Ph.Dor3+ years of experience in algorithm development , with \n• Proven ability for independent research and algorithm development.\n• Strong Python implementation skills is a must\n• Excellent communication and presentation skills\n• Ability to thrive in a multi-disciplinary environment\n• Good team member \n• Strong self-learning capabilities\n• Highly motivated and independent\n• Occasional travel to HQ\n\n• 物理、電機工程、數學或相關領域的碩士學位 (必備)。\n• 具備 博士學位 (Ph.D.) 或 3 年以上演算法開發經驗。\n• 具備獨立進行科學研究與演算法開發的實證能力。\n• 具備強大的 Python 實作能力 (必備)。\n• 具備卓越的溝通與簡報能力、強大的自學能力、高度的主動性，並能在多領域協作的環境中蓬勃發展。\n• 需配合不定期前往總部出差。\n• 良好的團隊成員特質。\n• 強大的自我學習能力。\n• 具備高度積極性與獨立性。\n\n\nGet to know us better\nNova (NASDAQ: NVMI) is a global company and a leading provider of innovative metrology solutions for process control in semiconductor manufacturing. \nWith a team of ~1200 people in three R&D centers and 27 field offices, we bring insights into the world’s most advanced industry. We leverage multiple technology fields such as physics, optics, chemistry, and algorithms to develop hardware and software solutions that measure almost every advanced computer chip built in the world.\n\nNova dives deep into dimensions and layers at the atomic level to extract unique insights and provide our customers with crucial decision-making data, handling critical challenges by providing unique, differentiated solutions. \nOur outstanding people-focused and innovative culture means every person at Nova has the power to make an impact and significantly redefine what people can achieve through technology.\n\nJoin us if you are  \nA dreamer and brilliant high aimer who sees the impossible as the starting point and loves working in a multidisciplinary global team to create innovative breakthroughs.\n",
+      "jobCategory": [
+        {
+          "code": "2007001012",
+          "description": "演算法工程師"
+        },
+        {
+          "code": "2007001021",
+          "description": "資料科學家"
+        }
+      ],
+      "salary": "待遇面議",
+      "salaryMin": 0,
+      "salaryMax": 0,
+      "salaryType": 10,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001006001",
+      "addressRegion": "新竹市",
+      "addressArea": "新竹市",
+      "addressDetail": "東區慈雲路118號23樓-1",
+      "industryArea": "",
+      "longitude": "121.01263",
+      "latitude": "24.7912458",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "需出差，一年累積時間約一個月以下",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": "彈性上下班"
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "週休二日",
+      "startWorkingDay": "一個月內",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "1人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": ""
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/3000/70731633000/logo.gif?v=20260303171058",
+    "postalCode": "300",
+    "closeDate": "",
+    "industry": "半導體製造業",
+    "custNo": "70731633000",
+    "encodedCustNo": "whrsdbc",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E8%AB%BE%E5%A8%81%E9%87%8F%E6%B8%AC%E8%A8%AD%E5%82%99%E8%82%A1%E4%BB%BD%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=Algorithm+Scientist",
+    "industryNo": "1001006002",
+    "employees": "180人",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": null,
+      "lastCustReplyTimestamp": null,
+      "nowTimestamp": 1775660126
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

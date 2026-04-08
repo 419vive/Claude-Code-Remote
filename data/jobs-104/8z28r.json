@@ -1,0 +1,186 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "AI行銷與應用專案經理（可遠距工作）",
+      "appearDate": "2026/04/03",
+      "custName": "凱悅整合行銷管理顧問有限公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bixom",
+      "analysisType": 3,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8z28r",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0.9609171349859785
+    },
+    "contact": {
+      "hrName": "Carolin Wu",
+      "email": "wcr830@gmail.com",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "本職務設定5個工作天回覆"
+    },
+    "environmentPic": {
+      "environmentPic": [
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/4550/130000000044550/env/s_890328564411860136.jpg?v=20260407015221",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/4550/130000000044550/env/l_890328564411860136.jpg?v=20260407015221",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/4550/130000000044550/env/s_962627717425375941.jpg?v=20260407015221",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/4550/130000000044550/env/l_962627717425375941.jpg?v=20260407015221",
+          "description": ""
+        },
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/4550/130000000044550/env/s_962627717425375942.jpg?v=20260407015221",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/4550/130000000044550/env/l_962627717425375942.jpg?v=20260407015221",
+          "description": ""
+        }
+      ],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [
+          {
+            "code": 65536,
+            "description": "僑生"
+          },
+          {
+            "code": 32,
+            "description": "外籍人士"
+          }
+        ],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "5年以上",
+      "edu": "大學以上",
+      "major": [],
+      "language": [
+        {
+          "code": 1,
+          "language": "英文",
+          "ability": {
+            "listening": "精通",
+            "speaking": "精通",
+            "reading": "精通",
+            "writing": "精通"
+          }
+        },
+        {
+          "code": 18,
+          "language": "中文",
+          "ability": {
+            "listening": "精通",
+            "speaking": "精通",
+            "reading": "精通",
+            "writing": "精通"
+          }
+        }
+      ],
+      "localLanguage": [],
+      "specialty": [],
+      "skill": [],
+      "certificate": [],
+      "driverLicense": [],
+      "other": ""
+    },
+    "welfare": {
+      "tag": [],
+      "welfare": "獎金/禮品/保險/其他\r\n\t1.依表現發放年終獎金\r\n\t2.三節獎金/禮品\r\n\t3.勞動節獎品/禮品\r\n\t4.勞保\r\n\t5.健保\r\n\t6.部門不定期聚餐\r\n\t7.伙食費\r\n休假制度:\r\n\t1.週休二日\r\n\t2.特休/年假\r\n\t3女性同仁生理假\t\r\n",
+      "legalTag": []
+    },
+    "jobDetail": {
+      "jobDescription": "AI行銷與應用專案經理\n\n",
+      "jobCategory": [
+        {
+          "code": "2004003006",
+          "description": "專案經理"
+        },
+        {
+          "code": "2004003001",
+          "description": "專案管理主管"
+        },
+        {
+          "code": "2004003004",
+          "description": "其他專案管理師"
+        }
+      ],
+      "salary": "待遇面議",
+      "salaryMin": 0,
+      "salaryMax": 0,
+      "salaryType": 10,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001001005",
+      "addressRegion": "台北市大安區",
+      "addressArea": "台北市",
+      "addressDetail": "可線上工作",
+      "industryArea": "",
+      "longitude": "121.5433783",
+      "latitude": "25.0249441",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "無需出差外派",
+      "workPeriod": {
+        "shifts": {
+          "日班": [],
+          "晚班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "依公司規定",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "3~4人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": ""
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/4550/130000000044550/logo.jpg?v=20260407015221",
+    "postalCode": "106",
+    "closeDate": "",
+    "industry": "工商顧問服務業",
+    "custNo": "130000000044550",
+    "encodedCustNo": "1a2x6bixom",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E5%87%B1%E6%82%85%E6%95%B4%E5%90%88%E8%A1%8C%E9%8A%B7%E7%AE%A1%E7%90%86%E9%A1%A7%E5%95%8F%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=AI%E8%A1%8C%E9%8A%B7%E8%88%87%E6%87%89%E7%94%A8%E5%B0%88%E6%A1%88%E7%B6%93%E7%90%86%EF%BC%88%E5%8F%AF%E9%81%A0%E8%B7%9D%E5%B7%A5%E4%BD%9C%EF%BC%89",
+    "industryNo": "1008003001",
+    "employees": "6人",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": 1775640140,
+      "lastCustReplyTimestamp": 1775634527,
+      "nowTimestamp": 1775660100
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

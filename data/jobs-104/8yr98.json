@@ -1,0 +1,284 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "國際銷售經理 (International Sales Manager)",
+      "appearDate": "2026/04/02",
+      "custName": "聆機科技股份有限公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bmsk6",
+      "analysisType": 3,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8yr98",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0.8383630415795701
+    },
+    "contact": {
+      "hrName": "晏自強",
+      "email": "heartbotai@gmail.com,gavin.chuang@heartbot.com",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "合適者將於5個工作天內主動聯繫，不合適者將不另行通知"
+    },
+    "environmentPic": {
+      "environmentPic": [
+        {
+          "thumbnailLink": "https://static.104.com.tw/b_profile/cust_picture/4534/130000000224534/env/s_894196076815522131.jpg?v=20260406190333",
+          "link": "https://static.104.com.tw/b_profile/cust_picture/4534/130000000224534/env/l_894196076815522131.jpg?v=20260406190333",
+          "description": "位於新竹高中旁的陽明交大創新育成中心 學府館.  這由一棟交大創校後的學生一舍改建而成. 許多在竹科園區交大第一代創業家所住過的歷史建築"
+        }
+      ],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "3年以上",
+      "edu": "大學以上",
+      "major": [
+        "資訊管理相關",
+        "市場行銷相關",
+        "國際貿易相關"
+      ],
+      "language": [
+        {
+          "code": 1,
+          "language": "英文",
+          "ability": {
+            "listening": "精通",
+            "speaking": "精通",
+            "reading": "精通",
+            "writing": "精通"
+          }
+        }
+      ],
+      "localLanguage": [],
+      "specialty": [
+        {
+          "code": "12001003099",
+          "description": "Prompt"
+        },
+        {
+          "code": "12001003095",
+          "description": "SaaS"
+        },
+        {
+          "code": "12001011013",
+          "description": "Google關鍵字廣告"
+        },
+        {
+          "code": "12001011018",
+          "description": "SEO"
+        },
+        {
+          "code": "12001008012",
+          "description": "PowerPoint"
+        },
+        {
+          "code": "12001008030",
+          "description": "ChatGPT"
+        },
+        {
+          "code": "12001008031",
+          "description": "Canva"
+        },
+        {
+          "code": "12001008037",
+          "description": "EDM"
+        },
+        {
+          "code": "12001008032",
+          "description": "Facebook"
+        },
+        {
+          "code": "12001008033",
+          "description": "Instagram"
+        },
+        {
+          "code": "12001008034",
+          "description": "短影音"
+        }
+      ],
+      "skill": [
+        {
+          "code": "11006003003",
+          "description": "業務或通路開發"
+        },
+        {
+          "code": "11006004001",
+          "description": "客戶情報蒐集"
+        },
+        {
+          "code": "11006003004",
+          "description": "業績目標分配與績效達成"
+        },
+        {
+          "code": "11006004006",
+          "description": "產品介紹及解說銷售"
+        },
+        {
+          "code": "11006004002",
+          "description": "客訴案件處理"
+        },
+        {
+          "code": "11006002002",
+          "description": "國際貿易基本概念"
+        },
+        {
+          "code": "11006003001",
+          "description": "客戶資料更新維護"
+        },
+        {
+          "code": "11006003005",
+          "description": "業績與管理報表撰寫"
+        },
+        {
+          "code": "11006003002",
+          "description": "國外業務開發"
+        }
+      ],
+      "certificate": [
+        {
+          "name": "ITI外貿協會培訓中心國企班二年期英語組結業",
+          "code": 4012002021
+        },
+        {
+          "name": "TOEIC (多益測驗)",
+          "code": 4001001005
+        },
+        {
+          "name": "TOEIC Speaking and Writing TEST (多益說寫測驗)",
+          "code": 4001001028
+        }
+      ],
+      "driverLicense": [],
+      "other": "基本條件：\n* 三年以上 B2B 業務或國際市場拓展經驗\n* 具備軟體或 SaaS 產業背景\n* 熟悉歐盟或北美市場商業模式\n* 具數位行銷與數位銷售實務操作經驗\n* 具通路管理與代理商合作經驗\n* 英文流利（具跨國商務談判能力）\n* 對生成式 AI 有實際應用經驗與高度興趣\n\n加分條件：\n* 有資安、生成式 AI 或雲端服務產業背景\n* 熟悉 GDPR 或歐盟 AI Act 相關法律要求\n* 有建立國際業務團隊經驗\n* 曾成功開拓海外市場並達成營收目標"
+    },
+    "welfare": {
+      "tag": [
+        "員工紅利",
+        "員工認股",
+        "入股分紅",
+        "年終獎金",
+        "三節獎金/禮品",
+        "生日假",
+        "員工進修補助",
+        "子女教育獎助學金",
+        "健身費用補助",
+        "部門聚餐",
+        "免費下午茶",
+        "優於勞基法特休",
+        "伙食津貼",
+        "員工團體保險",
+        "可遠端/在家上班",
+        "不用補班"
+      ],
+      "welfare": "<合規保險>\n1. 法定：勞工、全民健保、勞退\n2. 福利：優質團保\n\n<彈性工作時間>\n1. 可選擇遠距工作, 選擇自我環境, 無需浪費時間在通勤上.\n2. 可彈性上下班時間, 安排自己的生活, 無須擔心遲到早退.\n\n<超優於勞基法的休假安排>\n1. 新進第一年內，除勞基法規定特休假外，額外享有給6天樂活假\n2. 任職滿一年後，除勞基法規定特休假外，每年都享有樂活假7天\n3. 補班假： 不需與其他人一起週末補班, 直接休假.\n4. 久任假：一起長長久久, 每一年增加一日公司假.\n5. 重要時刻假：工作之餘, 參與人生的重要時刻, 共度伴侶的生日, 結婚週年與寶貝的生日.\n6. 自我實現假：每個月可挑一天去挑戰從沒做過的活動，迎接自我的高光時刻.\n7. 健檢假：健檢當日休假一天.\n\n<鼓勵職涯發展>\n1. 國際化的產品與舞台, 讓您發揮.\n2. 鼓勵終身學習, 補助自選進修課程.\n3. 海外出差機會, 增加國際視野.\n\n<追求身心靈健康>\n1. 定期員工活動與每月聚餐.\n2. 每年補助員工健康檢查.\n3. 每年健身俱樂部或運動器材補助.\n4. 月度咖啡或零食補助.\n5. 年度學齡前寶貝照顧補助.\n\n<優質薪酬獎勵>\n1. 保證14個月的年薪.\n2. 提供績效獎金與激勵計畫.\n3. 提供久任獎金.\n4. 提供員工認股權, 參與公司的未來成長.",
+      "legalTag": [
+        "週休二日",
+        "勞保",
+        "健保",
+        "陪產假",
+        "產假",
+        "特別休假",
+        "育嬰留停",
+        "女性生理假",
+        "勞退提撥金",
+        "安胎假",
+        "員工體檢"
+      ]
+    },
+    "jobDetail": {
+      "jobDescription": "我們是一家專注於 Generative AI 應用與企業級 AI 應用訂閱制服務的公司，致力於協助企業在提升生產力的同時，兼顧資安、合規與資料治理。\n\n我們正在尋找一位具有國際通路的業務專才，拓展市場通路與生成式 AI 的應用合作。\n\n1. B2B 軟體通路與海外代理商合作\n- 管理並深化與海外軟體代理商、經銷商、SI 或 MSP 的品牌行銷與業務開發合作\n- 設計與管理的 Channel Program（價格定位、分潤制度、激勵指標、培訓制度等）\n- 推動特定客戶的客制化訂閱計劃，建立客戶成功案例\n\n2. 數位行銷與數位銷售協作\n- 熟悉 B2B 數位行銷\n- 能運用數據分析，協助優化 Conversion Rate、LTV 等指標\n- 能將實際業務訂單與數位行銷有效連動\n\n3. AI Native， 熟悉應用 AI 於：\n- 客戶開發與銷售優化\n- 市場分析與競品研究\n- 行銷溝通文件與簡報製作\n- 能協助公司建立 AI 驅動的銷售流程\n\n如果您希望參與生成式AI 應用的國際通路開發、結合數位銷售並在企業級 AI 應用領域一起成長，我們期待您的加入！",
+      "jobCategory": [
+        {
+          "code": "2005003015",
+          "description": "通路開發人員"
+        },
+        {
+          "code": "2004001004",
+          "description": "產品行銷企劃"
+        },
+        {
+          "code": "2005003005",
+          "description": "國外業務"
+        }
+      ],
+      "salary": "月薪80,000元以上",
+      "salaryMin": 80000,
+      "salaryMax": 9999999,
+      "salaryType": 50,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001006001",
+      "addressRegion": "新竹市",
+      "addressArea": "新竹市",
+      "addressDetail": "東區學府路40號",
+      "industryArea": "",
+      "longitude": "120.982156",
+      "latitude": "24.7954787",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "需出差，一年累積時間約一個月以下",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "依公司規定",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "1人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": "可於台北市辦公室遠端工作"
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/4534/130000000224534/logo.png?v=20260406190333",
+    "postalCode": "300",
+    "closeDate": "",
+    "industry": "其它軟體及網路相關業",
+    "custNo": "130000000224534",
+    "encodedCustNo": "1a2x6bmsk6",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E8%81%86%E6%A9%9F%E7%A7%91%E6%8A%80%E8%82%A1%E4%BB%BD%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=%E5%9C%8B%E9%9A%9B%E9%8A%B7%E5%94%AE%E7%B6%93%E7%90%86+%28International+Sales+Manager%29",
+    "industryNo": "1001001006",
+    "employees": "15人",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": 1775650616,
+      "lastCustReplyTimestamp": 1775535750,
+      "nowTimestamp": 1775660113
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

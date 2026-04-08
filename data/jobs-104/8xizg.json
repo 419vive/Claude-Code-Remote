@@ -1,0 +1,165 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "影像剪輯人員（AI 影像製作｜可遠端.高雄）",
+      "appearDate": "2026/01/15",
+      "custName": "安語數位科技有限公司(籌備處)",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bnmtg",
+      "analysisType": 3,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8xizg",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0.7391886157431626
+    },
+    "contact": {
+      "hrName": "王先生",
+      "email": "joeylungwu@gmail.com",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": ""
+    },
+    "environmentPic": {
+      "environmentPic": [],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "1年以上",
+      "edu": "高中以上",
+      "major": [],
+      "language": [],
+      "localLanguage": [],
+      "specialty": [
+        {
+          "code": "12001008030",
+          "description": "ChatGPT"
+        },
+        {
+          "code": "12002001046",
+          "description": "CapCut"
+        },
+        {
+          "code": "12002002009",
+          "description": "Final Cut ProX"
+        }
+      ],
+      "skill": [
+        {
+          "code": "11005006001",
+          "description": "各式影片剪接後製作業"
+        },
+        {
+          "code": "11015004003",
+          "description": "多媒體影像處理"
+        }
+      ],
+      "certificate": [],
+      "driverLicense": [],
+      "other": ""
+    },
+    "welfare": {
+      "tag": [],
+      "welfare": "",
+      "legalTag": []
+    },
+    "jobDetail": {
+      "jobDescription": "\n一、工作內容\n使用 AI 影像與語音工具，製作 1–2 分鐘之數位影像內容（以照片或文字.圖片.生成動態影像）\n將 AI 產出素材進行後製剪輯、字幕、配樂與畫面包裝\n依照公司既定 SOP 與模板進行影片製作，確保品質一致\n基本影像修整（裁切、色彩微調、畫面穩定、音量平衡）\n依需求進行小幅修改與版本調整\n整理與回傳製作過程中之問題與優化建議\n\n二、主要使用工具（至少熟悉其一）\nAI 影像生成：照片轉影片、口型同步、虛擬人物相關工具\nAI 聲音處理：語音清理、音質優化或語音生成工具\n剪輯軟體：CapCut、DaVinci Resolve、Final Cut Pro 或同級工具\n字幕與版型處理工具（內建或外掛皆可）\n\n三、工作型態\n以遠端線上工作為主，不需進辦公室\n以案件／產量為導向，工作時間彈性\n依案件需求與時程進行交付，非即時待命\n適合自由接案者或兼職／全職遠端工作者\n\n四、應徵條件\n【必要條件】\n具備基礎影像剪輯能力，能獨立完成短影片製作\n熟悉 AI 相關影像或語音工具，願意持續學習新工具\n能依 SOP 操作，不自行發揮過度創作\n具備基本檔案管理與版本控管概念\n能準時交付並接受回饋修改\n【加分條件（非必要）】\n有 AI 生成影像、虛擬人物或數位內容製作經驗\n曾製作過紀念影片、人物敘事型影片或情感向內容\n熟悉聲音後製（降噪、EQ、音量平衡）\n有接案或遠端工作經驗\n\n五、薪資與合作方式\n可採案件計酬、時薪或長期合作制（依能力與配合度討論）\n案件穩定，適合長期配合\n製作流程與交付標準明確，不需自行對接客戶\n（實際合作方式將於溝通後確認）\n\n六、我們的工作特色\nAI 為核心的影像製作流程，不是傳統高工時剪輯\n內容形式固定，易於上手與複製\n不需構思腳本、不需拍攝\n專注於執行與品質穩定\n\n七、應徵方式\n請提供以下資訊：\n過往影像或剪輯作品（連結或檔案）\n熟悉或曾使用過的 AI 影像／語音工具\n可配合的合作方式（兼職／接案／全職遠端）",
+      "jobCategory": [
+        {
+          "code": "2013002019",
+          "description": "剪輯師"
+        },
+        {
+          "code": "2014001016",
+          "description": "編輯"
+        },
+        {
+          "code": "2013002010",
+          "description": "影片製作技術人員"
+        }
+      ],
+      "salary": "月薪35,000~45,000元",
+      "salaryMin": 35000,
+      "salaryMax": 45000,
+      "salaryType": 50,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001016001",
+      "addressRegion": "高雄市新興區",
+      "addressArea": "高雄市",
+      "addressDetail": "遠端上班",
+      "industryArea": "",
+      "longitude": "120.3060706",
+      "latitude": "22.6283893",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "無需出差外派",
+      "workPeriod": {
+        "shifts": {
+          "日班": [
+            "10:00~19:00"
+          ],
+          "晚班": [],
+          "中班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "週休二日",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "1人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": ""
+      }
+    },
+    "switch": "on",
+    "custLogo": "",
+    "postalCode": "800",
+    "closeDate": "",
+    "industry": "數位內容產業",
+    "custNo": "130000000263748",
+    "encodedCustNo": "1a2x6bnmtg",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E5%AE%89%E8%AA%9E%E6%95%B8%E4%BD%8D%E7%A7%91%E6%8A%80%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8%28%E7%B1%8C%E5%82%99%E8%99%95%29&jobName=%E5%BD%B1%E5%83%8F%E5%89%AA%E8%BC%AF%E4%BA%BA%E5%93%A1%EF%BC%88AI+%E5%BD%B1%E5%83%8F%E8%A3%BD%E4%BD%9C%EF%BD%9C%E5%8F%AF%E9%81%A0%E7%AB%AF.%E9%AB%98%E9%9B%84%EF%BC%89",
+    "industryNo": "1001001005",
+    "employees": "暫不提供",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": 1775580205,
+      "lastCustReplyTimestamp": 1769060500,
+      "nowTimestamp": 1775660103
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

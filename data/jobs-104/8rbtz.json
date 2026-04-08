@@ -1,0 +1,164 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "https://static.104.com.tw/b_profile/cust_picture/1209/130000000201209/custintroduce/image3.jpg?v=20240913135054",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "https://static.104.com.tw/b_profile/cust_picture/1209/130000000201209/custintroduce/image2.jpg?v=20240913135054",
+        "link": ""
+      },
+      "jobName": "資深前端工程師 (Sr. AI-Native Frontend Engineer)",
+      "appearDate": "2026/04/02",
+      "custName": "美商昇迪凡科技術有限公司台灣分公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bmak9",
+      "analysisType": 3,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8rbtz",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0.9816204783704958
+    },
+    "contact": {
+      "hrName": "Adam",
+      "email": "adam.chuang@centific.com",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "本職務設定3個工作天回覆"
+    },
+    "environmentPic": {
+      "environmentPic": [],
+      "corpImageBottom": {
+        "imageUrl": "https://static.104.com.tw/b_profile/cust_picture/1209/130000000201209/custintroduce/image1.jpg?v=20240913135054",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "4年以上",
+      "edu": "大學以上",
+      "major": [],
+      "language": [
+        {
+          "code": 1,
+          "language": "英文",
+          "ability": {
+            "listening": "中等",
+            "speaking": "中等",
+            "reading": "精通",
+            "writing": "精通"
+          }
+        }
+      ],
+      "localLanguage": [],
+      "specialty": [
+        {
+          "code": "12001006032",
+          "description": "CSS"
+        },
+        {
+          "code": "12001006013",
+          "description": "HTML"
+        }
+      ],
+      "skill": [
+        {
+          "code": "11015004006",
+          "description": "使用者介面設計"
+        },
+        {
+          "code": "11015004013",
+          "description": "網頁語法撰寫"
+        },
+        {
+          "code": "11015004012",
+          "description": "網頁軟體操作"
+        }
+      ],
+      "certificate": [],
+      "driverLicense": [],
+      "other": ""
+    },
+    "welfare": {
+      "tag": [],
+      "welfare": "公司福利制度\n\n1.\t完善的保障制度，保障員工的工作與生活（享勞保、健保、勞退金、團保）\n2.\t完善的獎勵制度，根據績效發放獎金\n3.\t彈性工作，員工可以根據自身情況彈性調整上下班時間，週休二日\n4.\t帶薪假期符合標準，陪產假、女性同仁生理假、女性同仁育嬰假、年假、病假\n5.\t各類員工補貼，如加班補貼、結婚禮金、喪葬補助、符合規定的車資報銷等\n6.\t定期體檢，組織員工進行健康檢查。\n7.\tTeam Building，定期組織員工進行團建活動，如旅遊、聚餐等。\n8.\t愉悅的工作氛圍，為員工提供零食、飲料、水果作為下午茶。\n9.\t多元化、國際化的工作環境\n",
+      "legalTag": []
+    },
+    "jobDetail": {
+      "jobDescription": "We strive to build the best in-class hosted cloud and on-prem solutions leveraging deep learning to democratize AI. Come join a creative and dedicated team of engineers. We are looking for talented people wanting to have first-hand experience in building compliant, secure, reliable and high-performance services serving millions of requests worldwide.\n\nResponsibility & Qualification \n1. Proficiency in HTML, CSS, and JavaScript: Have a deep understanding of HTML, CSS, and JavaScript and be able to write clean, maintainable code.   \n2. Experience with front-end frameworks: Have experience working with popular front-end frameworks such as React, Angular, or Vue.js, and be able to use them to build applications.   \n3. Proficiency with web development tools: Proficient with tools such as Git, Webpack and other task runners that can help streamline the development process.   \n4. Knowledge of cross-browser compatibility issues: Have an understanding of cross-browser compatibility issues and be able to write code that works across a variety of browsers.   \n5. Strong debugging and problem-solving: Be able to quickly identify and resolve issues in their code and be able to troubleshoot problems in a production environment.   \n6. Optimization: Strong problem-solving skills, the ability to troubleshoot issues, and to optimize performance for the web.   \n7. Excellent communication and teamwork: Be able to communicate effectively with team member, and be able to work collaboratively to achieve project goals.   \n8. Continuous learning: Committed to continuous learning and keeping up-to-date with the latest web development technologies and best practices",
+      "jobCategory": [
+        {
+          "code": "2007001015",
+          "description": "前端工程師"
+        }
+      ],
+      "salary": "年薪1,050,000~1,600,000元",
+      "salaryMin": 1050000,
+      "salaryMax": 1600000,
+      "salaryType": 60,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001001011",
+      "addressRegion": "台北市南港區",
+      "addressArea": "台北市",
+      "addressDetail": "南港軟體園區",
+      "industryArea": "",
+      "longitude": "121.6119246",
+      "latitude": "25.0572459",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "無需出差外派",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "依公司規定",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "1人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": "根據候選人情況可開放遠端辦公"
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/1209/130000000201209/logo.png?v=20240913135054",
+    "postalCode": "115",
+    "closeDate": "",
+    "industry": "電腦軟體服務業",
+    "custNo": "130000000201209",
+    "encodedCustNo": "1a2x6bmak9",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E7%BE%8E%E5%95%86%E6%98%87%E8%BF%AA%E5%87%A1%E7%A7%91%E6%8A%80%E8%A1%93%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8%E5%8F%B0%E7%81%A3%E5%88%86%E5%85%AC%E5%8F%B8&jobName=%E8%B3%87%E6%B7%B1%E5%89%8D%E7%AB%AF%E5%B7%A5%E7%A8%8B%E5%B8%AB+%28Sr.+AI-Native+Frontend+Engineer%29",
+    "industryNo": "1001001002",
+    "employees": "3200人",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": 1775612394,
+      "lastCustReplyTimestamp": 1775027218,
+      "nowTimestamp": 1775660076
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

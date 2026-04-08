@@ -1,0 +1,178 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "UI/UX & QA Specialist",
+      "appearDate": "2026/03/27",
+      "custName": "台灣動析智能科技有限公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bl2s1",
+      "analysisType": 3,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8zk5e",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0.9176491455745228
+    },
+    "contact": {
+      "hrName": "Robin",
+      "email": "robin.huang@aniware.ltd,joe.mak@aniware.ltd",
+      "visit": "",
+      "phone": [],
+      "other": "How to Apply:\nANIWARE is the company that runs CardioBird. We are an equal-opportunity employer. We celebrate diversity and are committed to building a champion team that reflects global communities — because pets (and products) deserve the best. Submit your resume and a brief cover letter highlighting your skills, experience and achievements concerning the position you seek to [robin.huang@aniware.ltd] and [joe.mak@aniware.ltd] by [15 April 2026].",
+      "reply": "本職務設定30個工作天回覆"
+    },
+    "environmentPic": {
+      "environmentPic": [],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [
+          {
+            "code": 2,
+            "description": "應屆畢業生"
+          },
+          {
+            "code": 64,
+            "description": "原住民"
+          },
+          {
+            "code": 131072,
+            "description": "新住民"
+          },
+          {
+            "code": 2048,
+            "description": "二度就業"
+          },
+          {
+            "code": 32768,
+            "description": "中壯齡"
+          },
+          {
+            "code": 4096,
+            "description": "中高齡"
+          }
+        ],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "不拘",
+      "edu": "高中以上",
+      "major": [],
+      "language": [],
+      "localLanguage": [],
+      "specialty": [
+        {
+          "code": "12002004009",
+          "description": "Figma"
+        }
+      ],
+      "skill": [
+        {
+          "code": "11015004006",
+          "description": "使用者介面設計"
+        },
+        {
+          "code": "11015004015",
+          "description": "使用者體驗設計"
+        }
+      ],
+      "certificate": [],
+      "driverLicense": [],
+      "other": "Minimum 1 year of UI/UX design experience, preferably on technology products (mobile or web apps).\n\nProven portfolio demonstrating high-quality, minimalist, and thoughtful design execution.\n\nStrong proficiency in design tools such as Figma, Sketch, or Adobe XD.\n\nExceptional attention to detail and a structured, testing-oriented mindset.\n\nExcellent communication skills, able to collaborate across design, product, and engineering teams.\n\nPassionate about delivering pixel-perfect, user-centered digital experiences.\n\nA drive for excellence and a \"get it done\" attitude; you find the shortest path to the best result.\n\nYou have a self-driven work ethic to thrive in remote, asynchronous environments without hand-holding.\n\nYou are a pet lover and owner.\n"
+    },
+    "welfare": {
+      "tag": [],
+      "welfare": "- 十天年假\n- 彈性 work from home 制度",
+      "legalTag": []
+    },
+    "jobDetail": {
+      "jobDescription": "■ ABOUT CARDIOBIRD \n\nCardioBird is revolutionizing animal healthcare as the world’s leading veterinary biosignal analytics platform, serving 1,000+ clinics globally. We combine cutting-edge AI technology with veterinary expertise to deliver fast, accurate cardiac diagnostics and monitoring for animals. Join our mission-driven team to build products that create a healthier tomorrow for pets and their families. \n\n■ THE ROLE \n\nWe are seeking a UI/UX & QA Specialist who combines design excellence with quality ownership. This is a creative hybrid position that elevates the designer into a gatekeeper of product experience and quality, and transforms QA from passively finding bugs into actively ensuring that the final product fulfills its design intent.\nYou will work closely with our engineers and product owners to craft and validate intuitive, high-quality mobile and web interfaces. Your attention to detail and user-centric mindset will ensure every release not only functions smoothly but also feels beautifully designed.\n\n■ RESPONSIBILITIES\n\nDesign intuitive and visually refined user interfaces across mobile and web applications.\n\nConduct rigorous design reviews and UIUX quality testing to ensure all builds align precisely with design specifications.\n\nCreate, document, and maintain design standards and quality checklists for consistent user experience.\n\nCollaborate with product owners, managers and engineers to communicate design intent and resolve UX gaps during development.\n\nPerform manual usability testing and report feedback on interaction flows, accessibility, and visual quality.\n\nProactively identify UI/UX inconsistencies, usability issues, and improvement opportunities before release.\n\nContribute to evolving the product’s overall visual identity and interaction language.\n\nOther duties assigned by supervisors.\n\n■ WHY JOIN US? (RIGHTS & CULTURE)\n\nCompetitive salary benchmarked to the local market. \n\nFlexibility to work remotely from a safe, healthy location of your choice. \n\n10 days of annual leave (accrued pro-rata). \n\n[ Growth & Impact ]\n\nFlat hierarchy: Own projects and make an impact from Day 1. \n\nTraining in product development, veterinary medicine, and AI technology. \n\nBuild products that transform animal healthcare globally. \n\nThrive in a fun, idea-driven virtual space where creativity is celebrated.",
+      "jobCategory": [
+        {
+          "code": "2013001016",
+          "description": "UX設計師"
+        },
+        {
+          "code": "2013001015",
+          "description": "UI設計師"
+        },
+        {
+          "code": "2013001006",
+          "description": "網頁設計師"
+        }
+      ],
+      "salary": "月薪40,000元以上",
+      "salaryMin": 40000,
+      "salaryMax": 9999999,
+      "salaryType": 50,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001001005",
+      "addressRegion": "台北市大安區",
+      "addressArea": "台北市",
+      "addressDetail": "信義路四段296號15樓",
+      "industryArea": "",
+      "longitude": "121.5547954",
+      "latitude": "25.0328864",
+      "manageResp": "管理人數未定",
+      "businessTrip": "無需出差外派",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "週休二日",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "不限",
+      "landmark": "距捷運信義安和站約180公尺",
+      "remoteWork": {
+        "type": 1,
+        "description": ""
+      }
+    },
+    "switch": "on",
+    "custLogo": "https://static.104.com.tw/b_profile/cust_picture/4465/130000000144465/logo.jpg?v=20250223091959",
+    "postalCode": "106",
+    "closeDate": "",
+    "industry": "其它軟體及網路相關業",
+    "custNo": "130000000144465",
+    "encodedCustNo": "1a2x6bl2s1",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E5%8F%B0%E7%81%A3%E5%8B%95%E6%9E%90%E6%99%BA%E8%83%BD%E7%A7%91%E6%8A%80%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=UI%2FUX+%26+QA+Specialist",
+    "industryNo": "1001001006",
+    "employees": "17人",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": 1775613466,
+      "lastCustReplyTimestamp": null,
+      "nowTimestamp": 1775660080
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}

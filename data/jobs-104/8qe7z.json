@@ -1,0 +1,139 @@
+{
+  "data": {
+    "corpImageRight": {
+      "corpImageRight": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "header": {
+      "corpImageTop": {
+        "imageUrl": "",
+        "link": ""
+      },
+      "jobName": "AI工程師（遠端上班）",
+      "appearDate": "2026/04/07",
+      "custName": "采鑛數據科技股份有限公司",
+      "custUrl": "https://www.104.com.tw/company/1a2x6bnblh",
+      "analysisType": 3,
+      "analysisUrl": "//www.104.com.tw/jobs/apply/analysis/8qe7z",
+      "isSaved": false,
+      "isFollowed": false,
+      "isApplied": false,
+      "applyDate": "",
+      "userApplyCount": 0,
+      "hrBehaviorPR": 0.12080505268451931
+    },
+    "contact": {
+      "hrName": "劉先生",
+      "email": "",
+      "visit": "",
+      "phone": [],
+      "other": "",
+      "reply": "本職務設定10個工作天回覆"
+    },
+    "environmentPic": {
+      "environmentPic": [],
+      "corpImageBottom": {
+        "imageUrl": "",
+        "link": ""
+      }
+    },
+    "condition": {
+      "acceptRole": {
+        "role": [],
+        "disRole": {
+          "needHandicapCompendium": false,
+          "disability": []
+        }
+      },
+      "workExp": "不拘",
+      "edu": "大學以上",
+      "major": [],
+      "language": [],
+      "localLanguage": [],
+      "specialty": [],
+      "skill": [],
+      "certificate": [],
+      "driverLicense": [],
+      "other": ""
+    },
+    "welfare": {
+      "tag": [],
+      "welfare": "",
+      "legalTag": []
+    },
+    "jobDetail": {
+      "jobDescription": "1. 需求討論及分析\r\n2. 網頁程式、Web API、排程程式設計與開發\r\n3. 資料庫設計及優化、跨系統資料交換與整合\r\n4. 提供用戶更好的 UI/UX 體驗\r\n5. 維護、優化現有專案。\r\n6. 大語言模型（LLM)實作經驗",
+      "jobCategory": [
+        {
+          "code": "2007001017",
+          "description": "全端工程師"
+        },
+        {
+          "code": "2007001018",
+          "description": "數據分析師／資料分析師"
+        },
+        {
+          "code": "2007001012",
+          "description": "演算法工程師"
+        }
+      ],
+      "salary": "月薪40,000~50,000元",
+      "salaryMin": 40000,
+      "salaryMax": 50000,
+      "salaryType": 50,
+      "jobType": 1,
+      "workType": [],
+      "addressNo": "6001008020",
+      "addressRegion": "台中市大雅區",
+      "addressArea": "台中市",
+      "addressDetail": "科雅路6號",
+      "industryArea": "",
+      "longitude": "120.6232784",
+      "latitude": "24.2148176",
+      "manageResp": "不需負擔管理責任",
+      "businessTrip": "無需出差外派",
+      "workPeriod": {
+        "shifts": {
+          "日班": []
+        },
+        "note": ""
+      },
+      "workPeriodTags": [],
+      "vacationPolicy": "依公司規定",
+      "startWorkingDay": "不限",
+      "hireType": 0,
+      "delegatedRecruit": "",
+      "needEmp": "1人",
+      "landmark": "",
+      "remoteWork": {
+        "type": 1,
+        "description": ""
+      }
+    },
+    "switch": "on",
+    "custLogo": "",
+    "postalCode": "428",
+    "closeDate": "",
+    "industry": "電腦軟體服務業",
+    "custNo": "130000000249205",
+    "encodedCustNo": "1a2x6bnblh",
+    "reportUrl": "https://www.104.com.tw/feedback?category=2&custName=%E9%87%87%E9%91%9B%E6%95%B8%E6%93%9A%E7%A7%91%E6%8A%80%E8%82%A1%E4%BB%BD%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8&jobName=AI%E5%B7%A5%E7%A8%8B%E5%B8%AB%EF%BC%88%E9%81%A0%E7%AB%AF%E4%B8%8A%E7%8F%AD%EF%BC%89",
+    "industryNo": "1001001002",
+    "employees": "暫不提供",
+    "chinaCorp": false,
+    "interactionRecord": {
+      "lastProcessedResumeAtTime": null,
+      "lastCustReplyTimestamp": 1774338486,
+      "nowTimestamp": 1775660115
+    }
+  },
+  "metadata": {
+    "enableHTML": false,
+    "hiddenBanner": false,
+    "seo": {
+      "noindex": false
+    }
+  }
+}
