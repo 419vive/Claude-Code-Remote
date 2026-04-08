@@ -28,6 +28,17 @@
 - Use typed interfaces for all public APIs
 - Prefer TDD London School (mock-first) for new code
 - Use event sourcing for state changes
+
+## Frontend Design System
+
+- **Read [`kun-auto-chatbot/docs/DESIGN.md`](kun-auto-chatbot/docs/DESIGN.md) before any UI work**
+- Defines tokens, typography (Inter + Noto Sans TC), components, vehicle-card patterns
+- Adapted from VoltAgent's BMW DESIGN.md, rebuilt around shadcn/ui + Tailwind v4 + oklch tokens
+- **Tokens, not hex codes**: use `bg-primary`, `text-foreground`, never `bg-[#1c69d4]`
+- **Single accent**: deep navy is the only chromatic color — never introduce a second hue
+- **Always `tabular-nums`** on prices and mileage
+- **10px radius** on cards/buttons (softer than BMW's 0px — Taiwanese local-business warmth)
+- If `DESIGN.md` and `client/src/index.css` disagree, `index.css` wins — update the doc
 - Ensure input validation at system boundaries
 
 ### Project Config
