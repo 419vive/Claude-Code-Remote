@@ -53,6 +53,10 @@ export default function VehicleVideoPlayer({ vehicle }: VehicleVideoPlayerProps)
     color: vehicle.color || undefined,
     displacement: vehicle.displacement || undefined,
     photoUrls: photos,
+    // BGM is served by Vite from client/public/audio/ — relative URL works
+    // in both dev and prod (same-origin). Only plays once user clicks play.
+    musicUrl: "/audio/bgm-upbeat.mp3",
+    musicVolume: 0.3,
   };
 
   return (

@@ -12,7 +12,7 @@
  * Output: ./output/vehicle-cards/<brand>-<model>-<id>.mp4
  *
  * Optional: Place a royalty-free background music file at
- *   ./public/audio/bgm-upbeat.mp3
+ *   ./client/public/audio/bgm-upbeat.mp3
  * and it will automatically be included in all videos.
  */
 
@@ -56,16 +56,17 @@ async function main() {
   });
 
   // Check for background music
-  const musicPath = path.resolve("./public/audio/bgm-upbeat.mp3");
+  // BGM lives in Vite's publicDir so it's also served at /audio/bgm-upbeat.mp3 in-browser
+  const musicPath = path.resolve("./client/public/audio/bgm-upbeat.mp3");
   const hasMusicFile = fs.existsSync(musicPath);
   const musicUrl = hasMusicFile
     ? `file://${musicPath}`
     : undefined;
 
   if (hasMusicFile) {
-    console.log("Background music found: public/audio/bgm-upbeat.mp3");
+    console.log("Background music found: client/public/audio/bgm-upbeat.mp3");
   } else {
-    console.log("No background music file found at public/audio/bgm-upbeat.mp3 — rendering without music.");
+    console.log("No background music file found at client/public/audio/bgm-upbeat.mp3 — rendering without music.");
     console.log("Tip: Drop a royalty-free MP3 there for automatic music in all videos.");
   }
 
