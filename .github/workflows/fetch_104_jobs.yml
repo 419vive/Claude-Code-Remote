@@ -1,0 +1,60 @@
+name: Fetch 104 Jobs
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_ids:
+        description: "Space-separated 104 job IDs (leave blank to use scripts/104_ids.txt)"
+        required: false
+        default: ""
+  push:
+    branches:
+      - "claude/business-integration-visual-6KNmK"
+    paths:
+      - "scripts/fetch_104_jobs.py"
+      - "scripts/104_ids.txt"
+      - ".github/workflows/fetch_104_jobs.yml"
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install requests
+
+      - name: Fetch 104 jobs
+        env:
+          JOB_IDS: ${{ github.event.inputs.job_ids }}
+        run: python scripts/fetch_104_jobs.py
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/jobs-104/ || true
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore(jobs): refresh 104 job intelligence [skip ci]"
+            git push
+          fi
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jobs-104-${{ github.run_id }}
+          path: data/jobs-104/
+          if-no-files-found: warn
