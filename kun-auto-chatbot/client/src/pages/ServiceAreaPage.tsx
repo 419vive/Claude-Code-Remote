@@ -1,12 +1,8 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Car,
-  Gauge,
-  Fuel,
-  Calendar,
   ChevronRight,
   ChevronDown,
   MapPin,
@@ -19,102 +15,13 @@ import {
 } from "lucide-react";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ProgressiveImage } from "@/components/ProgressiveImage";
 import SeoFooter from "@/components/SeoFooter";
 import StickyBookingBar from "@/components/StickyBookingBar";
 import { SERVICE_AREAS, LOCAL_AREAS, OUT_OF_CITY_AREAS } from "@/data/serviceAreas";
+import { VehicleListCard } from "@/components/VehicleListCard";
 
 const LINE_OA_URL = "https://page.line.me/825oftez";
 
-function VehicleCard({ vehicle }: { vehicle: any }) {
-  const photos: string[] = vehicle.photoUrls
-    ? vehicle.photoUrls.split("|").filter((u: string) => u.trim())
-    : [];
-
-  const lineMsg = encodeURIComponent(
-    `我想了解這台 ${vehicle.brand} ${vehicle.model} ${vehicle.modelYear}年款 ${vehicle.priceDisplay || vehicle.price + "萬"}`
-  );
-
-  return (
-    <Card className="group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5">
-      <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-        {photos.length > 0 ? (
-          <ProgressiveImage
-            src={photos[0]}
-            alt={`${vehicle.brand} ${vehicle.model}`}
-            className="transition-transform group-hover:scale-105"
-            containerClassName="h-full w-full"
-            aspectRatio="16/10"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <Car className="h-12 w-12 text-muted-foreground/30" />
-          </div>
-        )}
-        <Badge className="absolute top-2 left-2 bg-primary/90 text-primary-foreground text-xs">
-          {vehicle.status === "available"
-            ? "在售"
-            : vehicle.status === "reserved"
-              ? "已預訂"
-              : "已售出"}
-        </Badge>
-        {photos.length > 1 && (
-          <span className="absolute top-2 right-2 flex items-center gap-0.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
-            📷 {photos.length}
-          </span>
-        )}
-      </div>
-      <CardContent className="p-4">
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-foreground">
-              {vehicle.brand} {vehicle.model}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              {vehicle.modelYear}年款
-            </p>
-          </div>
-          <span className="shrink-0 text-lg font-bold text-primary">
-            {vehicle.priceDisplay || `${vehicle.price}萬`}
-          </span>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-y-1.5 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Gauge className="h-3 w-3" /> {vehicle.mileage || "N/A"}
-          </span>
-          <span className="flex items-center gap-1">
-            <Fuel className="h-3 w-3" /> {vehicle.fuelType || "N/A"}
-          </span>
-          <span className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" /> {vehicle.color || "N/A"}
-          </span>
-          <span className="flex items-center gap-1">
-            <Car className="h-3 w-3" /> {vehicle.transmission || "N/A"}
-          </span>
-        </div>
-        <div className="mt-3 flex gap-2">
-          <a
-            href={`/vehicle/${vehicle.id}`}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            看詳情
-          </a>
-          <a
-            href={`${LINE_OA_URL}?openQrCodeReader=false&msg=${lineMsg}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#06C755] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#05b04c] active:bg-[#049a43]"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
-            </svg>
-            LINE 問車
-          </a>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 function FaqAccordion({ faq }: { faq: { q: string; a: string } }) {
   const [open, setOpen] = useState(false);
@@ -379,7 +286,7 @@ export default function ServiceAreaPage() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {vehicles.map((v) => (
-                <VehicleCard key={v.id} vehicle={v} />
+                <VehicleListCard key={v.id} vehicle={v} />
               ))}
             </div>
           )}
