@@ -83,9 +83,9 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
   };
 
   return (
-    <Card className="group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5">
+    <Card className="group overflow-hidden transition-shadow hover:shadow-md">
       <div
-        className="relative aspect-[16/10] overflow-hidden bg-muted"
+        className="relative aspect-[4/3] overflow-hidden bg-muted"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -97,7 +97,7 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
               alt={`${vehicle.brand} ${vehicle.model} - 照片 ${currentPhoto + 1}`}
               className="transition-transform group-hover:scale-105"
               containerClassName="h-full w-full"
-              aspectRatio="16/10"
+              aspectRatio="4/3"
             />
             {/* Navigation arrows - only show if multiple photos */}
             {totalPhotos > 1 && (
@@ -155,17 +155,19 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
             : false;
           const isHot = Number(vehicle.price) < 50;
           if (!isNew && !isHot) return null;
+          // DESIGN.md: navy is the only chromatic accent. Use weight + token
+          // contrast for emphasis instead of introducing blue/orange hues.
           return (
             <div className="absolute top-8 left-2 flex flex-col gap-1">
               {isNew && (
-                <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-blue-500 text-white leading-none">
+                <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-semibold leading-none">
                   本週新到
-                </span>
+                </Badge>
               )}
               {isHot && (
-                <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-orange-500 text-white leading-none">
+                <Badge className="px-1.5 py-0 text-[10px] font-semibold leading-none bg-primary text-primary-foreground">
                   詢問熱烈
-                </span>
+                </Badge>
               )}
             </div>
           );
@@ -200,39 +202,43 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
           )}
         </div>
       </div>
-      <CardContent className="p-4">
-        <div className="mb-2 flex items-start justify-between gap-2">
+      <CardContent className="p-4 md:p-6">
+        <div className="mb-2 flex items-start justify-between gap-3">
           <div className="min-w-0 flex items-start gap-2">
             <button
               onClick={(e) => { e.stopPropagation(); onToggleCompare(); }}
-              className={`mt-0.5 shrink-0 flex items-center justify-center h-6 w-6 rounded-md border transition-all ${isComparing ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"}`}
+              className={`mt-1 shrink-0 flex items-center justify-center h-6 w-6 rounded-md border transition-all ${isComparing ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"}`}
               title={isComparing ? "取消比較" : "加入比較"}
             >
               <GitCompareArrows className="h-3.5 w-3.5" />
             </button>
-            <div>
-              <h3 className="truncate text-sm font-semibold text-foreground">
+            <div className="min-w-0">
+              {/* DESIGN.md: card title = text-xl font-semibold */}
+              <h3 className="truncate text-xl font-semibold text-foreground leading-tight">
                 {vehicle.brand} {vehicle.model}
               </h3>
-              <p className="text-xs text-muted-foreground">{vehicle.modelYear}年款</p>
+              {/* DESIGN.md: body small (vehicle metadata) = text-sm text-muted-foreground */}
+              <p className="text-sm text-muted-foreground">{vehicle.modelYear}年款</p>
             </div>
           </div>
-          <span className="shrink-0 text-lg font-bold text-primary">
+          {/* DESIGN.md: price = text-2xl font-bold tabular-nums text-foreground (NOT primary; price is data, not a CTA) */}
+          <span className="shrink-0 text-2xl font-bold tabular-nums text-foreground leading-none">
             {vehicle.priceDisplay || `${vehicle.price}萬`}
           </span>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-y-1.5 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Gauge className="h-3 w-3" /> {vehicle.mileage || "N/A"}
+        <div className="mt-3 grid grid-cols-2 gap-y-1.5 text-sm text-muted-foreground">
+          {/* DESIGN.md: tabular-nums on mileage so numbers align */}
+          <span className="flex items-center gap-1.5 tabular-nums">
+            <Gauge className="h-3.5 w-3.5" /> {vehicle.mileage || "N/A"}
           </span>
-          <span className="flex items-center gap-1">
-            <Fuel className="h-3 w-3" /> {vehicle.fuelType || "N/A"}
+          <span className="flex items-center gap-1.5">
+            <Fuel className="h-3.5 w-3.5" /> {vehicle.fuelType || "N/A"}
           </span>
-          <span className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" /> {vehicle.color || "N/A"}
+          <span className="flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5" /> {vehicle.color || "N/A"}
           </span>
-          <span className="flex items-center gap-1">
-            <Car className="h-3 w-3" /> {vehicle.transmission || "N/A"}
+          <span className="flex items-center gap-1.5">
+            <Car className="h-3.5 w-3.5" /> {vehicle.transmission || "N/A"}
           </span>
         </div>
         {featureList.length > 0 && (
@@ -249,28 +255,40 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
             )}
           </div>
         )}
-        {/* Action buttons */}
-        <div className="mt-3 flex gap-2">
-          <a
-            href={`/vehicle/${vehicle.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+        {/* Action buttons — DESIGN.md: use shadcn Button via asChild for <a> semantics */}
+        <div className="mt-4 flex gap-2">
+          <Button asChild size="sm" className="flex-1">
+            <a
+              href={`/vehicle/${vehicle.id}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              看詳情
+            </a>
+          </Button>
+          {/*
+            LINE 問車 button — uses LINE brand green (#06C755) as a documented
+            exception to the "no raw hex" rule. LINE's branding guidelines
+            require this exact color for any "Add LINE friend" or "Open LINE"
+            CTA. Keep this hex inline; do not replace with a token.
+          */}
+          <Button
+            asChild
+            size="sm"
+            className="flex-1 bg-[#06C755] text-white hover:bg-[#05b04c] active:bg-[#049a43]"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
-            看詳情
-          </a>
-          <a
-            href={`https://page.line.me/825oftez?openQrCodeReader=false&msg=${encodeURIComponent(`我想了解這台 ${vehicle.brand} ${vehicle.model} ${vehicle.modelYear}年款 ${vehicle.priceDisplay || vehicle.price + '萬'}`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#06C755] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#05b04c] active:bg-[#049a43]"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+            <a
+              href={`https://page.line.me/825oftez?openQrCodeReader=false&msg=${encodeURIComponent(`我想了解這台 ${vehicle.brand} ${vehicle.model} ${vehicle.modelYear}年款 ${vehicle.priceDisplay || vehicle.price + '萬'}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
-            </svg>
-            LINE 問車
-          </a>
+              </svg>
+              LINE 問車
+            </a>
+          </Button>
         </div>
       </CardContent>
     </Card>
