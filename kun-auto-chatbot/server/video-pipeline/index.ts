@@ -8,3 +8,12 @@ export type { VideoProvider } from "./providers";
 export { buildScript, offlineStubScript, insertProduct } from "./script-builder";
 export { orchestrate } from "./orchestrator";
 export { generateMusic, ttsElevenLabs, ttsFishSpeech, generateSubtitles } from "./audio";
+export { assembleFinalVideo } from "./assembler";
+export {
+  loadCharacters,
+  saveCharacters,
+  upsertCharacter,
+  lockCharacterToProvider,
+  findCharacterById,
+} from "./character-store";
+export { lookupVehicleForInsert, pickRandomVehiclesForInsert } from "./vehicle-lookup";

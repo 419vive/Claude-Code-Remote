@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-04-08T00:00:00.000Z",
+  "characters": [
+    {
+      "id": "aling-host",
+      "name": "阿霖 (A-Ling)",
+      "description": "30代台灣男主持人，穿襯衫配牛仔褲，友善自信的笑容，短黑髮",
+      "lockedIn": {
+        "higgsfield": "REPLACE_WITH_SOUL_ID_AFTER_TRAINING",
+        "kling": "REPLACE_WITH_KLING_CHARACTER_ID"
+      },
+      "referenceImages": [
+        "https://your-cdn.example.com/characters/aling-1.jpg",
+        "https://your-cdn.example.com/characters/aling-2.jpg",
+        "https://your-cdn.example.com/characters/aling-3.jpg"
+      ]
+    },
+    {
+      "id": "meimei-critic",
+      "name": "美美 (Mei-Mei)",
+      "description": "20代台灣女車評，時尚打扮，黑色長髮，活潑的表情",
+      "lockedIn": {
+        "higgsfield": "REPLACE_WITH_SOUL_ID_AFTER_TRAINING"
+      },
+      "referenceImages": [
+        "https://your-cdn.example.com/characters/meimei-1.jpg",
+        "https://your-cdn.example.com/characters/meimei-2.jpg"
+      ]
+    }
+  ]
+}

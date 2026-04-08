@@ -6,7 +6,45 @@ Turns a natural-language brief into a 5-minute AI character skit with:
 - Pro Mandarin voice-over (ElevenLabs)
 - Commercial-licensed music (Suno)
 - Bilingual word-level subtitles (WhisperX)
-- Deterministic final assembly (Remotion + FFmpeg)
+- Deterministic final assembly (FFmpeg)
+
+## Recommended tier quickstart ($142/mo, 15 × 5-min videos)
+
+1. **Subscribe** (create account, save API keys):
+   - Higgsfield **Ultimate** — $29/mo — https://higgsfield.ai/pricing
+   - Kling **Premier** — $64.99/mo — https://klingai.com/global/dev/pricing
+   - Seedance via **PiAPI** (pay-per-use ~$15-25/mo) — https://piapi.ai
+   - ElevenLabs **Creator** — $22/mo — https://elevenlabs.io/pricing
+   - Suno via **PiAPI** — $10/mo effective — https://piapi.ai
+
+2. **Train your recurring characters on Higgsfield** (one-time $3 each):
+   - Upload 20+ photos per character to Higgsfield
+   - Copy the returned Soul ID
+   - Paste into `config/characters.json` (see `config/characters.example.json`)
+
+3. **Install FFmpeg + WhisperX** (for assembly + subtitles):
+   ```bash
+   brew install ffmpeg        # or: apt install ffmpeg
+   pip install whisperx
+   ```
+
+4. **Set env vars** in `kun-auto-chatbot/.env` (see section below).
+
+5. **Verify**:
+   ```bash
+   cd kun-auto-chatbot
+   npx tsx scripts/create-video.ts --health
+   ```
+
+6. **Dry run your first brief** (zero cost):
+   ```bash
+   npx tsx scripts/create-video.ts \
+     --brief "兩個角色辯論BMW X1 vs Toyota Corolla Cross,穿插崑家現車畫面" \
+     --vehicle-id 1 \
+     --dry-run
+   ```
+
+7. **Go live** when the dry run looks right.
 
 ## One-time setup
 

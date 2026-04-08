@@ -14,6 +14,12 @@ build/
 .env.test.local
 .env.production.local
 
+# Video pipeline — private character configs contain provider Soul IDs
+config/characters.json
+
+# Video pipeline — generated outputs (clips, voiceover, music, final MP4)
+output/video-projects/
+
 # IDE and editor files
 .vscode/
 .idea/

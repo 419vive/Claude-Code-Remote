@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { assembleFinalVideo } from "./assembler";
 import { generateMusic, generateSubtitles, ttsElevenLabs, ttsFishSpeech } from "./audio";
 import { ProviderRegistry } from "./providers";
 import type { GeneratedClip, Resolution, Script, Shot, VideoProject } from "./types";
@@ -109,19 +110,34 @@ export async function orchestrate(options: OrchestrateOptions): Promise<VideoPro
     }
   }
 
-  // 5. Final assembly — hand off to Remotion/FFmpeg stitcher (stub for now)
+  // 5. Final assembly — real FFmpeg stitch (requires ffmpeg on PATH)
   const finalPath = path.join(projectDir, "final.mp4");
   if (!dryRun) {
     try {
       await assembleFinalVideo({
         clips,
-        voiceoverPath,
-        musicPath,
-        subtitlePath,
+        voiceoverPath: (await fileExists(voiceoverPath)) ? voiceoverPath : undefined,
+        musicPath: (await fileExists(musicPath)) ? musicPath : undefined,
+        subtitlePath: (await fileExists(subtitlePath)) ? subtitlePath : undefined,
         outputPath: finalPath,
       });
     } catch (err) {
-      console.warn("[orchestrator] assembly deferred to manual step:", (err as Error).message);
+      console.warn("[orchestrator] assembly failed:", (err as Error).message);
+      // Write a manifest so the user can stitch manually
+      await fs.writeFile(
+        finalPath.replace(/\.mp4$/, ".manifest.json"),
+        JSON.stringify(
+          {
+            clips: clips.map((c) => c.videoUrl),
+            voiceover: voiceoverPath,
+            music: musicPath,
+            subtitles: subtitlePath,
+            error: (err as Error).message,
+          },
+          null,
+          2,
+        ),
+      );
     }
   }
 
@@ -198,26 +214,11 @@ async function generateClips(opts: {
   return results;
 }
 
-/**
- * Final assembly stub.
- * Real implementation: bundle Remotion with a timeline composition that plays
- * each clip back-to-back with the voiceover + BGM + burned-in subs, then
- * renderMedia() to MP4. For now we just write a manifest the user can inspect.
- */
-async function assembleFinalVideo(params: {
-  clips: GeneratedClip[];
-  voiceoverPath: string;
-  musicPath: string;
-  subtitlePath: string;
-  outputPath: string;
-}): Promise<void> {
-  const manifest = {
-    assembled: false,
-    reason: "Assembly hook not yet wired to Remotion — run scripts/create-video.ts --assemble manually",
-    inputs: params,
-  };
-  await fs.writeFile(
-    params.outputPath.replace(/\.mp4$/, ".manifest.json"),
-    JSON.stringify(manifest, null, 2),
-  );
+async function fileExists(p: string): Promise<boolean> {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
 }

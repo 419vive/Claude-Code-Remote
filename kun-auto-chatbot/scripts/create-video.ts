@@ -33,8 +33,15 @@
  *   └── final.mp4 (or final.manifest.json if assembly is deferred)
  */
 import path from "node:path";
-import { orchestrate, buildScript, ProviderRegistry } from "../server/video-pipeline";
-import type { Character, VehicleForInsert } from "../server/video-pipeline/script-builder";
+import {
+  orchestrate,
+  buildScript,
+  ProviderRegistry,
+  loadCharacters,
+  lookupVehicleForInsert,
+  pickRandomVehiclesForInsert,
+} from "../server/video-pipeline";
+import type { VehicleForInsert } from "../server/video-pipeline/script-builder";
 
 interface CliArgs {
   brief?: string;
@@ -43,6 +50,8 @@ interface CliArgs {
   dryRun: boolean;
   health: boolean;
   vehicleId?: number;
+  randomVehicles?: number;
+  charactersConfig: string;
   outputDir: string;
 }
 
@@ -52,6 +61,7 @@ function parseArgs(argv: string[]): CliArgs {
     language: "zh-TW",
     dryRun: false,
     health: false,
+    charactersConfig: path.resolve("./config/characters.json"),
     outputDir: path.resolve("./output/video-projects"),
   };
   for (let i = 0; i < argv.length; i++) {
@@ -63,6 +73,8 @@ function parseArgs(argv: string[]): CliArgs {
     else if (flag === "--dry-run") args.dryRun = true;
     else if (flag === "--health") args.health = true;
     else if (flag === "--vehicle-id") args.vehicleId = parseInt(next, 10);
+    else if (flag === "--random-vehicles") args.randomVehicles = parseInt(next, 10);
+    else if (flag === "--characters") args.charactersConfig = path.resolve(next);
     else if (flag === "--output") args.outputDir = path.resolve(next);
   }
   return args;
@@ -81,14 +93,6 @@ async function healthCheck(): Promise<void> {
   console.log("");
 }
 
-async function fetchVehicleForInsert(vehicleId: number): Promise<VehicleForInsert | null> {
-  // Minimal version: read from the DB via the existing router. For now return null
-  // and let the user supply vehicle refs manually — this stub avoids coupling the
-  // script to the server's tRPC setup.
-  console.warn(`[create-video] vehicle lookup stub — supply photos manually for id=${vehicleId}`);
-  return null;
-}
-
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
@@ -103,11 +107,41 @@ async function main() {
     process.exit(1);
   }
 
-  const characters: Character[] = []; // TODO: load persisted characters from a config file
+  // Load persisted characters (Soul IDs etc. already trained on providers)
+  const characters = await loadCharacters(args.charactersConfig);
+  if (characters.length > 0) {
+    console.log(
+      `[create-video] loaded ${characters.length} character(s): ${characters.map((c) => c.name).join(", ")}`,
+    );
+  } else {
+    console.log(
+      `[create-video] no characters in ${args.charactersConfig} — script builder will invent one`,
+    );
+  }
+
+  // Resolve vehicle product inserts from the live inventory DB
   const availableVehicles: VehicleForInsert[] = [];
   if (args.vehicleId) {
-    const v = await fetchVehicleForInsert(args.vehicleId);
-    if (v) availableVehicles.push(v);
+    try {
+      const v = await lookupVehicleForInsert(args.vehicleId);
+      if (v) {
+        availableVehicles.push(v);
+        console.log(`[create-video] product insert: ${v.label}`);
+      } else {
+        console.warn(`[create-video] vehicle ${args.vehicleId} has no usable photos`);
+      }
+    } catch (err) {
+      console.warn(`[create-video] vehicle lookup failed (DB unavailable?):`, (err as Error).message);
+    }
+  }
+  if (args.randomVehicles && args.randomVehicles > 0) {
+    try {
+      const picks = await pickRandomVehiclesForInsert(args.randomVehicles);
+      availableVehicles.push(...picks);
+      console.log(`[create-video] random inserts: ${picks.map((v) => v.label).join(", ")}`);
+    } catch (err) {
+      console.warn(`[create-video] random vehicle pick failed:`, (err as Error).message);
+    }
   }
 
   console.log(`[create-video] building script from brief (${args.brief.length} chars)...`);
