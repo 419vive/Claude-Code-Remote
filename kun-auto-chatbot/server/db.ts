@@ -13,6 +13,7 @@ import {
   loanInquiries, InsertLoanInquiry,
   appointments, InsertAppointment,
   adSpend, InsertAdSpend,
+  facebookAdsCampaigns, InsertFacebookAdsCampaign,
 } from "../drizzle/schema";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -802,6 +803,74 @@ export async function deleteAdSpend(id: number) {
   const db = await getDb();
   if (!db) return;
   await db.delete(adSpend).where(eq(adSpend.id, id));
+}
+
+// ============ FACEBOOK ADS MANUAL CRUD ============
+
+export async function upsertFacebookAd(data: {
+  id?: number;
+  campaignName: string;
+  status?: string;
+  objective?: string;
+  spend: string;
+  impressions: number;
+  clicks: number;
+  reach: number;
+  conversions: number;
+  ctr?: string | null;
+  cpc?: string | null;
+  cpm?: string | null;
+  costPerConversion?: string | null;
+  dateStart?: string | null;
+  dateEnd?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  if (data.id) {
+    await db.update(facebookAdsCampaigns)
+      .set({
+        campaignName: data.campaignName,
+        status: data.status || null,
+        objective: data.objective || null,
+        spend: data.spend,
+        impressions: data.impressions,
+        clicks: data.clicks,
+        reach: data.reach,
+        conversions: data.conversions,
+        ctr: data.ctr || null,
+        cpc: data.cpc || null,
+        cpm: data.cpm || null,
+        costPerConversion: data.costPerConversion || null,
+        dateStart: data.dateStart || null,
+        dateEnd: data.dateEnd || null,
+      })
+      .where(eq(facebookAdsCampaigns.id, data.id));
+  } else {
+    await db.insert(facebookAdsCampaigns).values({
+      campaignId: `manual_${Date.now()}`,
+      campaignName: data.campaignName,
+      adAccountId: "manual_entry",
+      status: data.status || null,
+      objective: data.objective || null,
+      spend: data.spend,
+      impressions: data.impressions,
+      clicks: data.clicks,
+      reach: data.reach,
+      conversions: data.conversions,
+      ctr: data.ctr || null,
+      cpc: data.cpc || null,
+      cpm: data.cpm || null,
+      costPerConversion: data.costPerConversion || null,
+      dateStart: data.dateStart || null,
+      dateEnd: data.dateEnd || null,
+    });
+  }
+}
+
+export async function deleteFacebookAd(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(facebookAdsCampaigns).where(eq(facebookAdsCampaigns.id, id));
 }
 
 /** Cross-channel ROI: ad spend + conversions from referrer data, grouped by month+channel */

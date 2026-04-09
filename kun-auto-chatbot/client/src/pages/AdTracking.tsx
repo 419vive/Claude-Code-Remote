@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,10 @@ import {
   BarChart3,
   Facebook,
   Megaphone,
+  Plus,
+  Trash2,
+  X,
+  Pencil,
 } from "lucide-react";
 
 function StatCard({
@@ -97,6 +102,19 @@ function PixelStatusCard({
   );
 }
 
+const emptyFbForm = {
+  campaignName: "",
+  status: "ACTIVE",
+  objective: "",
+  spend: "",
+  impressions: "",
+  clicks: "",
+  reach: "",
+  conversions: "",
+  dateStart: "",
+  dateEnd: "",
+};
+
 export default function AdTracking() {
   const utils = trpc.useUtils();
   const { data: summary, isLoading: summaryLoading } = trpc.admin.conversionSummary.useQuery({});
@@ -111,6 +129,72 @@ export default function AdTracking() {
   const fbSyncMut = trpc.admin.syncFacebookAds.useMutation({
     onSuccess: () => { utils.admin.facebookAds.invalidate(); utils.admin.facebookAdSummary.invalidate(); },
   });
+
+  const [showFbForm, setShowFbForm] = useState(false);
+  const [fbForm, setFbForm] = useState(emptyFbForm);
+  const [editingFbId, setEditingFbId] = useState<number | null>(null);
+
+  const fbUpsertMut = trpc.admin.facebookAdUpsert.useMutation({
+    onSuccess: () => {
+      utils.admin.facebookAds.invalidate();
+      utils.admin.facebookAdSummary.invalidate();
+      setShowFbForm(false);
+      setFbForm(emptyFbForm);
+      setEditingFbId(null);
+    },
+  });
+  const fbDeleteMut = trpc.admin.facebookAdDelete.useMutation({
+    onSuccess: () => {
+      utils.admin.facebookAds.invalidate();
+      utils.admin.facebookAdSummary.invalidate();
+    },
+  });
+
+  function handleFbSubmit() {
+    const spend = parseFloat(fbForm.spend) || 0;
+    const impressions = parseInt(fbForm.impressions) || 0;
+    const clicks = parseInt(fbForm.clicks) || 0;
+    const reach = parseInt(fbForm.reach) || 0;
+    const conversions = parseInt(fbForm.conversions) || 0;
+    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(4) : undefined;
+    const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : undefined;
+    const cpm = impressions > 0 ? ((spend / impressions) * 1000).toFixed(2) : undefined;
+    const costPerConversion = conversions > 0 ? (spend / conversions).toFixed(2) : undefined;
+    fbUpsertMut.mutate({
+      ...(editingFbId ? { id: editingFbId } : {}),
+      campaignName: fbForm.campaignName,
+      status: fbForm.status || "ACTIVE",
+      objective: fbForm.objective || undefined,
+      spend: spend.toFixed(2),
+      impressions,
+      clicks,
+      reach,
+      conversions,
+      ctr,
+      cpc,
+      cpm,
+      costPerConversion,
+      dateStart: fbForm.dateStart || undefined,
+      dateEnd: fbForm.dateEnd || undefined,
+    });
+  }
+
+  function startEditFb(ad: any) {
+    setEditingFbId(ad.id);
+    setFbForm({
+      campaignName: ad.campaignName || "",
+      status: ad.status || "ACTIVE",
+      objective: ad.objective || "",
+      spend: String(ad.spend || 0),
+      impressions: String(ad.impressions || 0),
+      clicks: String(ad.clicks || 0),
+      reach: String(ad.reach || 0),
+      conversions: String(ad.conversions || 0),
+      dateStart: ad.dateStart || "",
+      dateEnd: ad.dateEnd || "",
+    });
+    setShowFbForm(true);
+  }
 
   const conversionRate = summary && summary.uniqueVisitors > 0
     ? ((summary.totalLoans + summary.totalAppointments) / summary.uniqueVisitors * 100).toFixed(1)
@@ -298,19 +382,155 @@ export default function AdTracking() {
                 </Badge>
               )}
             </CardTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-2"
-              onClick={() => fbSyncMut.mutate()}
-              disabled={fbSyncMut.isPending}
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${fbSyncMut.isPending ? "animate-spin" : ""}`} />
-              {fbSyncMut.isPending ? "同步中..." : "手動同步"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                onClick={() => { setEditingFbId(null); setFbForm(emptyFbForm); setShowFbForm(true); }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                手動新增
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                onClick={() => fbSyncMut.mutate()}
+                disabled={fbSyncMut.isPending}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${fbSyncMut.isPending ? "animate-spin" : ""}`} />
+                {fbSyncMut.isPending ? "同步中..." : "API 同步"}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Manual entry form */}
+          {showFbForm && (
+            <div className="mb-5 rounded-lg border bg-muted/30 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium">
+                  {editingFbId ? "編輯廣告活動" : "新增廣告活動"}
+                </h3>
+                <Button size="sm" variant="ghost" onClick={() => { setShowFbForm(false); setEditingFbId(null); }}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">活動名稱 *</label>
+                  <input
+                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={fbForm.campaignName}
+                    onChange={e => setFbForm(p => ({ ...p, campaignName: e.target.value }))}
+                    placeholder="e.g. 春季促銷活動"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">狀態</label>
+                  <select
+                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={fbForm.status}
+                    onChange={e => setFbForm(p => ({ ...p, status: e.target.value }))}
+                  >
+                    <option value="ACTIVE">啟用中</option>
+                    <option value="PAUSED">暫停</option>
+                    <option value="COMPLETED">已完成</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">目標</label>
+                  <input
+                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={fbForm.objective}
+                    onChange={e => setFbForm(p => ({ ...p, objective: e.target.value }))}
+                    placeholder="e.g. LEAD_GENERATION"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">花費 (NT$) *</label>
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm tabular-nums"
+                    value={fbForm.spend}
+                    onChange={e => setFbForm(p => ({ ...p, spend: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">曝光量</label>
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm tabular-nums"
+                    value={fbForm.impressions}
+                    onChange={e => setFbForm(p => ({ ...p, impressions: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">點擊數</label>
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm tabular-nums"
+                    value={fbForm.clicks}
+                    onChange={e => setFbForm(p => ({ ...p, clicks: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">觸及人數</label>
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm tabular-nums"
+                    value={fbForm.reach}
+                    onChange={e => setFbForm(p => ({ ...p, reach: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">轉換數</label>
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm tabular-nums"
+                    value={fbForm.conversions}
+                    onChange={e => setFbForm(p => ({ ...p, conversions: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">日期區間</label>
+                  <div className="mt-1 flex gap-2">
+                    <input
+                      type="date"
+                      className="w-full rounded-md border bg-background px-2 py-2 text-sm"
+                      value={fbForm.dateStart}
+                      onChange={e => setFbForm(p => ({ ...p, dateStart: e.target.value }))}
+                    />
+                    <input
+                      type="date"
+                      className="w-full rounded-md border bg-background px-2 py-2 text-sm"
+                      value={fbForm.dateEnd}
+                      onChange={e => setFbForm(p => ({ ...p, dateEnd: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleFbSubmit}
+                  disabled={!fbForm.campaignName || !fbForm.spend || fbUpsertMut.isPending}
+                >
+                  {fbUpsertMut.isPending ? "儲存中..." : editingFbId ? "更新" : "新增"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setShowFbForm(false); setEditingFbId(null); }}>
+                  取消
+                </Button>
+              </div>
+            </div>
+          )}
+
           {fbSummaryLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
@@ -360,8 +580,8 @@ export default function AdTracking() {
               {/* Campaign detail table */}
               {fbAds && fbAds.length > 0 && (
                 <div className="overflow-x-auto">
-                  <div className="space-y-1 min-w-[700px]">
-                    <div className="grid grid-cols-8 text-xs font-medium text-muted-foreground pb-2 border-b">
+                  <div className="space-y-1 min-w-[750px]">
+                    <div className="grid grid-cols-9 text-xs font-medium text-muted-foreground pb-2 border-b">
                       <span className="col-span-2">活動名稱</span>
                       <span>狀態</span>
                       <span className="text-right">花費</span>
@@ -369,9 +589,10 @@ export default function AdTracking() {
                       <span className="text-right">點擊</span>
                       <span className="text-right">CTR</span>
                       <span className="text-right">轉換</span>
+                      <span className="text-right">操作</span>
                     </div>
                     {(fbAds as any[]).map((ad: any) => (
-                      <div key={ad.campaignId} className="grid grid-cols-8 items-center text-sm py-2 border-b border-muted/50 last:border-0">
+                      <div key={ad.campaignId || ad.id} className="grid grid-cols-9 items-center text-sm py-2 border-b border-muted/50 last:border-0">
                         <span className="col-span-2 truncate pr-2" title={ad.campaignName}>
                           {ad.campaignName || ad.campaignId}
                         </span>
@@ -383,10 +604,12 @@ export default function AdTracking() {
                                 ? "text-green-600 border-green-200 bg-green-50"
                                 : ad.status === "PAUSED"
                                 ? "text-yellow-600 border-yellow-200 bg-yellow-50"
+                                : ad.status === "COMPLETED"
+                                ? "text-muted-foreground border-muted bg-muted/50"
                                 : "text-muted-foreground"
                             }
                           >
-                            {ad.status === "ACTIVE" ? "啟用" : ad.status === "PAUSED" ? "暫停" : ad.status || "—"}
+                            {ad.status === "ACTIVE" ? "啟用" : ad.status === "PAUSED" ? "暫停" : ad.status === "COMPLETED" ? "完成" : ad.status || "—"}
                           </Badge>
                         </span>
                         <span className="text-right font-medium tabular-nums">NT${Number(ad.spend).toLocaleString()}</span>
@@ -394,6 +617,19 @@ export default function AdTracking() {
                         <span className="text-right tabular-nums">{ad.clicks?.toLocaleString()}</span>
                         <span className="text-right tabular-nums">{ad.ctr ? `${Number(ad.ctr).toFixed(2)}%` : "—"}</span>
                         <span className="text-right font-bold tabular-nums">{ad.conversions || 0}</span>
+                        <span className="flex justify-end gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => startEditFb(ad)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+                            onClick={() => { if (confirm("確定刪除此活動？")) fbDeleteMut.mutate({ id: ad.id }); }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -401,7 +637,7 @@ export default function AdTracking() {
               )}
 
               <p className="text-xs text-muted-foreground text-center">
-                數據每 6 小時自動更新
+                可手動輸入或透過 API 自動同步（需設定 FB_ACCESS_TOKEN）
               </p>
             </div>
           ) : (
@@ -410,7 +646,7 @@ export default function AdTracking() {
                 尚無 Facebook 廣告數據
               </p>
               <p className="text-xs text-muted-foreground">
-                請先在 Railway 環境變數設定 FB_AD_ACCOUNT_ID 和 FB_ACCESS_TOKEN，再點擊「手動同步」
+                點擊上方「手動新增」輸入廣告數據，或設定 API Token 自動同步
               </p>
             </div>
           )}

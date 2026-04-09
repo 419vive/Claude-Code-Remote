@@ -446,11 +446,43 @@ export const adminRouter = router({
     return getFacebookAdSummary();
   }),
 
-  /** Manually trigger Facebook Ads sync */
+  /** Manually trigger Facebook Ads sync (API) */
   syncFacebookAds: adminProcedure.mutation(async () => {
     await syncFacebookAds();
     return { success: true };
   }),
+
+  /** Manually add/edit a Facebook ad campaign */
+  facebookAdUpsert: adminProcedure
+    .input(z.object({
+      id: z.number().optional(),
+      campaignName: z.string().min(1),
+      status: z.string().optional(),
+      objective: z.string().optional(),
+      spend: z.string(),
+      impressions: z.number().min(0),
+      clicks: z.number().min(0),
+      reach: z.number().min(0),
+      conversions: z.number().min(0),
+      ctr: z.string().optional(),
+      cpc: z.string().optional(),
+      cpm: z.string().optional(),
+      costPerConversion: z.string().optional(),
+      dateStart: z.string().optional(),
+      dateEnd: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      await db.upsertFacebookAd(input);
+      return { success: true };
+    }),
+
+  /** Delete a Facebook ad campaign record */
+  facebookAdDelete: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.deleteFacebookAd(input.id);
+      return { success: true };
+    }),
 
   // ============ 8891 PREMIUM ADS ============
 
