@@ -19,6 +19,7 @@ const VehicleManagement = lazy(() => import("./pages/VehicleManagement"));
 const LineSetup = lazy(() => import("./pages/LineSetup"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const AdTracking = lazy(() => import("./pages/AdTracking"));
+const AdSpendROI = lazy(() => import("./pages/AdSpendROI"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const LoanInquiries = lazy(() => import("./pages/LoanInquiries"));
 const Appointments = lazy(() => import("./pages/Appointments"));
@@ -103,6 +104,11 @@ function Router() {
       <Route path="/admin/ad-tracking">
         <AdminLayout>
           <AdTracking />
+        </AdminLayout>
+      </Route>
+      <Route path="/admin/ad-spend">
+        <AdminLayout>
+          <AdSpendROI />
         </AdminLayout>
       </Route>
 

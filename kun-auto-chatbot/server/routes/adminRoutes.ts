@@ -396,6 +396,42 @@ export const adminRouter = router({
       return db.getDailyConversions(start, end);
     }),
 
+  // ============ AD SPEND / ROI ============
+
+  /** List all ad spend records */
+  adSpendList: adminProcedure.query(async () => {
+    return db.listAdSpend();
+  }),
+
+  /** Add or update ad spend record */
+  adSpendUpsert: adminProcedure
+    .input(z.object({
+      channel: z.string().min(1),
+      month: z.string().regex(/^\d{4}-\d{2}$/),
+      amount: z.string(), // decimal as string
+      listingsCount: z.number().optional(),
+      impressions: z.number().optional(),
+      clicks: z.number().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      await db.upsertAdSpend(input);
+      return { success: true };
+    }),
+
+  /** Delete an ad spend record */
+  adSpendDelete: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.deleteAdSpend(input.id);
+      return { success: true };
+    }),
+
+  /** Cross-channel ROI comparison */
+  channelROI: adminProcedure.query(async () => {
+    return db.getChannelROI();
+  }),
+
   /** Ad tracking pixel config (for dashboard display) */
   adPixelConfig: adminProcedure.query(async () => {
     return {

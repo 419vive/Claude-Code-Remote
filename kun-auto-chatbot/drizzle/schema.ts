@@ -194,3 +194,22 @@ export const appointments = mysqlTable("appointments", {
 
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = typeof appointments.$inferInsert;
+
+/**
+ * Ad spend records for cross-channel ROI comparison (8891, Facebook, Google, etc.)
+ */
+export const adSpend = mysqlTable("adSpend", {
+  id: int("id").autoincrement().primaryKey(),
+  channel: varchar("channel", { length: 32 }).notNull(), // "8891", "facebook", "google", "line", "other"
+  month: varchar("month", { length: 7 }).notNull(), // "2026-04" format
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), // NT$ spent
+  listingsCount: int("listingsCount"), // for 8891: how many vehicles listed
+  impressions: int("impressions"), // if known
+  clicks: int("clicks"), // if known
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AdSpend = typeof adSpend.$inferSelect;
+export type InsertAdSpend = typeof adSpend.$inferInsert;

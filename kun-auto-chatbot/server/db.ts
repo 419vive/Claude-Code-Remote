@@ -12,6 +12,7 @@ import {
   pageViews, InsertPageView,
   loanInquiries, InsertLoanInquiry,
   appointments, InsertAppointment,
+  adSpend, InsertAdSpend,
 } from "../drizzle/schema";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -771,4 +772,125 @@ export async function getConversionSummary(startDate?: Date, endDate?: Date) {
     totalPageViews: Number(pvs[0]?.count ?? 0),
     uniqueVisitors: Number(visitors[0]?.count ?? 0),
   };
+}
+
+// ============ AD SPEND QUERIES ============
+
+export async function listAdSpend() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(adSpend).orderBy(desc(adSpend.month), adSpend.channel);
+}
+
+export async function upsertAdSpend(data: InsertAdSpend) {
+  const db = await getDb();
+  if (!db) return;
+  // Check if record exists for this channel+month
+  const existing = await db.select().from(adSpend)
+    .where(and(eq(adSpend.channel, data.channel), eq(adSpend.month, data.month)))
+    .limit(1);
+  if (existing.length > 0) {
+    await db.update(adSpend)
+      .set({ amount: data.amount, listingsCount: data.listingsCount, impressions: data.impressions, clicks: data.clicks, notes: data.notes })
+      .where(eq(adSpend.id, existing[0].id));
+  } else {
+    await db.insert(adSpend).values(data);
+  }
+}
+
+export async function deleteAdSpend(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(adSpend).where(eq(adSpend.id, id));
+}
+
+/** Cross-channel ROI: ad spend + conversions from referrer data, grouped by month+channel */
+export async function getChannelROI() {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get all ad spend records
+  const spendRows = await db.select().from(adSpend).orderBy(desc(adSpend.month));
+
+  // Get 8891 referral conversions (pageViews from 8891 → loans/appointments)
+  const referralVisitors = await db.select({
+    month: sql<string>`DATE_FORMAT(${pageViews.createdAt}, '%Y-%m')`,
+    referrerDomain: pageViews.referrerDomain,
+    visitors: sql<number>`COUNT(DISTINCT ${pageViews.sessionHash})`,
+    pageViews: sql<number>`COUNT(*)`,
+  }).from(pageViews)
+    .where(sql`${pageViews.referrerDomain} IS NOT NULL`)
+    .groupBy(sql`DATE_FORMAT(${pageViews.createdAt}, '%Y-%m')`, pageViews.referrerDomain);
+
+  // Get monthly conversions (loans + appointments)
+  const monthlyLoans = await db.select({
+    month: sql<string>`DATE_FORMAT(${loanInquiries.createdAt}, '%Y-%m')`,
+    count: sql<number>`COUNT(*)`,
+  }).from(loanInquiries).groupBy(sql`DATE_FORMAT(${loanInquiries.createdAt}, '%Y-%m')`);
+
+  const monthlyAppts = await db.select({
+    month: sql<string>`DATE_FORMAT(${appointments.createdAt}, '%Y-%m')`,
+    count: sql<number>`COUNT(*)`,
+  }).from(appointments).groupBy(sql`DATE_FORMAT(${appointments.createdAt}, '%Y-%m')`);
+
+  // Build ROI table
+  const monthChannelMap: Record<string, Record<string, any>> = {};
+
+  for (const row of spendRows) {
+    const key = `${row.month}|${row.channel}`;
+    monthChannelMap[key] = {
+      id: row.id,
+      month: row.month,
+      channel: row.channel,
+      spend: Number(row.amount),
+      listings: row.listingsCount,
+      impressions: row.impressions,
+      clicks: row.clicks,
+      notes: row.notes,
+      visitors: 0,
+      conversions: 0,
+      cpa: null as number | null,
+    };
+  }
+
+  // Map referral visitors to channels
+  const channelDomainMap: Record<string, string> = {
+    "8891": "8891",
+    "facebook": "facebook",
+    "fb": "facebook",
+    "instagram": "facebook",
+    "google": "google",
+    "line": "line",
+  };
+
+  for (const row of referralVisitors) {
+    const domain = String(row.referrerDomain || "").toLowerCase();
+    let matchedChannel: string | null = null;
+    for (const [keyword, channel] of Object.entries(channelDomainMap)) {
+      if (domain.includes(keyword)) { matchedChannel = channel; break; }
+    }
+    if (!matchedChannel) continue;
+    const key = `${row.month}|${matchedChannel}`;
+    if (monthChannelMap[key]) {
+      monthChannelMap[key].visitors += Number(row.visitors);
+    }
+  }
+
+  // Add total conversions per month (distributed across channels by visitor ratio)
+  const monthlyConvMap: Record<string, number> = {};
+  for (const row of monthlyLoans) monthlyConvMap[row.month] = (monthlyConvMap[row.month] || 0) + Number(row.count);
+  for (const row of monthlyAppts) monthlyConvMap[row.month] = (monthlyConvMap[row.month] || 0) + Number(row.count);
+
+  // Calculate CPA
+  for (const entry of Object.values(monthChannelMap)) {
+    const totalConv = monthlyConvMap[entry.month] || 0;
+    entry.conversions = totalConv; // simplified: show total monthly conversions
+    if (entry.spend > 0 && totalConv > 0) {
+      entry.cpa = Math.round(entry.spend / totalConv);
+    }
+  }
+
+  return Object.values(monthChannelMap).sort((a, b) =>
+    b.month.localeCompare(a.month) || a.channel.localeCompare(b.channel)
+  );
 }

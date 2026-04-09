@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, MessageSquare, Car, Home, Settings, BarChart3, DollarSign, CalendarDays, Target } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, MessageSquare, Car, Home, Settings, BarChart3, DollarSign, CalendarDays, Target, Coins } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -35,6 +35,7 @@ const menuItems = [
   { icon: DollarSign, label: "貸款諮詢", path: "/admin/loans" },
   { icon: CalendarDays, label: "預約看車", path: "/admin/appointments" },
   { icon: Target, label: "廣告追蹤", path: "/admin/ad-tracking" },
+  { icon: Coins, label: "廣告花費 ROI", path: "/admin/ad-spend" },
   { icon: Settings, label: "LINE 整合", path: "/admin/line-setup" },
 ];
 
