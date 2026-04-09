@@ -335,41 +335,85 @@ async function startServer() {
 
   // ============================================================
   // FAST REDIRECT: /line and /contact
-  // Server-side device detection + instant redirect (no SPA load needed)
-  // This is ~50ms vs ~2-3s for SPA-based redirect
+  // Server-side device detection + pixel capture before LINE redirect
+  // Mobile: loads Meta Pixel + Google Ads, fires events, then redirects (~200ms)
+  // Desktop: instant redirect to homepage
   // ============================================================
   const LINE_OA_URL = "https://page.line.me/825oftez";
 
   app.get(["/line", "/contact"], (req, res) => {
     const ua = req.headers["user-agent"] || "";
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    const redirectUrl = isMobile ? LINE_OA_URL : "/";
 
-    // Return ultra-lightweight HTML that redirects immediately
-    // No React, no JS bundle, no waiting — just pure instant redirect
+    if (!isMobile) {
+      // Desktop: instant redirect, no pixel needed
+      res.status(200).set({ "Content-Type": "text/html" }).end(`<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="0;url=/">
+<title>崑家汽車 — 跳轉中</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1B3A5C;font-family:system-ui,-apple-system,sans-serif;color:#fff}.c{text-align:center;padding:2rem}.s{width:2rem;height:2rem;border:3px solid rgba(196,162,101,.3);border-top-color:#C4A265;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 1rem}@keyframes spin{to{transform:rotate(360deg)}}a{color:#C4A265;text-decoration:underline}</style>
+</head>
+<body>
+<div class="c"><div class="s"></div>
+<p style="font-size:1.1rem;font-weight:600;margin-bottom:.5rem">正在前往崑家汽車官網...</p>
+<p style="font-size:.8rem;opacity:.5">如未自動跳轉，<a href="/">請點此</a></p>
+</div>
+<script>window.location.href="/"</script>
+</body></html>`);
+      return;
+    }
+
+    // Mobile: embed pixel scripts, fire tracking events, then redirect to LINE
     res.status(200).set({ "Content-Type": "text/html" }).end(`<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="refresh" content="0;url=${redirectUrl}">
-<title>崑家汽車 — 跳轉中</title>
+<title>崑家汽車 — 前往官方 LINE</title>
+<!-- Meta Pixel -->
+<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','936259169015798');fbq('track','PageView');fbq('track','Contact',{content_category:'line_redirect',content_name:'崑家汽車LINE官方帳號'});</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=936259169015798&ev=PageView&noscript=1"/></noscript>
+<!-- Google Ads + GA4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-18X1ENYHP8"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-18X1ENYHP8');gtag('config','AW-8142635893');gtag('event','conversion',{send_to:'AW-8142635893/line_redirect',event_category:'contact',event_label:'line_redirect'});</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1B3A5C;font-family:system-ui,-apple-system,sans-serif;color:#fff}
-.c{text-align:center;padding:2rem}
-.s{width:2rem;height:2rem;border:3px solid rgba(196,162,101,.3);border-top-color:#C4A265;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 1rem}
-@keyframes spin{to{transform:rotate(360deg)}}
-a{color:#C4A265;text-decoration:underline}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1B3A5C,#0f2440);font-family:system-ui,-apple-system,sans-serif;color:#fff}
+.c{text-align:center;padding:2rem;max-width:20rem}
+.icon{width:4rem;height:4rem;margin:0 auto 1rem;background:linear-gradient(135deg,#C4A265,#a8893e);border-radius:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(196,162,101,.3)}
+.icon svg{width:2rem;height:2rem;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+h1{font-size:1.3rem;margin-bottom:.25rem}
+.sub{font-size:.75rem;opacity:.5;margin-bottom:1.5rem}
+.line-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(6,199,85,.15);border:1px solid rgba(6,199,85,.3);border-radius:2rem;padding:.5rem 1.25rem;margin-bottom:1rem}
+.line-badge svg{width:1.5rem;height:1.5rem;fill:#06C755}
+.line-badge span{font-size:.95rem;font-weight:600;color:#06C755}
+.bar{width:100%;height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin-bottom:1rem}
+.bar-fill{height:100%;background:linear-gradient(90deg,#06C755,#00B900);animation:fill .5s ease-out forwards}
+@keyframes fill{from{width:0}to{width:100%}}
+.hint{font-size:.7rem;opacity:.4}
+.hint a{color:#C4A265;text-decoration:underline}
 </style>
 </head>
 <body>
 <div class="c">
-<div class="s"></div>
-<p style="font-size:1.1rem;font-weight:600;margin-bottom:.5rem">${isMobile ? "正在開啟 LINE..." : "正在前往崑家汽車官網..."}</p>
-<p style="font-size:.8rem;opacity:.5">如未自動跳轉，<a href="${redirectUrl}">請點此</a></p>
+<div class="icon"><svg viewBox="0 0 24 24"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg></div>
+<h1>崑家汽車</h1>
+<p class="sub">高雄優質中古車商 · 誠信經營40年</p>
+<div class="line-badge">
+<svg viewBox="0 0 24 24"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596a.629.629 0 01-.199.031c-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595a.62.62 0 01.194-.033c.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+<span>前往官方 LINE</span>
 </div>
-<script>window.location.href="${redirectUrl}"</script>
+<div class="bar"><div class="bar-fill"></div></div>
+<p class="hint">正在為您開啟 LINE 官方帳號...<br>如未自動跳轉，<a href="${LINE_OA_URL}">請點此</a></p>
+</div>
+<script>
+// Redirect after pixels have had time to dispatch (~300ms)
+// fbq/gtag use image beacons internally, so they'll complete even after navigation
+setTimeout(function(){window.location.href="${LINE_OA_URL}"},300);
+</script>
 </body>
 </html>`);
   });
