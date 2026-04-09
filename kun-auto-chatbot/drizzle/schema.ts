@@ -71,12 +71,32 @@ export const conversations = mysqlTable("conversations", {
   summary: text("summary"),
   interestedVehicleIds: text("interestedVehicleIds"),
   notifiedOwner: int("notifiedOwner").default(0),
+  // LLM-generated lead qualifier verdict (overwritten on each run).
+  // Shape: { icpScore, tier, reasoning, buyingSignals[], risks[], recommendedAction, draftFollowUp, model, generatedAt }
+  leadQualifierVerdict: json("leadQualifierVerdict"),
+  leadQualifierAt: timestamp("leadQualifierAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = typeof conversations.$inferInsert;
+
+/**
+ * Structured shape of leadQualifierVerdict JSON column.
+ * Not a table — used for typing the JSON blob.
+ */
+export type LeadQualifierVerdict = {
+  icpScore: number; // 0–100, LLM's own qualitative score (distinct from regex leadScore)
+  tier: "cold" | "warm" | "hot" | "urgent";
+  reasoning: string; // 2–4 sentences: why this score
+  buyingSignals: string[]; // concrete signals extracted from conversation
+  risks: string[]; // blockers / hesitations detected
+  recommendedAction: string; // what the owner should do next
+  draftFollowUp: string; // ready-to-send 高雄在地老江湖 message
+  model: string; // which LLM produced this
+  generatedAt: string; // ISO timestamp
+};
 
 /**
  * Individual messages within conversations

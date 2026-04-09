@@ -2,6 +2,7 @@ import { logger } from "../logger";
 import { notifyOwner } from "../_core/notification";
 import * as db from "../db";
 import { detectPhoneNumber } from "../lineUtils";
+import { maybeRunLeadQualifier } from "../leadQualifierAgent";
 
 // ============ LEAD SCORING LOGIC ============
 
@@ -179,6 +180,11 @@ export async function checkAndNotifyOwner(conversationId: number, conversation: 
         }
       }
     }
+
+    // Fire-and-forget: enrich with LLM qualifier verdict.
+    // Runs only at notification milestones (so ≤4 runs per lead lifecycle).
+    // Overwrites conversations.leadQualifierVerdict. Never blocks the request.
+    maybeRunLeadQualifier(conversationId);
   } catch (err) {
     logger.error("Lead Notify", "Failed:", err);
   }

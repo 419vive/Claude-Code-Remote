@@ -5,7 +5,7 @@ import mysql from "mysql2";
 import {
   InsertUser, users,
   vehicles, Vehicle, InsertVehicle,
-  conversations, Conversation, InsertConversation,
+  conversations, Conversation, InsertConversation, LeadQualifierVerdict,
   messages, Message as DbMessage, InsertMessage,
   leadEvents, InsertLeadEvent,
   analyticsEvents, InsertAnalyticsEvent,
@@ -175,10 +175,29 @@ export async function getConversationBySessionId(sessionId: string) {
   return result[0];
 }
 
+export async function getConversationById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
+  return result[0];
+}
+
 export async function updateConversation(id: number, data: Partial<InsertConversation>) {
   const db = await getDb();
   if (!db) return;
   await db.update(conversations).set(data).where(eq(conversations.id, id));
+}
+
+/**
+ * Overwrite the lead qualifier verdict JSON for a conversation.
+ * Called by leadQualifierAgent after a successful LLM run.
+ */
+export async function updateLeadQualifierVerdict(id: number, verdict: LeadQualifierVerdict) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(conversations)
+    .set({ leadQualifierVerdict: verdict, leadQualifierAt: new Date() })
+    .where(eq(conversations.id, id));
 }
 
 export async function listConversations(filters?: {

@@ -1,5 +1,6 @@
 import * as db from "./db";
 import { notifyOwner } from "./_core/notification";
+import { maybeRunLeadQualifier } from "./leadQualifierAgent";
 
 // ============ HELPER: Get assistant content description for Rich Menu triggers ============
 export function getAssistantContentForTrigger(trigger: { type: string; label: string }): string {
@@ -303,6 +304,11 @@ export async function checkAndNotifyOwner(
         }
       }
     }
+
+    // Fire-and-forget: enrich with LLM qualifier verdict.
+    // Runs only at notification milestones (so ≤4 runs per lead lifecycle).
+    // Overwrites conversations.leadQualifierVerdict. Never blocks the webhook.
+    maybeRunLeadQualifier(conversation.id);
   } catch (err) {
     console.error("[LINE] Owner notification failed:", err);
   }
