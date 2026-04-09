@@ -1387,9 +1387,6 @@ export const blogPosts: BlogPost[] = [
 </p>
     `
   },
-];
-
-
   {
     slug: "used-car-under-30-wan",
     title: "30萬以下二手車推薦｜低價首購族最划算選擇",
@@ -2139,12 +2136,6 @@ export const blogPosts: BlogPost[] = [
 </p>
     `
   },
-];
-
-export function getBlogPost(slug: string): BlogPost | undefined {
-  return blogPosts.find(p => p.slug === slug);
-}
-
   {
     slug: "used-car-maintenance-cost",
     title: "二手車養車費用完整指南｜年度保養成本大公開",
@@ -2476,8 +2467,6 @@ export function getBlogPost(slug: string): BlogPost | undefined {
 </p>
     `
   },
-];
-
   {
     slug: "flood-damaged-car-check",
     title: "泡水車辨別方法｜一眼識破水淹車詐騙",
@@ -2692,8 +2681,6 @@ export function getBlogPost(slug: string): BlogPost | undefined {
 </p>
     `
   },
-];
-
   {
     slug: "tainan-used-car-guide",
     title: "台南二手車推薦｜在地車商、維修廠、購車指南",
@@ -2749,8 +2736,6 @@ export function getBlogPost(slug: string): BlogPost | undefined {
     keywords: ["高雄三民區", "高雄二手車", "在地車商", "40年老店", "認證車源"],
     content: `<p class="answer-summary" data-speakable><strong>崑家汽車位於高雄三民區大順二路269號，40年老店、全台最大認證車源、實價標示。三民區購車首選。</strong></p><h2>為什麼選擇崑家汽車</h2><ul><li>40年在地信賴，1984年成立</li><li>全台最大認證車源規模</li><li>實價標示，透明無隱藏費用</li><li>1年保固標配、可延保至3年</li><li>靈活貸款方案（零利率12期、1.99%優利）</li></ul><h2>店舖地點</h2><p><strong>高雄市三民區大順二路269號</strong><br>電話：0936-812-818<br><a href="https://page.line.me/825oftez" target="_blank" rel="noopener">LINE @825oftez</a><br><a href="/">官網</a></p><p style="margin-top: 2rem; padding: 1.5rem; background: #f5f5f5; border-left: 4px solid #d4a574;"><strong>高雄三民區買二手車，崑家汽車最值信賴！</strong>加<a href="https://page.line.me/825oftez" target="_blank" rel="noopener">LINE @825oftez</a>看最新車源，或<a href="/">直接到門市</a>。</p>`
   },
-];
-
   {
     slug: "used-car-loan-zero-down",
     title: "二手車全額貸款｜零利率、低首付、輕鬆購車方案",
@@ -2895,6 +2880,10 @@ export function getBlogPost(slug: string): BlogPost | undefined {
     content: `<p class="answer-summary" data-speakable><strong>賣給車商最快速簡單。估價 → 決定 → 過戶 → 領錢，1-2天完成。</strong></p><h2>賣車方式選擇</h2><table><thead><tr><th>方式</th><th>優勢</th><th>估價</th></tr></thead><tbody><tr><td>賣給車商</td><td>快速、簡單</td><td>市場價-10-15%</td></tr><tr><td>個人買家</td><td>價格較高</td><td>市場價-5-8%</td></tr></tbody></table><h2>賣車流程</h2><ol><li>諮詢多家車商</li><li>到店完整估價</li><li>協商價格</li><li>簽約交車</li><li>辦理過戶</li><li>領取款項</li></ol><h2>影響售價的因素</h2><ul><li>年份和里程數</li><li>有沒有事故紀錄</li><li>保養記錄完整度</li><li>市場供需</li></ul><p><a href="/">崑家汽車提供友善估價</a>。</p>`
   },
 ];
+
+export function getBlogPost(slug: string): BlogPost | undefined {
+  return blogPosts.find(p => p.slug === slug);
+}
 
 export function getRelatedPosts(slug: string, count = 3): BlogPost[] {
   return blogPosts.filter(p => p.slug !== slug).slice(0, count);
