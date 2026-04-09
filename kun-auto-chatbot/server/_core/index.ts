@@ -13,6 +13,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startSyncScheduler, sync8891 } from "../sync8891";
 import { sync8891Premium } from "../sync8891Premium";
+import { syncFacebookAds } from "../syncFacebookAds";
 import { deployRichMenu } from "../lineRichMenu";
 import { RATE_LIMIT_CONFIG, logSecurityEvent } from "../security";
 import { trackingRouter } from "../trackingApi";
@@ -160,6 +161,32 @@ async function runMigrations() {
       updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_premium_item (item_id),
       INDEX idx_premium_fetched (fetched_at)
+    )`);
+
+    await conn.execute(`CREATE TABLE IF NOT EXISTS facebook_ads_campaigns (
+      id int AUTO_INCREMENT NOT NULL PRIMARY KEY,
+      campaign_id varchar(64) NOT NULL,
+      campaign_name varchar(256),
+      ad_account_id varchar(64) NOT NULL,
+      status varchar(20),
+      objective varchar(64),
+      daily_budget int,
+      lifetime_budget int,
+      spend decimal(10,2) DEFAULT 0,
+      impressions int DEFAULT 0,
+      clicks int DEFAULT 0,
+      reach_count int DEFAULT 0,
+      ctr decimal(6,4),
+      cpc decimal(10,2),
+      cpm decimal(10,2),
+      conversions int DEFAULT 0,
+      cost_per_conversion decimal(10,2),
+      date_start varchar(10),
+      date_end varchar(10),
+      fetched_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_fb_campaign (campaign_id),
+      INDEX idx_fb_account (ad_account_id)
     )`);
 
     logger.info("Database", "Migrations completed successfully");
@@ -495,6 +522,27 @@ setTimeout(function(){window.location.href="${LINE_OA_URL}"},300);
       scheduleNextRun();
     } else {
       logger.info("8891 Premium", "Skipping premium ad sync (EIGHTBALL_ACCOUNT not configured)");
+    }
+
+    // Facebook Ads: sync every 6 hours
+    if (process.env.FB_ACCESS_TOKEN && process.env.FB_AD_ACCOUNT_ID) {
+      logger.info("Facebook Ads", "Facebook Ads sync enabled — every 6 hours");
+      // Initial sync after 90 seconds
+      setTimeout(async () => {
+        logger.info("Facebook Ads", "Running initial Facebook Ads sync...");
+        await syncFacebookAds().catch(err =>
+          logger.error("Facebook Ads", "Initial sync failed:", err)
+        );
+      }, 90000);
+      // Recurring every 6 hours
+      setInterval(async () => {
+        logger.info("Facebook Ads", "Running scheduled Facebook Ads sync...");
+        await syncFacebookAds().catch(err =>
+          logger.error("Facebook Ads", "Scheduled sync failed:", err)
+        );
+      }, 6 * 60 * 60 * 1000);
+    } else {
+      logger.info("Facebook Ads", "Skipping Facebook Ads sync (FB_ACCESS_TOKEN not configured)");
     }
 
     // Auto-deploy Rich Menu on startup to keep it in sync with code

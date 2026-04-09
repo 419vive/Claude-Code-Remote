@@ -242,3 +242,34 @@ export const premiumAds8891 = mysqlTable("premium_ads_8891", {
 
 export type PremiumAd8891 = typeof premiumAds8891.$inferSelect;
 export type InsertPremiumAd8891 = typeof premiumAds8891.$inferInsert;
+
+/**
+ * Facebook / Instagram Ads campaign performance data
+ * Fetched from Meta Marketing API
+ */
+export const facebookAdsCampaigns = mysqlTable("facebook_ads_campaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: varchar("campaign_id", { length: 64 }).notNull(),
+  campaignName: varchar("campaign_name", { length: 256 }),
+  adAccountId: varchar("ad_account_id", { length: 64 }).notNull(),
+  status: varchar("status", { length: 20 }),
+  objective: varchar("objective", { length: 64 }),
+  dailyBudget: int("daily_budget"),
+  lifetimeBudget: int("lifetime_budget"),
+  spend: decimal("spend", { precision: 10, scale: 2 }).default("0"),
+  impressions: int("impressions").default(0),
+  clicks: int("clicks").default(0),
+  reach: int("reach").default(0),
+  ctr: decimal("ctr", { precision: 6, scale: 4 }),
+  cpc: decimal("cpc", { precision: 10, scale: 2 }),
+  cpm: decimal("cpm", { precision: 10, scale: 2 }),
+  conversions: int("conversions").default(0),
+  costPerConversion: decimal("cost_per_conversion", { precision: 10, scale: 2 }),
+  dateStart: varchar("date_start", { length: 10 }),
+  dateEnd: varchar("date_end", { length: 10 }),
+  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FacebookAdsCampaign = typeof facebookAdsCampaigns.$inferSelect;
+export type InsertFacebookAdsCampaign = typeof facebookAdsCampaigns.$inferInsert;

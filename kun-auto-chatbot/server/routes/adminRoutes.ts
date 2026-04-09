@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import * as db from "../db";
 import { sync8891, getSyncStatus } from "../sync8891";
 import { sync8891Premium, getPremiumAdStats } from "../sync8891Premium";
+import { syncFacebookAds, getFacebookAdStats, getFacebookAdSummary } from "../syncFacebookAds";
 import { deployRichMenu, getRichMenuStatus, cancelDefaultRichMenu } from "../lineRichMenu";
 import { logSecurityEvent, getSecurityEvents } from "../security";
 
@@ -431,6 +432,24 @@ export const adminRouter = router({
   /** Cross-channel ROI comparison */
   channelROI: adminProcedure.query(async () => {
     return db.getChannelROI();
+  }),
+
+  // ============ FACEBOOK / INSTAGRAM ADS ============
+
+  /** Get all Facebook ad campaign data */
+  facebookAds: adminProcedure.query(async () => {
+    return getFacebookAdStats();
+  }),
+
+  /** Get Facebook ads aggregated summary */
+  facebookAdSummary: adminProcedure.query(async () => {
+    return getFacebookAdSummary();
+  }),
+
+  /** Manually trigger Facebook Ads sync */
+  syncFacebookAds: adminProcedure.mutation(async () => {
+    await syncFacebookAds();
+    return { success: true };
   }),
 
   // ============ 8891 PREMIUM ADS ============

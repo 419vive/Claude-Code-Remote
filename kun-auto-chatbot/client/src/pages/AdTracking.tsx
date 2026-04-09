@@ -16,6 +16,8 @@ import {
   Crown,
   MousePointerClick,
   BarChart3,
+  Facebook,
+  Megaphone,
 } from "lucide-react";
 
 function StatCard({
@@ -103,6 +105,11 @@ export default function AdTracking() {
   const { data: premiumAds, isLoading: premiumLoading } = trpc.admin.premiumAds.useQuery();
   const syncMut = trpc.admin.syncPremiumAds.useMutation({
     onSuccess: () => { utils.admin.premiumAds.invalidate(); },
+  });
+  const { data: fbAds, isLoading: fbLoading } = trpc.admin.facebookAds.useQuery();
+  const { data: fbSummary, isLoading: fbSummaryLoading } = trpc.admin.facebookAdSummary.useQuery();
+  const fbSyncMut = trpc.admin.syncFacebookAds.useMutation({
+    onSuccess: () => { utils.admin.facebookAds.invalidate(); utils.admin.facebookAdSummary.invalidate(); },
   });
 
   const conversionRate = summary && summary.uniqueVisitors > 0
@@ -275,6 +282,138 @@ export default function AdTracking() {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Facebook / Instagram Ads Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Megaphone className="h-4 w-4 text-blue-500" />
+              Facebook / Instagram 廣告成效
+              {fbSummary && fbSummary.activeCampaigns > 0 && (
+                <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                  {fbSummary.activeCampaigns} 個活躍
+                </Badge>
+              )}
+            </CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              onClick={() => fbSyncMut.mutate()}
+              disabled={fbSyncMut.isPending}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${fbSyncMut.isPending ? "animate-spin" : ""}`} />
+              {fbSyncMut.isPending ? "同步中..." : "手動同步"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {fbSummaryLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+            </div>
+          ) : fbSummary && (fbSummary.totalImpressions > 0 || (fbAds && fbAds.length > 0)) ? (
+            <div className="space-y-5">
+              {/* Summary stat cards */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <StatCard
+                  title="總花費"
+                  value={`NT$${fbSummary.totalSpend.toLocaleString()}`}
+                  icon={DollarSign}
+                  accent="text-green-600"
+                />
+                <StatCard
+                  title="總曝光量"
+                  value={fbSummary.totalImpressions.toLocaleString()}
+                  icon={Eye}
+                  accent="text-blue-600"
+                />
+                <StatCard
+                  title="總點擊數"
+                  value={fbSummary.totalClicks.toLocaleString()}
+                  icon={MousePointerClick}
+                  accent="text-orange-600"
+                />
+                <StatCard
+                  title="總觸及人數"
+                  value={fbSummary.totalReach.toLocaleString()}
+                  icon={Users}
+                />
+                <StatCard
+                  title="轉換數"
+                  value={fbSummary.totalConversions}
+                  icon={Target}
+                  description="Lead + Schedule"
+                  accent="text-green-600"
+                />
+                <StatCard
+                  title="平均 CTR"
+                  value={`${fbSummary.avgCTR}%`}
+                  icon={TrendingUp}
+                  description={`CPC: NT$${fbSummary.avgCPC}`}
+                />
+              </div>
+
+              {/* Campaign detail table */}
+              {fbAds && fbAds.length > 0 && (
+                <div className="overflow-x-auto">
+                  <div className="space-y-1 min-w-[700px]">
+                    <div className="grid grid-cols-8 text-xs font-medium text-muted-foreground pb-2 border-b">
+                      <span className="col-span-2">活動名稱</span>
+                      <span>狀態</span>
+                      <span className="text-right">花費</span>
+                      <span className="text-right">曝光</span>
+                      <span className="text-right">點擊</span>
+                      <span className="text-right">CTR</span>
+                      <span className="text-right">轉換</span>
+                    </div>
+                    {(fbAds as any[]).map((ad: any) => (
+                      <div key={ad.campaignId} className="grid grid-cols-8 items-center text-sm py-2 border-b border-muted/50 last:border-0">
+                        <span className="col-span-2 truncate pr-2" title={ad.campaignName}>
+                          {ad.campaignName || ad.campaignId}
+                        </span>
+                        <span>
+                          <Badge
+                            variant="outline"
+                            className={
+                              ad.status === "ACTIVE"
+                                ? "text-green-600 border-green-200 bg-green-50"
+                                : ad.status === "PAUSED"
+                                ? "text-yellow-600 border-yellow-200 bg-yellow-50"
+                                : "text-muted-foreground"
+                            }
+                          >
+                            {ad.status === "ACTIVE" ? "啟用" : ad.status === "PAUSED" ? "暫停" : ad.status || "—"}
+                          </Badge>
+                        </span>
+                        <span className="text-right font-medium tabular-nums">NT${Number(ad.spend).toLocaleString()}</span>
+                        <span className="text-right tabular-nums">{ad.impressions?.toLocaleString()}</span>
+                        <span className="text-right tabular-nums">{ad.clicks?.toLocaleString()}</span>
+                        <span className="text-right tabular-nums">{ad.ctr ? `${Number(ad.ctr).toFixed(2)}%` : "—"}</span>
+                        <span className="text-right font-bold tabular-nums">{ad.conversions || 0}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground text-center">
+                數據每 6 小時自動更新
+              </p>
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-sm text-muted-foreground mb-2">
+                尚無 Facebook 廣告數據
+              </p>
+              <p className="text-xs text-muted-foreground">
+                請先在 Railway 環境變數設定 FB_AD_ACCOUNT_ID 和 FB_ACCESS_TOKEN，再點擊「手動同步」
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
