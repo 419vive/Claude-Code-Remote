@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Car, MessageCircle, Smartphone, Monitor, ArrowRight, Phone } from "lucide-react";
+import { trackLineRedirect } from "@/lib/pixels";
 
 type DeviceType = "mobile" | "desktop";
 
@@ -18,24 +19,27 @@ const LINE_URL = "https://page.line.me/825oftez";
 const WEBSITE_URL = "/";
 
 export default function SmartRedirect() {
-  // Detect device synchronously — no "detecting" flash
   const device = useMemo(() => detectDevice(), []);
   const [redirectCancelled, setRedirectCancelled] = useState(false);
+  const redirectFired = useRef(false);
 
-  // Redirect immediately (no countdown delay)
   useEffect(() => {
-    if (redirectCancelled) return;
+    if (redirectCancelled || redirectFired.current) return;
+    redirectFired.current = true;
 
-    // Redirect after a minimal 300ms (just enough for the page to render)
-    const timer = setTimeout(() => {
-      if (device === "mobile") {
+    if (device === "mobile") {
+      // Fire pixel events, then redirect to LINE
+      // trackLineRedirect waits ~150ms for pixel dispatch, then we navigate
+      trackLineRedirect().then(() => {
         window.location.href = LINE_URL;
-      } else {
+      });
+    } else {
+      // Desktop: redirect to website after minimal render
+      const timer = setTimeout(() => {
         window.location.href = WEBSITE_URL;
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
   }, [device, redirectCancelled]);
 
   return (
@@ -68,29 +72,37 @@ export default function SmartRedirect() {
                   )}
                 </div>
 
-                <p className="text-white text-base font-medium mb-1">
+                <p className="text-white text-lg font-semibold mb-1">
                   {device === "mobile"
-                    ? "正在為您開啟 LINE 官方帳號..."
+                    ? "前往崑家汽車官方 LINE"
                     : "正在為您導向崑家汽車官網..."}
                 </p>
-                <p className="text-white/50 text-sm mb-6">正在跳轉中...</p>
+                <p className="text-white/50 text-sm mb-6">
+                  {device === "mobile"
+                    ? "正在為您開啟 LINE 官方帳號..."
+                    : "正在跳轉中..."}
+                </p>
 
-                {/* Progress bar — animated immediately */}
+                {/* Progress bar */}
                 <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-6">
                   <div
-                    className="h-full rounded-full animate-pulse"
+                    className="h-full rounded-full"
                     style={{
                       width: "100%",
                       background:
                         device === "mobile"
                           ? "linear-gradient(90deg, #06C755, #00B900)"
                           : "linear-gradient(90deg, #C4A265, #a8893e)",
+                      animation: "progressSlide 0.4s ease-out",
                     }}
                   />
                 </div>
 
                 <button
-                  onClick={() => setRedirectCancelled(true)}
+                  onClick={() => {
+                    setRedirectCancelled(true);
+                    redirectFired.current = false;
+                  }}
                   className="text-white/40 text-xs hover:text-white/70 transition-colors underline underline-offset-2"
                 >
                   取消自動跳轉，手動選擇
@@ -163,6 +175,14 @@ export default function SmartRedirect() {
           </div>
         </div>
       </div>
+
+      {/* Progress animation keyframes */}
+      <style>{`
+        @keyframes progressSlide {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+      `}</style>
     </div>
   );
 }

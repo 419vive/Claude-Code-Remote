@@ -79,3 +79,23 @@ export function trackMapClick() {
     window.fbq("track", "FindLocation");
   }
 }
+
+/** Fire pixel events when redirecting to LINE — returns a promise that resolves once events are queued */
+export function trackLineRedirect(): Promise<void> {
+  if (window.fbq) {
+    window.fbq("track", "Contact", {
+      content_category: "line_redirect",
+      content_name: "崑家汽車LINE官方帳號",
+    });
+  }
+  if (window.gtag) {
+    window.gtag("event", "conversion", {
+      send_to: "AW-8142635893/line_redirect",
+      event_category: "contact",
+      event_label: "line_redirect",
+    });
+  }
+  // Give pixel network requests ~150ms to dispatch (they use img/beacon internally
+  // so they'll complete even after navigation, but this ensures they're queued)
+  return new Promise((resolve) => setTimeout(resolve, 150));
+}
