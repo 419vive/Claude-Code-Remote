@@ -3,6 +3,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import * as db from "../db";
 import { sync8891, getSyncStatus } from "../sync8891";
+import { sync8891Premium, getPremiumAdStats } from "../sync8891Premium";
 import { deployRichMenu, getRichMenuStatus, cancelDefaultRichMenu } from "../lineRichMenu";
 import { logSecurityEvent, getSecurityEvents } from "../security";
 
@@ -430,6 +431,19 @@ export const adminRouter = router({
   /** Cross-channel ROI comparison */
   channelROI: adminProcedure.query(async () => {
     return db.getChannelROI();
+  }),
+
+  // ============ 8891 PREMIUM ADS ============
+
+  /** Get 8891 premium ad stats */
+  premiumAds: adminProcedure.query(async () => {
+    return getPremiumAdStats();
+  }),
+
+  /** Manually trigger 8891 premium ad sync */
+  syncPremiumAds: adminProcedure.mutation(async () => {
+    await sync8891Premium();
+    return { success: true };
   }),
 
   /** Ad tracking pixel config (for dashboard display) */

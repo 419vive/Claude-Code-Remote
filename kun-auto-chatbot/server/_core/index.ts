@@ -12,6 +12,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startSyncScheduler, sync8891 } from "../sync8891";
+import { sync8891Premium } from "../sync8891Premium";
 import { deployRichMenu } from "../lineRichMenu";
 import { RATE_LIMIT_CONFIG, logSecurityEvent } from "../security";
 import { trackingRouter } from "../trackingApi";
@@ -135,6 +136,30 @@ async function runMigrations() {
       INDEX idx_pageviews_created (createdAt),
       INDEX idx_pageviews_session (sessionHash),
       INDEX idx_pageviews_path (path(191))
+    )`);
+
+    await conn.execute(`CREATE TABLE IF NOT EXISTS premium_ads_8891 (
+      id int AUTO_INCREMENT NOT NULL PRIMARY KEY,
+      item_id varchar(20) NOT NULL,
+      car_name varchar(100),
+      price varchar(20),
+      status varchar(20),
+      campaign_period varchar(30),
+      period_start varchar(30),
+      period_end varchar(30),
+      current_rank int,
+      current_bid int,
+      cumulative_days int DEFAULT 0,
+      avg_rank int,
+      avg_bid int,
+      total_cost int DEFAULT 0,
+      impressions int DEFAULT 0,
+      clicks int DEFAULT 0,
+      auto_renew int DEFAULT 0,
+      fetched_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_premium_item (item_id),
+      INDEX idx_premium_fetched (fetched_at)
     )`);
 
     logger.info("Database", "Migrations completed successfully");
@@ -447,6 +472,31 @@ setTimeout(function(){window.location.href="${LINE_OA_URL}"},300);
       .then(result => logger.info("Sync", `Initial sync completed: ${result}`))
       .catch(err => logger.error("Sync", "Initial sync failed:", err));
     startSyncScheduler(6);
+
+    // 8891 Premium Ads: daily sync at 08:00 Taiwan time (UTC 00:00)
+    // Using setInterval with 24h period, initial run 60s after startup
+    if (process.env.EIGHTBALL_ACCOUNT && process.env.EIGHTBALL_PASSWORD) {
+      logger.info("8891 Premium", "Premium ad sync enabled — daily at UTC 00:00 (TW 08:00)");
+      // Schedule daily at UTC 00:00
+      const scheduleNextRun = () => {
+        const now = new Date();
+        const next = new Date(now);
+        next.setUTCHours(0, 0, 0, 0);
+        if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+        const delay = next.getTime() - now.getTime();
+        setTimeout(async () => {
+          logger.info("8891 Premium", "Running scheduled premium ad sync...");
+          await sync8891Premium().catch(err =>
+            logger.error("8891 Premium", "Scheduled sync failed:", err)
+          );
+          scheduleNextRun();
+        }, delay);
+      };
+      scheduleNextRun();
+    } else {
+      logger.info("8891 Premium", "Skipping premium ad sync (EIGHTBALL_ACCOUNT not configured)");
+    }
+
     // Auto-deploy Rich Menu on startup to keep it in sync with code
     const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
     if (lineToken) {

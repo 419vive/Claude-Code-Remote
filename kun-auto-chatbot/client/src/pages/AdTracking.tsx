@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,6 +12,10 @@ import {
   TrendingUp,
   ExternalLink,
   CheckCircle2,
+  RefreshCw,
+  Crown,
+  MousePointerClick,
+  BarChart3,
 } from "lucide-react";
 
 function StatCard({
@@ -91,9 +96,14 @@ function PixelStatusCard({
 }
 
 export default function AdTracking() {
+  const utils = trpc.useUtils();
   const { data: summary, isLoading: summaryLoading } = trpc.admin.conversionSummary.useQuery({});
   const { data: daily, isLoading: dailyLoading } = trpc.admin.dailyConversions.useQuery({});
   const { data: pixels } = trpc.admin.adPixelConfig.useQuery();
+  const { data: premiumAds, isLoading: premiumLoading } = trpc.admin.premiumAds.useQuery();
+  const syncMut = trpc.admin.syncPremiumAds.useMutation({
+    onSuccess: () => { utils.admin.premiumAds.invalidate(); },
+  });
 
   const conversionRate = summary && summary.uniqueVisitors > 0
     ? ((summary.totalLoans + summary.totalAppointments) / summary.uniqueVisitors * 100).toFixed(1)
@@ -265,6 +275,125 @@ export default function AdTracking() {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* 8891 Premium Ads Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Crown className="h-4 w-4 text-orange-500" />
+              8891 精選廣告成效
+              {premiumAds && premiumAds.some((a: any) => a.status === "推廣中") && (
+                <Badge className="bg-orange-100 text-orange-700 border-orange-200">推廣中</Badge>
+              )}
+            </CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              onClick={() => syncMut.mutate()}
+              disabled={syncMut.isPending}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${syncMut.isPending ? "animate-spin" : ""}`} />
+              {syncMut.isPending ? "同步中..." : "手動同步"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {premiumLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+            </div>
+          ) : premiumAds && premiumAds.length > 0 ? (
+            <div className="space-y-5">
+              {/* Aggregate stat cards */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard
+                  title="累計曝光量"
+                  value={(premiumAds as any[]).reduce((s: number, a: any) => s + (a.impressions || 0), 0).toLocaleString()}
+                  icon={Eye}
+                  accent="text-orange-600"
+                />
+                <StatCard
+                  title="累計點閱量"
+                  value={(premiumAds as any[]).reduce((s: number, a: any) => s + (a.clicks || 0), 0).toLocaleString()}
+                  icon={MousePointerClick}
+                  accent="text-blue-600"
+                />
+                <StatCard
+                  title="累計費用"
+                  value={`NT$${(premiumAds as any[]).reduce((s: number, a: any) => s + (a.totalCost || 0), 0).toLocaleString()}`}
+                  icon={DollarSign}
+                  accent="text-green-600"
+                />
+                <StatCard
+                  title="目前排名"
+                  value={(() => {
+                    const active = (premiumAds as any[]).find((a: any) => a.status === "推廣中" && a.currentRank);
+                    return active ? `第 ${active.currentRank} 名` : "—";
+                  })()}
+                  icon={BarChart3}
+                  accent="text-primary"
+                />
+              </div>
+
+              {/* Detail rows for each ad */}
+              {(premiumAds as any[]).map((ad: any) => (
+                <div key={ad.itemId} className="rounded-lg border p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{ad.carName || "未知車款"}</span>
+                      <span className="text-xs text-muted-foreground font-mono">{ad.itemId}</span>
+                    </div>
+                    <Badge variant={ad.status === "推廣中" ? "default" : "secondary"}>
+                      {ad.status || "未知"}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">推廣期別</p>
+                      <p className="font-medium">{ad.campaignPeriod || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">推廣時間</p>
+                      <p className="font-medium text-xs">{ad.periodStart && ad.periodEnd ? `${ad.periodStart} ~ ${ad.periodEnd}` : "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">累計天數</p>
+                      <p className="font-medium tabular-nums">{ad.cumulativeDays || 0} 天</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">本期出價</p>
+                      <p className="font-medium tabular-nums">{ad.currentBid ? `NT$${ad.currentBid.toLocaleString()}` : "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">平均排名</p>
+                      <p className="font-medium tabular-nums">{ad.avgRank ? `第 ${ad.avgRank} 名` : "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">平均出價</p>
+                      <p className="font-medium tabular-nums">{ad.avgBid ? `NT$${ad.avgBid.toLocaleString()}` : "—"}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <p className="text-xs text-muted-foreground text-center">
+                數據每日 08:00 自動更新
+              </p>
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-sm text-muted-foreground mb-2">
+                尚無 8891 精選廣告數據
+              </p>
+              <p className="text-xs text-muted-foreground">
+                請先在 Railway 環境變數設定 EIGHTBALL_ACCOUNT 和 EIGHTBALL_PASSWORD，再點擊「手動同步」
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

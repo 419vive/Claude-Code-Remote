@@ -213,3 +213,32 @@ export const adSpend = mysqlTable("adSpend", {
 
 export type AdSpend = typeof adSpend.$inferSelect;
 export type InsertAdSpend = typeof adSpend.$inferInsert;
+
+/**
+ * 8891 精選廣告 (SuperTop) performance data
+ * Scraped from 8891 dashboard via Playwright
+ */
+export const premiumAds8891 = mysqlTable("premium_ads_8891", {
+  id: int("id").autoincrement().primaryKey(),
+  itemId: varchar("item_id", { length: 20 }).notNull(),
+  carName: varchar("car_name", { length: 100 }),
+  price: varchar("price", { length: 20 }),
+  status: varchar("status", { length: 20 }),
+  campaignPeriod: varchar("campaign_period", { length: 30 }),
+  periodStart: varchar("period_start", { length: 30 }),
+  periodEnd: varchar("period_end", { length: 30 }),
+  currentRank: int("current_rank"),
+  currentBid: int("current_bid"),
+  cumulativeDays: int("cumulative_days").default(0),
+  avgRank: int("avg_rank"),
+  avgBid: int("avg_bid"),
+  totalCost: int("total_cost").default(0),
+  impressions: int("impressions").default(0),
+  clicks: int("clicks").default(0),
+  autoRenew: int("auto_renew").default(0),
+  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PremiumAd8891 = typeof premiumAds8891.$inferSelect;
+export type InsertPremiumAd8891 = typeof premiumAds8891.$inferInsert;
