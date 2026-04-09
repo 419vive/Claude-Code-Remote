@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
-RUN npm install --frozen-lockfile 2>/dev/null || npm install
+RUN npm install --legacy-peer-deps
 
 # Copy source
 COPY . .
