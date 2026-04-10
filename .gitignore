@@ -14,3 +14,8 @@ __pycache__/
 *.pyc
 venv/
 .venv/
+
+# Carousel generator (large fonts + generated output)
+scripts/carousel-generator/fonts/*.otf
+scripts/carousel-generator/fonts/*.ttf
+scripts/carousel-generator/output/*.png
