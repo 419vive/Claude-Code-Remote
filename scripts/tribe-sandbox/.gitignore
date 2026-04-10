@@ -1,0 +1,7 @@
+# TRIBE v2 sandbox — do not commit venv, weights, upstream clone, or outputs.
+.venv/
+cache/
+out/
+tribev2/
+__pycache__/
+*.pyc
