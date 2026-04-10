@@ -19,3 +19,6 @@ venv/
 scripts/carousel-generator/fonts/*.otf
 scripts/carousel-generator/fonts/*.ttf
 scripts/carousel-generator/output/*.png
+
+# Claude Flow cache
+.claude-flow/
