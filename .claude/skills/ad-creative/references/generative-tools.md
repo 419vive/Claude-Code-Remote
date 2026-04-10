@@ -244,6 +244,8 @@ ByteDance's video generation model with simultaneous audio-visual generation and
 
 **Docs:** [Seedance](https://seed.bytedance.com/en/seedance2_0)
 
+**Specialized Seedance prompt skills:** Use `/seedance-[genre]` for genre-optimized prompts — `seedance-cinematic`, `seedance-3d-cgi`, `seedance-cartoon`, `seedance-comic-to-video`, `seedance-fight-scenes`, `seedance-motion-design-ad`, `seedance-ecommerce-ad`, `seedance-anime-action`, `seedance-product-360`, `seedance-music-video`, `seedance-social-hook`, `seedance-brand-story`, `seedance-fashion-lookbook`, `seedance-food-beverage`, `seedance-real-estate`.
+
 ---
 
 ### Higgsfield
@@ -264,6 +266,8 @@ Full-stack video creation platform with cinematic camera controls.
 - Animate product images into dynamic video
 - Create multiple video variations with different camera styles
 - Quick-turn video content for social campaigns
+
+**Prompt skills for Higgsfield:** All 15 Seedance prompt skills above generate prompts optimized for the Higgsfield platform at `higgsfield.ai/create/video?model=seedance_2_0`. Use the `browser` skill for automated submission.
 
 ---
 
