@@ -42,6 +42,16 @@ pip install -e ./tribev2
 echo "[4/4] Installing sandbox visualization deps ..."
 pip install "nilearn>=0.10" "matplotlib>=3.7" "numpy>=1.26"
 
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  echo ""
+  echo "WARNING: ffmpeg not found on PATH."
+  echo "  Video/audio/text compare will still work, but image inputs"
+  echo "  (--image-a / --image-b in compare.py) require ffmpeg for the"
+  echo "  still-to-held-MP4 conversion. Install via:"
+  echo "    apt install ffmpeg       # Debian/Ubuntu"
+  echo "    brew install ffmpeg      # macOS"
+fi
+
 cat <<'EOF'
 
 Setup complete.
