@@ -1,6 +1,6 @@
 ---
 name: seedance-anime-action
-description: Generate anime-style video prompts for Seedance 2.0 on Higgsfield. Use whenever the user wants anime, Japanese animation style, shonen action, seinen drama, magical girl, mecha, isekai, slice-of-life anime, or any Japanese animation aesthetic. Triggers on: anime, Japanese animation, shonen, seinen, manga style video, anime fight, anime opening, anime ending, sakura, chibi, kawaii, mecha, isekai, or any anime-style request. Use even for "make it look like an anime" or "Japanese cartoon style."
+description: Generate anime-style video prompts for Seedance 2.0 on Higgsfield. Use whenever the user wants anime, Japanese animation style, shonen action, seinen drama, magical girl, mecha, isekai, slice-of-life anime, cyberpunk anime, 1980s anime, or any Japanese animation aesthetic. Triggers on: anime, Japanese animation, shonen, seinen, manga style video, anime fight, anime opening, anime ending, sakura, mecha, isekai, cyberpunk anime, 1980s anime, retro cyberpunk, neon anime, Akira style, or any anime-style request. Use even for "make it look like an anime" or "Japanese cartoon style."
 ---
 
 # Anime-Style Video Generation for Seedance 2.0 on Higgsfield
@@ -268,6 +268,32 @@ Each anime genre has a signature visual identity. Master these to match user int
 - Heavy use of tech UI elements, digital glitches
 - Color contrast: Dark cool tones with hot neon pops
 - Example: *Ghost in the Shell*, *Akira*, *Cyberpunk: Edgerunners*
+
+#### 1980s Cyberpunk Anime Sub-Style
+
+A specific retro-futuristic variant combining 1980s hand-drawn anime aesthetics with cyberpunk dystopia. Emphasizes wet pavement reflections, analog neon (not digital LED), motorcycle culture, and the gritty romanticism of *Akira*-era animation. Heavier line work, darker shadows, and more atmospheric than modern cyberpunk anime.
+
+**Key Differences from Modern Cyberpunk Anime:**
+- Thicker line work, hand-drawn cel feel (not clean digital lines)
+- Warmer neon tones (pink/magenta dominant vs modern cyan/teal)
+- Wet surfaces everywhere — rain, puddles, condensation
+- Analog tech aesthetic — CRT monitors, physical switches, chunky hardware
+- Dramatic shadows with rim lighting from neon sources
+- VHS grain and scan line overlay for authenticity
+
+**1980s Cyberpunk Image Prompt Template:**
+"A rebellious teenage hacker leaning against a neon-lit motorcycle in a rainy futuristic city alley, glowing holographic billboards, wet pavement reflections, pink and blue neon lights, retro 1980s anime style, cyberpunk atmosphere, dramatic shadows, cinematic composition, detailed cityscape."
+
+**1980s Cyberpunk Video Prompt Template:**
+"Wide shot of a rebellious teenage hacker standing beside a neon-lit motorcycle in a rainy alleyway.
+[cut] Close-up shot of neon reflections shimmering across the wet pavement.
+[cut] Side shot of the hacker putting on a futuristic helmet.
+[cut] Wide shot of the motorcycle speeding through a crowded cyberpunk highway at night.
+[cut] Close-up shot of holographic billboards glowing in pink and blue.
+[cut] Over-the-shoulder shot of the hacker looking out over a futuristic city skyline from a rooftop.
+No music, no talking."
+
+**1980s Cyberpunk Keywords:** retro 1980s anime, cyberpunk, neon-lit, wet pavement, rain, holographic, pink and blue neon, dramatic shadows, motorcycle, hacker, futuristic city, CRT monitors, analog tech, hand-drawn cel animation, thick line work, rim lighting, atmospheric
 
 ### **11. School / Supernatural Anime**
 **Visual Language:** Ambiguous between mundane and magical
@@ -1141,5 +1167,5 @@ Seedance 2.0 on Higgsfield is a tool that, when wielded with knowledge of anime 
 
 ---
 
-**Last Updated:** 2026-04-09
+**Last Updated:** 2026-04-10
 **For Seedance 2.0 on Higgsfield**

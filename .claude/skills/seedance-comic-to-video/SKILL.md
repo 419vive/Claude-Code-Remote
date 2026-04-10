@@ -1,6 +1,6 @@
 ---
 name: seedance-comic-to-video
-description: Convert comic book panels, manga pages, webtoons, and illustrated storyboards into animated video using Seedance 2.0 on Higgsfield. Use whenever the user wants to animate comics, bring illustrations to life, convert manga to video, animate storyboards, or create motion from static sequential art. Triggers on: comic to video, manga animation, panel animation, storyboard to video, webtoon animation, comic book motion, sequential art, graphic novel animation, or any illustrate-to-animate request. Use even when user says "make this drawing move" or "animate this page."
+description: Convert comic book panels, manga pages, webtoons, and illustrated storyboards into animated video using Seedance 2.0 on Higgsfield. Use whenever the user wants to animate comics, bring illustrations to life, convert manga to video, animate storyboards, create noir comic animation, or create motion from static sequential art. Triggers on: comic to video, manga animation, panel animation, storyboard to video, webtoon animation, comic book motion, sequential art, graphic novel animation, noir comic, detective comic, crime comic, black and white comic, or any illustrate-to-animate request. Use even when user says "make this drawing move" or "animate this page."
 ---
 
 # Seedance 2.0 on Higgsfield — Comic Book to Video Prompt Generator
@@ -611,6 +611,61 @@ Weight and physics: comic exaggeration, emphasizing the effort and transformatio
 Emotional emphasis: lands on the final powerful standing pose with fists clenched.
 Duration: 1.5 seconds.
 ```
+
+---
+
+## 7b. Noir Comic Animation Style
+
+A specialized sub-style for converting noir/detective comic panels into atmospheric animated video. Noir comic animation combines the sequential art conversion techniques above with the specific visual language of film noir: extreme contrast, dramatic shadows, rain-soaked environments, and morally ambiguous narratives.
+
+### Noir Visual Language
+
+- **Black and white dominant** — High contrast, near-monochrome with minimal color
+- **Heavy ink shading** — Deep blacks, stark whites, dramatic silhouettes
+- **Rain and wet surfaces** — Constant rain, glistening streets, reflections everywhere
+- **Cigarette smoke** — Curling smoke as atmospheric element and character trait
+- **Neon signs** — Flickering colored light cutting through darkness
+- **Dramatic shadows** — Characters half in shadow, venetian blind light patterns
+- **High-contrast lighting** — Single harsh light source, deep impenetrable blacks
+
+### Noir Color Strategy
+
+- **Primary:** Black and white with heavy ink contrast
+- **Accent method:** One or two desaturated accent colors (neon amber, cold blue, blood red)
+- **Skin tones:** Pale, washed out under harsh overhead or side lighting
+- **Backgrounds:** Inky blacks with minimal detail, just enough to suggest environment
+- **Rain/water:** Silver-white streaks against dark backgrounds
+
+### Noir Prompt Techniques for Seedance 2.0 on Higgsfield
+
+When converting noir comics to video, emphasize:
+1. **Lighting transitions** — Characters moving between light and shadow
+2. **Smoke animation** — Slow-curling cigarette or fog effects
+3. **Rain as constant motion** — Background rain provides continuous movement
+4. **Reflection shots** — Puddle reflections, mirror reflections, wet glass
+5. **Slow reveals** — Gradual pans revealing character faces from shadow
+
+### Noir Image Prompt Template
+
+"A detective in a trench coat walking through a rain-soaked city street at midnight, cigarette smoke curling through the air, neon signs flickering, black and white comic-book shading, high contrast lighting, dramatic shadows, gritty atmosphere, graphic novel style, cinematic noir mood."
+
+### Noir Video Prompt Template
+
+"Wide shot of a detective in a trench coat walking through a rain-soaked city street at midnight.
+[cut] Close-up shot of rain dripping from the brim of his hat.
+[cut] Side shot of the detective lighting a cigarette under a flickering neon sign.
+[cut] Wide shot of him entering a dimly lit jazz club filled with smoke.
+[cut] Close-up shot of a mysterious woman in a black dress watching him from across the room.
+[cut] Over-the-shoulder shot of the detective staring out at the city through a rainy window.
+No music, no talking."
+
+### Noir Keywords
+
+**Style:** noir, graphic novel, detective, crime comic, black and white, high contrast
+**Atmosphere:** rain-soaked, midnight, gritty, smoky, shadowy, moody, tense
+**Lighting:** single source, harsh side light, venetian blind shadows, neon flicker, silhouette
+**Elements:** trench coat, cigarette smoke, rain, wet pavement, neon signs, jazz club, fedora
+**Ink:** heavy blacks, stark whites, crosshatching, dramatic shading, comic-book shading
 
 ---
 
@@ -1805,6 +1860,6 @@ When all elements are present and detailed, **Seedance 2.0 on Higgsfield** produ
 
 ---
 
-**End of Skill Documentation**
+**End of Skill Documentation — Last Updated: 2026-04-10**
 
 *For additional support on Seedance 2.0 on Higgsfield comic animations, consult the Higgsfield platform documentation or reach out to the Higgsfield community.*
