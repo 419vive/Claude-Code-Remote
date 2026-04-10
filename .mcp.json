@@ -14,6 +14,14 @@
         "@anthropic-ai/mcp-server-playwright@latest"
       ]
     },
+    "canva": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic-ai/mcp-remote@latest",
+        "https://mcp.canva.com/sse"
+      ]
+    },
     "claude-flow": {
       "command": "npx",
       "args": [
