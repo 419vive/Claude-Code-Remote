@@ -14,3 +14,9 @@ __pycache__/
 *.pyc
 venv/
 .venv/
+
+# MCP memory backend runtime artifacts (HNSW index + sql.js DB)
+# Generated locally when calling mcp__claude-flow__memory_store — should not
+# be committed. Memory data lives in mcp__claude-flow__memory namespace,
+# canonical decision trail lives in docs/PROJECT_JOURNAL.md.
+.swarm/
