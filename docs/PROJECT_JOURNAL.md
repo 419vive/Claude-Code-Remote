@@ -14,6 +14,89 @@
 
 ---
 
+## 2026-04-11 — graphify sandbox shipped + measured (mixed verdict)
+
+**Context:**
+Jerry asked if `github.com/safishamsi/graphify` could save tokens at dev-time
+when Claude works on this repo. Tool is 7 days old on PyPI (`graphifyy`,
+two y's), maintainer "captainturbo" anonymous, 50 releases in first week,
+22k GitHub stars (suspicious timing). Risk-gated: yes to a reversible
+sandbox experiment, no to persistent skill install / PreToolUse hook.
+
+**Decision:**
+Built `scripts/graphify-sandbox/` as an isolated Python venv experiment,
+pinned `graphifyy==0.4.2`, AST-only graph build. Explicitly declined:
+- `graphify claude install`  → writes PreToolUse hook + CLAUDE.md section
+- `graphify hook install`    → writes post-commit git hooks
+- `graphify install`         → copies skill to `.claude/skills/`
+- Semantic extraction        → would spawn Claude subagents (real token cost)
+
+The `graphify` CLI has NO standalone `build` command — normal usage goes
+through the skill.md, which instructs an agent (Claude/Codex/Cursor) to do
+the extraction + subagent dispatch. We bypassed this by calling
+`graphify.extract.extract()` + `graphify.build.build()` directly from a
+Python driver (`build_ast_graph.py`), which does deterministic AST-only
+extraction with **zero LLM calls**.
+
+**Measurements on this repo (406 code files, 267K words):**
+- Build time:       2.5s wall clock
+- Token cost:       0 input / 0 output
+- Graph size:       5,344 nodes / 8,626 edges / 5.5MB graph.json
+- Secret sweep:     clean (0 hits on api-key / secret / channel-token / private-key patterns)
+- `graphify benchmark` reduction:  **4.5x average** (NOT the marketed 71.5x)
+- Per-query range:  2.1x (weak) to 1099x (sparse match) — highly variable
+
+**Query quality (3 real dev-time questions):**
+- Q1 "LINE webhook handler"        → WEAK. BFS walked into unrelated CLI-Anything test classes. No LINE node labels to anchor on.
+- Q2 "drizzle schema 8891 sync"    → STRONG. Found `sync8891.ts` + full function family (`shouldRunCoV`, `fetchAllVehiclesFromApi`, `runChainOfVerification`, etc.) with proper EXTRACTED call edges.
+- Q3 "Gemini chatbot response"     → WEAK. No node label contains "Gemini" (it's an import name + string literal, not an AST entity).
+
+**Root cause of the weak queries:**
+AST-only mode queries by substring-matching node labels. "LINE" and
+"Gemini" aren't class/function names in this codebase, so BFS can't find
+an anchor point. The semantic extraction pass (which we declined) is what
+gives graphify its concept-level query power — it spawns Claude subagents
+that read file contents and produce semantic nodes like "GeminiClient" or
+"webhookHandler" with human-readable labels.
+
+**Verdict:**
+- **Use-case it's good for:** "Show me everything that touches function X."
+  When you know the name of an entity, graphify gives you the whole call
+  family + contains-edges in one shot. This is the sync8891 case.
+- **Use-case it's bad for:** "Where is concept Y handled?" AST alone can't
+  bridge vocabulary (query says "webhook", code says `handleMessage`).
+- **4.5x not 71.5x.** Marketing claim is for mixed corpora with full
+  semantic extraction; AST-only on a code-heavy repo gives 4.5x.
+- **Safe to keep.** Sandbox is isolated, no persistent install, disposable
+  via `rm -rf scripts/graphify-sandbox/`. Not worth Path A (replace grep
+  for Claude) at this quality level.
+
+**Why not try the semantic extraction pass:**
+It would spawn Claude subagents for ~786 markdown files + images. Even at
+22 files/chunk that's ~36 parallel subagents, unknown token cost per
+chunk, and we'd be running Meta's code against Jerry's commercial repo
+with no cost ceiling. Defer until (a) we know graphify's token cost per
+chunk from their own docs, (b) there's a concrete dev workflow where the
+AST version is provably insufficient.
+
+**Outcome:**
+Sandbox shipped and committed. `build_ast_graph.py` produces a clean
+graph in 2.5s with zero token cost. Query quality is mixed — strong for
+named entities, weak for concept questions. Not wired into the main dev
+workflow. If Jerry wants a dev-time speedup, the more honest path is
+scoped Grep with better patterns (which Claude already uses) rather than
+graphify's AST-only BFS.
+
+**Artifacts:**
+- `scripts/graphify-sandbox/setup.sh`        — venv + pinned install
+- `scripts/graphify-sandbox/build_graph.sh`  — thin wrapper
+- `scripts/graphify-sandbox/build_ast_graph.py` — Python driver (AST-only)
+- `scripts/graphify-sandbox/.gitignore`      — excludes .venv, out, cache
+- Commit: (this commit)
+- Branch: `claude/integrate-tribe-v2-8jJ9v`
+
+---
+
 ## 2026-04-11 — Memory system audit + PROJECT_JOURNAL.md created
 
 **Context:**

@@ -20,3 +20,8 @@ venv/
 # be committed. Memory data lives in mcp__claude-flow__memory namespace,
 # canonical decision trail lives in docs/PROJECT_JOURNAL.md.
 .swarm/
+
+# graphifyy tool side-effect: creates graphify-out/cache/ in CWD when
+# `graphify query` or `graphify benchmark` is run from the repo root.
+# Our sandbox output lives in scripts/graphify-sandbox/out/, NOT here.
+graphify-out/

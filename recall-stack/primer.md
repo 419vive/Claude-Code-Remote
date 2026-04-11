@@ -1,34 +1,62 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
 Branch: `claude/integrate-tribe-v2-8jJ9v`
-Latest commit: `def2e19` (docs: add PROJECT_JOURNAL.md as unbreakable memory fallback)
+Latest commit: graphify sandbox shipped + measured (4.5x token reduction on AST-only, not 71x)
 
 ## Completed This Session
 
-- **TRIBE v2 personal research sandbox** (Path B, CC-BY-NC — non-commercial only)
-  - `scripts/tribe-sandbox/setup.sh` — venv + tribev2 clone + deps
-  - `scripts/tribe-sandbox/run_preflight.py` — single-creative runner (video/audio/text → fsaverage5 cortical heatmaps)
-  - `scripts/tribe-sandbox/compare.py` — A/B compare two creatives, with image→held-MP4 ffmpeg workaround
-  - Commits: `d9a6d8e`, `747f983`
-- **`docs/PROJECT_JOURNAL.md`** — unbreakable markdown memory fallback layer (commit `def2e19`)
-- **Memory infrastructure audit** — confirmed `@claude-flow/memory` npm package missing, hook stdin broken, but MCP `memory_*` tools work and are now being used
-- **CLAUDE.md updated** — added `@recall-stack/primer.md` import + "Memory System Behavior" behavioral contract section
-- **MCP memory seeded** — 4 entries in namespace `project-kunjia-autos`: license constraint, Path B decision, hardware constraint, creative-review rubric
+- **Graphify sandbox** (`scripts/graphify-sandbox/`, Path A greenlit)
+  - `setup.sh` — isolated venv, pinned `graphifyy==0.4.2`
+  - `build_ast_graph.py` — Python driver that bypasses the CLI entirely,
+    calls `graphify.extract` + `graphify.build` directly for **AST-only**
+    extraction (zero LLM calls, deterministic, 2.5s build on 406 code files)
+  - `build_graph.sh` — thin wrapper for venv activation
+  - Declined: `graphify claude install`, `hook install`, `install`, and
+    the semantic-extraction subagent pipeline (skill.md path)
+  - Measurements: 5344 nodes / 8626 edges / 5.5MB graph.json
+  - `graphify benchmark`: **4.5x average token reduction** (marketing
+    claim is 71.5x — that requires full semantic extraction we declined)
+- **Query verdict (3 real questions):**
+  - Q2 "sync8891 + drizzle schema" → STRONG, found full function family
+  - Q1 "LINE webhook handler" → WEAK, no matching node labels
+  - Q3 "Gemini callers" → WEAK, "Gemini" is an import string, not an AST entity
+- **Previous session carryover** (still valid):
+  - TRIBE v2 sandbox at `scripts/tribe-sandbox/` (CC-BY-NC, non-commercial, GPU-blocked)
+  - `docs/PROJECT_JOURNAL.md` unbreakable memory ledger
+  - CLAUDE.md + recall-stack behavioral contract + MCP memory seeded
 
 ## Exact Next Step
 
-**Wait for Jerry to drop a creative** (image/video/text) for Path 2 conversational review. No code needed — apply the 6-dim rubric (Hook / Price / Trust / CTA / Buyer-fit / Composition, 1-5 each, SHIP ≥24 / FIX 18-23 / KILL <18) using Claude's multimodal vision directly in chat.
+**Wait for Jerry's decision.** The graphify experiment is complete with
+honest numbers. Three forward paths:
+
+1. **Keep sandbox, don't wire in.** AST-only is too weak for concept
+   queries (LINE/Gemini/webhook) to replace grep. Sandbox sits idle,
+   deletable at any time.
+2. **Try one bounded semantic pass** with explicit cost cap — e.g., run
+   graphify semantic extraction on ONLY the `kun-auto-chatbot/server/`
+   directory (~30 files), measure Claude token cost, see if concept
+   queries improve.
+3. **Abandon graphify.** Delete `scripts/graphify-sandbox/`, call it a
+   learning experiment, go back to grep.
+
+Default: wait. No code until Jerry picks.
 
 ## Open Blockers
 
-- **No GPU available**: Jerry has iPhone + 10yr-old MacBook Pro. Claude sandbox also has no GPU. TRIBE v2 sandbox is shipped and correct but unusable until GPU access (Colab / HF Spaces / rented GPU). Deferred indefinitely.
-- **Broken memory layers** (deferred to separate focused session): `@claude-flow/memory` npm install, hook stdin bug in `pending-insights.jsonl`, `session.restore()` returning "No session to restore".
+- **No GPU**: TRIBE v2 sandbox unusable until GPU access (Colab / HF Spaces / rented GPU). Deferred indefinitely.
+- **Broken memory layers**: `@claude-flow/memory` npm package not installed, hook stdin parsing broken, `session.restore()` returning "No session to restore". Deferred to separate focused session.
+- **Graphify concept-query quality**: AST-only can't bridge vocabulary gap ("webhook" vs `handleMessage`). Fix requires the semantic-extraction path we declined.
 
 ## Key Knowledge
 
-- **TRIBE v2** = Meta FAIR Trimodal Brain Encoder (March 2026, CC-BY-NC-4.0). API: `TribeModel.from_pretrained("facebook/tribev2")`, supports `video_path`/`audio_path`/`text_path`, NO `image_path` (image workaround = ffmpeg held MP4 through V-JEPA2 backbone, unofficial).
-- **License constraint** = TRIBE v2 outputs CANNOT drive commercial ad/content decisions for 崑家汽車. Personal research only. Sandbox is isolated from production by design.
-- **Path A deferred**: Gemini-based commercial creative reviewer in admin dashboard, with `creativeReviews` table. Commercially clean but waits for Path 2 validation.
+- **Graphify CLI has NO `build` command.** Normal usage goes through the
+  skill.md (`.claude/skills/graphify/SKILL.md`), which instructs an agent
+  to spawn Claude subagents for semantic extraction. We bypass this via
+  direct Python API (`graphify.extract.extract()` + `graphify.build.build()`).
+- **Graphify install paths to AVOID**: `graphify claude install` (PreToolUse hook + CLAUDE.md mutation), `graphify hook install` (git hooks), `graphify install` (same as claude install).
+- **TRIBE v2** = Meta FAIR Trimodal Brain Encoder (March 2026, CC-BY-NC-4.0). No `image_path` API — image workaround is ffmpeg-held MP4 through V-JEPA2. NON-commercial only — cannot drive ad decisions for 崑家汽車.
+- **Path A (Gemini commercial creative reviewer in admin dashboard)** still deferred.
 - **Production stack**: TypeScript/Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE webhook + 8891.tw sync.
-- **Memory layer priority**: MCP `memory_*` tools → `docs/PROJECT_JOURNAL.md` → `recall-stack/primer.md` → `CLAUDE.md` files.
+- **Memory layer priority**: MCP `memory_*` tools → `docs/PROJECT_JOURNAL.md` → `recall-stack/primer.md` → `CLAUDE.md`.
 - **Before UI work**: read `kun-auto-chatbot/docs/DESIGN.md` (shadcn/ui + Tailwind v4 + oklch tokens, deep navy single accent, 10px radius, `tabular-nums` on prices).

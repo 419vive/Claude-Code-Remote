@@ -1,0 +1,8 @@
+# graphify sandbox — do not commit venv, generated graphs, caches, or runs.
+.venv/
+cache/
+out/
+graph/
+runs/
+*.pyc
+__pycache__/
