@@ -1,27 +1,34 @@
-# Active Project: Claude-Code-Remote (LINE chatbot & admin dashboard)
+# Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
+
+Branch: `claude/integrate-tribe-v2-8jJ9v`
+Latest commit: `def2e19` (docs: add PROJECT_JOURNAL.md as unbreakable memory fallback)
 
 ## Completed This Session
-- Performance optimization PR #9 (5 improvements: compression, caching, DB pooling, chunk splitting, non-blocking sync)
-- Installed claude-hud plugin v0.0.11 (real-time statusline HUD)
-- Configured claude-hud with tools, agents, todos, duration, config counts display
-- StatusLine config written to ~/.claude/settings.json
+
+- **TRIBE v2 personal research sandbox** (Path B, CC-BY-NC — non-commercial only)
+  - `scripts/tribe-sandbox/setup.sh` — venv + tribev2 clone + deps
+  - `scripts/tribe-sandbox/run_preflight.py` — single-creative runner (video/audio/text → fsaverage5 cortical heatmaps)
+  - `scripts/tribe-sandbox/compare.py` — A/B compare two creatives, with image→held-MP4 ffmpeg workaround
+  - Commits: `d9a6d8e`, `747f983`
+- **`docs/PROJECT_JOURNAL.md`** — unbreakable markdown memory fallback layer (commit `def2e19`)
+- **Memory infrastructure audit** — confirmed `@claude-flow/memory` npm package missing, hook stdin broken, but MCP `memory_*` tools work and are now being used
+- **CLAUDE.md updated** — added `@recall-stack/primer.md` import + "Memory System Behavior" behavioral contract section
+- **MCP memory seeded** — 4 entries in namespace `project-kunjia-autos`: license constraint, Path B decision, hardware constraint, creative-review rubric
 
 ## Exact Next Step
-Restart Claude Code to activate claude-hud statusline. Then verify HUD appears below input field.
+
+**Wait for Jerry to drop a creative** (image/video/text) for Path 2 conversational review. No code needed — apply the 6-dim rubric (Hook / Price / Trust / CTA / Buyer-fit / Composition, 1-5 each, SHIP ≥24 / FIX 18-23 / KILL <18) using Claude's multimodal vision directly in chat.
 
 ## Open Blockers
-- None
 
-## Installed Plugins
-- claude-hud v0.0.11 — statusline HUD showing context usage, tools, agents, todos, git status
-  - Config: ~/.claude/plugins/claude-hud/config.json
-  - Setup: /claude-hud:setup (re-run after issues)
-  - Configure: /claude-hud:configure (change display options)
-  - Reconfigure via: Edit ~/.claude/plugins/claude-hud/config.json
+- **No GPU available**: Jerry has iPhone + 10yr-old MacBook Pro. Claude sandbox also has no GPU. TRIBE v2 sandbox is shipped and correct but unusable until GPU access (Colab / HF Spaces / rented GPU). Deferred indefinitely.
+- **Broken memory layers** (deferred to separate focused session): `@claude-flow/memory` npm install, hook stdin bug in `pending-insights.jsonl`, `session.restore()` returning "No session to restore".
 
 ## Key Knowledge
-- claude-hud requires restart after install to activate
-- Plugin path: ~/.claude/plugins/cache/claude-hud/claude-hud/0.0.11/
-- Runtime: /opt/node22/bin/node with dist/index.js
-- Dynamic version resolution: auto-updates without re-running setup
-- Drizzle ORM + mysql2: use `mysql2` (not `mysql2/promise`) for pool types
+
+- **TRIBE v2** = Meta FAIR Trimodal Brain Encoder (March 2026, CC-BY-NC-4.0). API: `TribeModel.from_pretrained("facebook/tribev2")`, supports `video_path`/`audio_path`/`text_path`, NO `image_path` (image workaround = ffmpeg held MP4 through V-JEPA2 backbone, unofficial).
+- **License constraint** = TRIBE v2 outputs CANNOT drive commercial ad/content decisions for 崑家汽車. Personal research only. Sandbox is isolated from production by design.
+- **Path A deferred**: Gemini-based commercial creative reviewer in admin dashboard, with `creativeReviews` table. Commercially clean but waits for Path 2 validation.
+- **Production stack**: TypeScript/Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE webhook + 8891.tw sync.
+- **Memory layer priority**: MCP `memory_*` tools → `docs/PROJECT_JOURNAL.md` → `recall-stack/primer.md` → `CLAUDE.md` files.
+- **Before UI work**: read `kun-auto-chatbot/docs/DESIGN.md` (shadcn/ui + Tailwind v4 + oklch tokens, deep navy single accent, 10px radius, `tabular-nums` on prices).

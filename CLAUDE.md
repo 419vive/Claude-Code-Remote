@@ -1,3 +1,5 @@
+@recall-stack/primer.md
+
 # Claude Code Configuration - RuFlo V3
 
 ## Behavioral Rules (Always Enforced)
@@ -10,6 +12,32 @@
 - Never continuously check status after spawning a swarm — wait for results
 - ALWAYS read a file before editing it
 - NEVER commit secrets, credentials, or .env files
+
+## Memory System Behavior (Don't Act Stateless)
+
+This repo has multiple memory layers. USE them — do not claim you'll "forget things" when the infrastructure exists.
+
+**Layers, in order of durability:**
+
+1. **`docs/PROJECT_JOURNAL.md`** — append-only decision ledger, plain markdown, unbreakable fallback. Read top entries at session start for any non-trivial task.
+2. **`mcp__claude-flow__memory_*`** tools — structured fact storage with HNSW semantic search. Namespace: `project-kunjia-autos`. Use for patterns, decisions, constraints, preferences.
+3. **`recall-stack/primer.md`** — current-state summary, auto-loaded via `@recall-stack/primer.md` import at the top of this file. Keep under 100 lines. Rewrite after each task.
+4. **`CLAUDE.md`** files (this one + `recall-stack/CLAUDE.md`) — permanent rules and behavioral contracts.
+
+**Rules (apply every session):**
+
+- BEFORE any non-trivial work: read the top 2-3 entries of `docs/PROJECT_JOURNAL.md` + the loaded primer.md
+- AFTER any non-trivial decision: append a new `## YYYY-MM-DD — Topic` entry to `docs/PROJECT_JOURNAL.md` (newest first, reverse chronological)
+- AFTER a task: rewrite `recall-stack/primer.md` with current state (active project, completed this session, exact next step, open blockers, key knowledge)
+- FOR structured facts (architectural decisions, patterns, constraints, preferences): call `mcp__claude-flow__memory_store` with namespace `project-kunjia-autos` and meaningful tags
+- FOR searching prior decisions: call `mcp__claude-flow__memory_search` before asking the user "did we decide X?"
+- If a layer is unavailable, fall through to the next: MCP → journal → primer.md → CLAUDE.md
+
+**Known broken layers (2026-04-11, fix deferred):**
+
+- `@claude-flow/memory` npm package not installed → `auto-memory-hook.mjs` skips its import/sync. MCP `memory_*` tools still work independently (HNSW backend is sql.js-based, doesn't need the package).
+- `.claude-flow/data/pending-insights.jsonl` writes garbage (`file:"unknown"`, `sessionId:null`) — hook stdin parsing is broken. Do not rely on it.
+- `session.restore()` prints "No session to restore" even when session JSONs exist. Investigate in a separate focused pass.
 
 ## File Organization
 
