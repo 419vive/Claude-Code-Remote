@@ -1178,7 +1178,7 @@ export function buildFollowWelcomeMessages(): any[] {
           },
           {
             type: "button",
-            action: { type: "message", label: "🚗 看車庫存", text: "我想看車，有什麼車可以推薦？" },
+            action: { type: "uri", label: "🚗 看最新車庫存", uri: `${baseUrl}/vehicles` },
             style: "secondary",
           },
         ],
