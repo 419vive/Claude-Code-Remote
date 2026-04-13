@@ -612,6 +612,14 @@ export default function VehicleLanding() {
               {vehicleId && <ViewingNow vehicleId={vehicleId} className="text-green-400/80" />}
             </div>
 
+            {/* New car price comparison */}
+            {vehicle.newCarPrice && (vehicle.newCarPrice as string).trim() && (
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-white/40 text-xs line-through tabular-nums">新車價 {vehicle.newCarPrice as string}</span>
+                <span className="text-[#C4A265] text-xs font-medium tabular-nums">現售 {price}</span>
+              </div>
+            )}
+
             {/* Trust line — below title/price area */}
             <p className="flex items-center gap-1 text-green-400 text-xs mb-3">
               🔒 第三方認證 · 實車實價 · 支援貸款
@@ -636,14 +644,46 @@ export default function VehicleLanding() {
               <p className="text-orange-400 text-xs font-medium">近期詢問熱烈，建議盡早預約看車</p>
             </div>
 
-            {/* Short compelling copy */}
-            <div className="bg-white/[0.04] rounded-xl border border-white/[0.06] px-4 py-3">
+            {/* Full vehicle description from 8891 */}
+            <div className="bg-white/[0.04] rounded-xl border border-white/[0.06] px-4 py-3 mb-3">
               <p className="text-white/80 text-sm leading-relaxed answer-summary" data-speakable>
                 {vehicle.description
-                  ? (vehicle.description as string).slice(0, 120) + ((vehicle.description as string).length > 120 ? "..." : "")
+                  ? (vehicle.description as string)
                   : `${year} ${name}，${vehicle.mileage ? `里程 ${vehicle.mileage}，` : ""}${vehicle.fuelType ? `${vehicle.fuelType}，` : ""}全車通過第三方認證，品質保證！`}
               </p>
             </div>
+
+            {/* Features / equipment from 8891 subTitle */}
+            {vehicle.features && (vehicle.features as string).trim() && (
+              <div className="bg-white/[0.04] rounded-xl border border-white/[0.06] px-4 py-3 mb-3">
+                <p className="text-white/50 text-xs font-medium mb-2">配備亮點</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(vehicle.features as string).split(/[、,，]/).filter(Boolean).map((feat, i) => (
+                    <span
+                      key={i}
+                      className="inline-block px-2 py-0.5 rounded-md bg-[#C4A265]/10 border border-[#C4A265]/20 text-[#C4A265] text-xs"
+                    >
+                      {feat.trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Guarantees from 8891 inspection */}
+            {vehicle.guarantees && (vehicle.guarantees as string).trim() && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {(vehicle.guarantees as string).split(/[、,，]/).filter(Boolean).map((g, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 border border-green-500/20 text-green-400 text-xs"
+                  >
+                    <Shield className="w-3 h-3" />
+                    {g.trim()}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

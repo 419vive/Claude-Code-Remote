@@ -99,6 +99,7 @@ interface ScrapedVehicle {
   description: string;
   features: string;
   guarantees: string;
+  newCarPrice: string;
   photoUrls: string;
   photoCount: number;
 }
@@ -236,6 +237,7 @@ function apiVehicleToScraped(v: ApiVehicle): ScrapedVehicle {
     description: subTitle.replace(/【[^】]*】\s*/, ''),
     features,
     guarantees: "",
+    newCarPrice: "",
     photoUrls: photoUrl,
     photoCount: photoUrl ? 1 : 0,
   };
@@ -315,6 +317,7 @@ async function fetchVehicleDetailEnriched(carId: string): Promise<Partial<Scrape
       bodyType: extended.bodyType || "",
       features: "",  // features come from subTitle parsing in apiVehicleToScraped
       guarantees: guaranteeParts.join('、') || "",
+      newCarPrice: ds.newCarPrice || "",
     };
   } catch {
     return null;
@@ -571,6 +574,7 @@ export async function sync8891(): Promise<{
           if (enriched.features) scraped.features = enriched.features;
           if (enriched.description) scraped.description = enriched.description;
           if (enriched.guarantees) scraped.guarantees = enriched.guarantees;
+          if (enriched.newCarPrice) scraped.newCarPrice = enriched.newCarPrice;
         }
 
         const existing = await dbConn
@@ -603,6 +607,7 @@ export async function sync8891(): Promise<{
             guarantees: scraped.guarantees,
             photoUrls: scraped.photoUrls,
             photoCount: scraped.photoCount,
+            newCarPrice: scraped.newCarPrice,
             status: "available",
           });
           added++;
@@ -630,6 +635,7 @@ export async function sync8891(): Promise<{
           if (scraped.bodyType && scraped.bodyType !== current.bodyType) updates.bodyType = scraped.bodyType;
           if (scraped.features && scraped.features !== current.features) updates.features = scraped.features;
           if (scraped.guarantees && scraped.guarantees !== current.guarantees) updates.guarantees = scraped.guarantees;
+          if (scraped.newCarPrice && scraped.newCarPrice !== current.newCarPrice) updates.newCarPrice = scraped.newCarPrice;
           if (scraped.title && scraped.title !== current.title) updates.title = scraped.title;
           if (scraped.sourceUrl && scraped.sourceUrl !== current.sourceUrl) updates.sourceUrl = scraped.sourceUrl;
           // Only reset "sold" back to "available" if the car reappears on 8891.
