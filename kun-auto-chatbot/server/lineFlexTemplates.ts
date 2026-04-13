@@ -43,13 +43,13 @@ function buildVehicleBubble(v: Vehicle): any {
   const lineInquiryText = `我想詢問這台車：\n${v.brand} ${v.model} ${v.modelYear || ""}年\n售價：${priceText}\n${specs.slice(0, 3).join(" · ")}`;
 
   const footerButtons: any[] = [
-    // Primary CTA: 了解車子細節/規格 → 發送訊息讓 AI 回覆車輛規格（避免 LINE in-app browser 白頁面）
+    // Primary CTA: 了解車子細節/規格 → 開官網車輛頁 (pixel fire + 完整規格)
     {
       type: "button",
       action: {
-        type: "message",
+        type: "uri",
         label: "👉 了解車子細節/規格",
-        text: `我想了解 ${v.brand} ${v.model} 的詳細規格`,
+        uri: `${process.env.BASE_URL || "https://claude-code-remote-production.up.railway.app"}/vehicle/${v.id}`,
       },
       style: "primary",
       color: "#C4A265",
@@ -81,14 +81,14 @@ function buildVehicleBubble(v: Vehicle): any {
     });
   }
 
-  // Add "看所有照片" button if vehicle has more than 1 photo
+  // Add "看所有照片" button if vehicle has more than 1 photo → 開官網車輛頁 (pixel fire)
   if (photoCount > 1) {
     footerButtons.push({
       type: "button",
       action: {
-        type: "message",
+        type: "uri",
         label: `📸 看所有照片 (${photoCount}張)`,
-        text: `看照片 ${v.externalId}`,
+        uri: `${process.env.BASE_URL || "https://claude-code-remote-production.up.railway.app"}/vehicle/${v.id}`,
       },
       style: "secondary",
     });
@@ -125,9 +125,9 @@ function buildVehicleBubble(v: Vehicle): any {
       aspectRatio: "4:3",
       aspectMode: "cover",
       action: {
-        type: "message",
+        type: "uri",
         label: "查看詳情",
-        text: `我想了解 ${v.brand} ${v.model} 的詳細規格`,
+        uri: `${process.env.BASE_URL || "https://claude-code-remote-production.up.railway.app"}/vehicle/${v.id}`,
       },
     },
     body: {
@@ -1166,13 +1166,13 @@ export function buildFollowWelcomeMessages(): any[] {
         contents: [
           {
             type: "button",
-            action: { type: "message", label: "🔍 瀏覽在售車輛", text: "我想看車，有什麼車可以推薦？" },
+            action: { type: "uri", label: "🔍 瀏覽在售車輛", uri: `${baseUrl}/vehicles` },
             style: "primary",
             color: "#1B3A5C",
           },
           {
             type: "button",
-            action: { type: "message", label: "💰 50萬以下好車", text: "50萬以下有什麼好車？" },
+            action: { type: "uri", label: "💰 50萬以下好車", uri: `${baseUrl}/vehicles?maxPrice=50` },
             style: "primary",
             color: "#C4A265",
           },
