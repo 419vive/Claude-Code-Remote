@@ -5,10 +5,6 @@ import { ProgressiveImage } from "@/components/ProgressiveImage";
 import { addRecentlyViewed } from "@/lib/recentlyViewed";
 import {
   Car,
-  MapPin,
-  Fuel,
-  Gauge,
-  Calendar,
   ArrowRight,
   Phone,
   ChevronLeft,
@@ -18,6 +14,8 @@ import {
   Camera,
   Video,
   RotateCw,
+  CheckCircle,
+  Cog,
 } from "lucide-react";
 import StickyBookingBar from "@/components/StickyBookingBar";
 import { ViewingNow } from "@/components/SocialProof";
@@ -255,14 +253,6 @@ export default function VehicleLanding() {
   const year = vehicle.modelYear ? `${vehicle.modelYear}年` : "";
   const price = vehicle.priceDisplay || `${vehicle.price}萬`;
   const questions = getIntentQuestions(vehicle);
-
-  // Build specs
-  const specs: { icon: React.ReactNode; text: string }[] = [];
-  if (vehicle.modelYear) specs.push({ icon: <Calendar className="w-3.5 h-3.5" />, text: `${vehicle.modelYear}年` });
-  if (vehicle.mileage) specs.push({ icon: <Gauge className="w-3.5 h-3.5" />, text: vehicle.mileage });
-  if (vehicle.fuelType) specs.push({ icon: <Fuel className="w-3.5 h-3.5" />, text: vehicle.fuelType });
-  if (vehicle.color) specs.push({ icon: <Car className="w-3.5 h-3.5" />, text: vehicle.color });
-  if (vehicle.transmission) specs.push({ icon: <Gauge className="w-3.5 h-3.5" />, text: vehicle.transmission });
 
   const handleQuestionClick = (question: ReturnType<typeof getIntentQuestions>[number]) => {
     // Loan inquiry → redirect to form page
@@ -612,56 +602,87 @@ export default function VehicleLanding() {
               {vehicleId && <ViewingNow vehicleId={vehicleId} className="text-green-400/80" />}
             </div>
 
-            {/* New car price comparison */}
-            {vehicle.newCarPrice && (vehicle.newCarPrice as string).trim() && (
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-white/40 text-xs line-through tabular-nums">新車價 {vehicle.newCarPrice as string}</span>
-                <span className="text-[#C4A265] text-xs font-medium tabular-nums">現售 {price}</span>
-              </div>
-            )}
+            {/* Price + new car price comparison */}
+            <div className="flex items-baseline gap-3 mb-2">
+              <span className="text-[#C4A265] text-2xl font-bold tabular-nums">{price}</span>
+              {vehicle.newCarPrice && (vehicle.newCarPrice as string).trim() && (
+                <span className="text-white/35 text-xs tabular-nums">新車價：<span className="line-through">{vehicle.newCarPrice as string}</span></span>
+              )}
+            </div>
 
-            {/* Trust line — below title/price area */}
-            <p className="flex items-center gap-1 text-green-400 text-xs mb-3">
+            {/* Trust line */}
+            <p className="flex items-center gap-1 text-green-400 text-xs mb-4">
               🔒 第三方認證 · 實車實價 · 支援貸款
             </p>
 
-            {/* Specs grid */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              {specs.map((spec, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/10 text-white/70 text-xs"
-                >
-                  {spec.icon}
-                  {spec.text}
+            {/* ─── 簡介 section (like 8891) ─── */}
+            <div className="bg-white/[0.04] rounded-xl border border-white/[0.06] mb-3 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.06]">
+                <span className="text-white/50 text-xs font-medium">簡介</span>
+              </div>
+              <div className="grid grid-cols-4 divide-x divide-white/[0.06]">
+                <div className="px-2 py-3 text-center">
+                  <p className="text-white text-xs font-medium mb-0.5">{vehicle.location || "高雄市"}</p>
+                  <p className="text-white/40 text-[10px]">所在地</p>
                 </div>
-              ))}
+                <div className="px-2 py-3 text-center">
+                  <p className="text-white text-xs font-medium tabular-nums mb-0.5">{vehicle.mileage || "—"}</p>
+                  <p className="text-white/40 text-[10px]">里程</p>
+                </div>
+                <div className="px-2 py-3 text-center">
+                  <p className="text-white text-xs font-medium mb-0.5">{vehicle.fuelType || "—"}</p>
+                  <p className="text-white/40 text-[10px]">引擎燃料</p>
+                </div>
+                <div className="px-2 py-3 text-center">
+                  <p className="text-white text-xs font-medium mb-0.5">{vehicle.manufactureYear ? `${vehicle.manufactureYear}年` : year}</p>
+                  <p className="text-white/40 text-[10px]">出廠年份</p>
+                </div>
+              </div>
+              {vehicle.licenseDate && (
+                <div className="border-t border-white/[0.06] px-4 py-2 flex items-center justify-between">
+                  <span className="text-white/40 text-[10px]">領牌日期</span>
+                  <span className="text-white/70 text-xs tabular-nums">{vehicle.licenseDate}</span>
+                </div>
+              )}
             </div>
 
-            {/* Urgency / social proof line */}
-            <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 mb-3">
-              <span className="text-base leading-none">🔥</span>
-              <p className="text-orange-400 text-xs font-medium">近期詢問熱烈，建議盡早預約看車</p>
+            {/* ─── 參數 section (like 8891) ─── */}
+            <div className="bg-white/[0.04] rounded-xl border border-white/[0.06] mb-3 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.06]">
+                <Cog className="w-3 h-3 text-white/40" />
+                <span className="text-white/50 text-xs font-medium">參數</span>
+              </div>
+              <div className="grid grid-cols-4 divide-x divide-white/[0.06]">
+                <div className="px-2 py-3 text-center">
+                  <p className="text-white text-xs font-medium mb-0.5">{vehicle.displacement || "—"}</p>
+                  <p className="text-white/40 text-[10px]">排氣量</p>
+                </div>
+                <div className="px-2 py-3 text-center">
+                  <p className="text-white text-xs font-medium mb-0.5">{vehicle.transmission || "—"}</p>
+                  <p className="text-white/40 text-[10px]">變速系統</p>
+                </div>
+                <div className="px-2 py-3 text-center">
+                  <p className="text-white text-xs font-medium mb-0.5">{vehicle.color || "—"}</p>
+                  <p className="text-white/40 text-[10px]">車色</p>
+                </div>
+                <div className="px-2 py-3 text-center">
+                  <p className="text-white text-xs font-medium mb-0.5">{vehicle.bodyType || "—"}</p>
+                  <p className="text-white/40 text-[10px]">車型</p>
+                </div>
+              </div>
             </div>
 
-            {/* Full vehicle description from 8891 */}
-            <div className="bg-white/[0.04] rounded-xl border border-white/[0.06] px-4 py-3 mb-3">
-              <p className="text-white/80 text-sm leading-relaxed answer-summary" data-speakable>
-                {vehicle.description
-                  ? (vehicle.description as string)
-                  : `${year} ${name}，${vehicle.mileage ? `里程 ${vehicle.mileage}，` : ""}${vehicle.fuelType ? `${vehicle.fuelType}，` : ""}全車通過第三方認證，品質保證！`}
-              </p>
-            </div>
-
-            {/* Features / equipment from 8891 subTitle */}
+            {/* ─── 亮點 / Features from 8891 ─── */}
             {vehicle.features && (vehicle.features as string).trim() && (
-              <div className="bg-white/[0.04] rounded-xl border border-white/[0.06] px-4 py-3 mb-3">
-                <p className="text-white/50 text-xs font-medium mb-2">配備亮點</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(vehicle.features as string).split(/[、,，]/).filter(Boolean).map((feat, i) => (
+              <div className="bg-white/[0.04] rounded-xl border border-white/[0.06] mb-3 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.06]">
+                  <span className="text-white/50 text-xs font-medium">亮點配備</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 px-4 py-3">
+                  {(vehicle.features as string).split(/[、,，/]/).filter(Boolean).map((feat, i) => (
                     <span
                       key={i}
-                      className="inline-block px-2 py-0.5 rounded-md bg-[#C4A265]/10 border border-[#C4A265]/20 text-[#C4A265] text-xs"
+                      className="inline-block px-2.5 py-1 rounded-lg bg-[#C4A265]/10 border border-[#C4A265]/20 text-[#C4A265] text-xs"
                     >
                       {feat.trim()}
                     </span>
@@ -670,20 +691,65 @@ export default function VehicleLanding() {
               </div>
             )}
 
-            {/* Guarantees from 8891 inspection */}
-            {vehicle.guarantees && (vehicle.guarantees as string).trim() && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {(vehicle.guarantees as string).split(/[、,，]/).filter(Boolean).map((g, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 border border-green-500/20 text-green-400 text-xs"
-                  >
-                    <Shield className="w-3 h-3" />
-                    {g.trim()}
-                  </span>
+            {/* ─── 車源說明 / Description ─── */}
+            <div className="bg-white/[0.04] rounded-xl border border-white/[0.06] mb-3 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.06]">
+                <span className="text-white/50 text-xs font-medium">車源說明</span>
+              </div>
+              <div className="px-4 py-3">
+                <p className="text-white/80 text-sm leading-relaxed answer-summary" data-speakable>
+                  {vehicle.description
+                    ? (vehicle.description as string)
+                    : `${year} ${name}，${vehicle.mileage ? `里程 ${vehicle.mileage}，` : ""}${vehicle.fuelType ? `${vehicle.fuelType}，` : ""}全車通過第三方認證，品質保證！`}
+                </p>
+              </div>
+            </div>
+
+            {/* ─── 8891嚴選 guarantee checklist ─── */}
+            <div className="bg-gradient-to-b from-[#C4A265]/5 to-transparent rounded-xl border border-[#C4A265]/15 mb-3 overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#C4A265]/10">
+                <span className="text-[#C4A265] text-xs font-bold">8891嚴選</span>
+                <span className="text-white/40 text-[10px]">堅持3大車輛保障，不實立即賠付！</span>
+              </div>
+              {/* 3 badges */}
+              <div className="grid grid-cols-3 divide-x divide-white/[0.06] border-b border-white/[0.06]">
+                <div className="py-2.5 text-center">
+                  <p className="text-white/70 text-xs">售價真實</p>
+                </div>
+                <div className="py-2.5 text-center">
+                  <p className="text-white/70 text-xs">100% 有車</p>
+                </div>
+                <div className="py-2.5 text-center">
+                  <p className="text-white/70 text-xs">車況真實</p>
+                </div>
+              </div>
+              {/* Individual guarantee items */}
+              <div className="divide-y divide-white/[0.04]">
+                {[
+                  "無重大事故或車體銜接",
+                  "無泡水",
+                  "無計程車變造",
+                  "無引擎號碼變造",
+                  "無車身號碼變造",
+                  "引擎本體無異常",
+                  "變速箱換檔無異常",
+                  "方向機本體無異常",
+                  "車輛配備無異常",
+                  "提供保固",
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-2">
+                    <span className="text-white/60 text-xs">{item}</span>
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  </div>
                 ))}
               </div>
-            )}
+            </div>
+
+            {/* Urgency / social proof line */}
+            <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 mb-3">
+              <span className="text-base leading-none">🔥</span>
+              <p className="text-orange-400 text-xs font-medium">近期詢問熱烈，建議盡早預約看車</p>
+            </div>
           </div>
         </div>
 
