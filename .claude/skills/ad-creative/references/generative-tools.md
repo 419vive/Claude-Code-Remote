@@ -244,6 +244,8 @@ ByteDance's video generation model with simultaneous audio-visual generation and
 
 **Docs:** [Seedance](https://seed.bytedance.com/en/seedance2_0)
 
+**Automation:** For driving Seedance 2.0 on Higgsfield via Claude Code + Playwright MCP (batch workflow, JS prompt-bar clear, SESSION-RESUME.md recovery, image-to-video reference uploads), see [higgsfield-playwright-workflow.md](./higgsfield-playwright-workflow.md).
+
 ---
 
 ### Higgsfield
@@ -264,6 +266,8 @@ Full-stack video creation platform with cinematic camera controls.
 - Animate product images into dynamic video
 - Create multiple video variations with different camera styles
 - Quick-turn video content for social campaigns
+
+**Automation:** See [higgsfield-playwright-workflow.md](./higgsfield-playwright-workflow.md) for the full Claude Code + Playwright MCP playbook — covers NanoBanana 2 (image), Seedance 2.0 (video), the JS prompt-bar clear fix, crash recovery, and image-to-video reference workflow.
 
 ---
 
