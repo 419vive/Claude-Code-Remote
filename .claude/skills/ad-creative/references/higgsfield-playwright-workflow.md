@@ -1,6 +1,11 @@
 # Higgsfield × Playwright MCP — Automation Workflow
 
-Operational playbook for driving Higgsfield (NanoBanana 2 images + **Seedance 2.0** videos) with Claude Code via Playwright MCP. This covers the *how-to-automate* layer. For what the tools are, pricing, and capabilities, see [generative-tools.md](./generative-tools.md).
+Operational playbook for driving Higgsfield (NanoBanana 2 images + **Seedance 2.0** videos) with Claude Code via Playwright MCP. This covers the *how-to-automate* layer.
+
+**Three complementary layers:**
+- **Catalog** — what tools exist, pricing, capabilities → see [generative-tools.md](./generative-tools.md)
+- **Operations** — *this file* — browser automation, JS selectors, polling, downloads, recovery
+- **Prompt craft by genre** — 15 `seedance-*` skills in `.claude/skills/` covering cinematic, 3d-cgi, cartoon, comic-to-video, fight-scenes, motion-design-ad, ecommerce-ad, anime-action, product-360, music-video, social-hook, brand-story, fashion-lookbook, food-beverage, real-estate. Invoke the one that matches the shot you're making.
 
 > Use this when you want to batch-generate creative on Higgsfield without babysitting the browser. The key trick is clearing the content-editable prompt bar via JS between generations so state doesn't leak between prompts.
 
