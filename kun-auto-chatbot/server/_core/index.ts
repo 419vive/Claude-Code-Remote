@@ -137,6 +137,49 @@ async function runMigrations() {
       INDEX idx_pageviews_path (path(191))
     )`);
 
+    // ── IDEMPOTENT SCHEMA UPGRADES ─────────────────────────────────────────
+    // Applies to EXISTING production tables that pre-date newer columns/enums.
+    // CREATE TABLE IF NOT EXISTS above won't touch existing tables, so we
+    // check INFORMATION_SCHEMA and ALTER only what's missing. Safe to re-run.
+    try {
+      // 0001: ensure conversations.status enum includes 'human_handoff'
+      const [statusRows]: any = await conn.execute(
+        `SELECT COLUMN_TYPE
+           FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'conversations'
+            AND COLUMN_NAME = 'status'`
+      );
+      const statusType = String(statusRows?.[0]?.COLUMN_TYPE || '');
+      if (statusType && !statusType.includes('human_handoff')) {
+        logger.info("Database", "Upgrading conversations.status enum to include 'human_handoff'...");
+        await conn.execute(
+          `ALTER TABLE \`conversations\` MODIFY COLUMN \`status\` enum('active','closed','follow_up','human_handoff') NOT NULL DEFAULT 'active'`
+        );
+        logger.info("Database", "✅ conversations.status enum upgraded");
+      }
+
+      // 0004: ensure conversations.aiDisabled column exists (operator takeover lock)
+      const [aiDisabledRows]: any = await conn.execute(
+        `SELECT COUNT(*) AS n
+           FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'conversations'
+            AND COLUMN_NAME = 'aiDisabled'`
+      );
+      if (Number(aiDisabledRows?.[0]?.n || 0) === 0) {
+        logger.info("Database", "Adding conversations.aiDisabled column (operator-takeover lock)...");
+        await conn.execute(
+          `ALTER TABLE \`conversations\` ADD COLUMN \`aiDisabled\` int NOT NULL DEFAULT 0`
+        );
+        logger.info("Database", "✅ conversations.aiDisabled column added");
+      }
+    } catch (alterErr) {
+      // Fail open: log but don't block startup. The app has fallbacks for
+      // missing columns (reads return undefined → falsy lock check).
+      logger.error("Database", "Idempotent schema upgrade failed (non-fatal):", alterErr);
+    }
+
     logger.info("Database", "Migrations completed successfully");
   } catch (error) {
     logger.error("Database", "Migration failed:", error);
