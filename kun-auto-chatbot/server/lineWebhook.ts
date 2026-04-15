@@ -11,7 +11,7 @@ import { buildLLMMessages, type PromptContext } from "./dynamicPromptBuilder";
 import { isRuleBasedMode, generateRuleBasedReply } from "./ruleBasedReply";
 import { sanitizeChatMessage, validateLLMOutput, getGuardrailMode } from "./security";
 
-import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting } from "./lineUtils";
+import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting, isOperator, parseOperatorCommand, type OperatorCommand } from "./lineUtils";
 import { getAssistantContentForTrigger, buildOwnerNotificationFlex, getMilestoneLevel, checkAndNotifyOwner, buildHumanHandoffFlex, sendHumanHandoffNotification } from "./lineNotification";
 import { updateConversationTracker, sendFollowUpMessages } from "./lineRecovery";
 
@@ -151,6 +151,179 @@ function isDuplicate(messageId: string): boolean {
   if (processedMessages.has(messageId)) return true;
   processedMessages.set(messageId, now);
   return false;
+}
+
+// ============ OPERATOR COMMAND HANDLER ============
+// Executes /lock, /unlock, /list, /status, /help when an operator (whitelisted
+// userId) texts the bot from their own LINE. Replies in-thread.
+//
+// Target resolution: operators only know the LAST 8 chars of the customer's
+// LINE userId (visible in the analytics dashboard / handoff Flex card).
+// We resolve by suffix-matching against `conversations.sessionId`
+// (which is `line-<userId>` for LINE customers).
+async function handleOperatorCommand(
+  cmd: OperatorCommand,
+  operatorUserId: string,
+  replyToken: string,
+  channelAccessToken: string
+): Promise<void> {
+  const reply = async (text: string) => {
+    try {
+      await fetch("https://api.line.me/v2/bot/message/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+        body: JSON.stringify({ replyToken, messages: [{ type: "text", text }] }),
+      });
+    } catch (err) {
+      console.error("[LINE Operator] reply failed:", err);
+    }
+  };
+
+  if (!cmd) return;
+
+  const HELP_TEXT = [
+    "📋 操作員指令：",
+    "/lock <last8>  → 鎖定 AI（用客人 userId 後8碼）",
+    "/lock          → 鎖定最近一筆 LINE 對話",
+    "/unlock <last8>→ 恢復 AI",
+    "/list          → 列出最近 5 筆 LINE 對話",
+    "/status <last8>→ 查單筆狀態",
+    "/help          → 顯示這份說明",
+    "",
+    "💡 你也可以在我傳的「真人接手通知」或「高品質潛客」卡片底下，",
+    "直接點「🔒 我來接手」一鍵鎖定 AI。",
+  ].join("\n");
+
+  if (cmd.kind === 'help') {
+    await reply(HELP_TEXT);
+    return;
+  }
+
+  // Helper: find LINE conversations matching a sessionId-suffix.
+  // Limit raised to 200 so older convs still resolve when an operator types
+  // last8 they remember from a notification card.
+  const findBySuffix = async (suffix: string | null) => {
+    const list = await db.listConversations({ channel: 'line', limit: 200 });
+    const items = list?.items || [];
+    if (!suffix) return items;
+    const s = suffix.trim().toLowerCase();
+    return items.filter(c => c.sessionId.toLowerCase().endsWith(s));
+  };
+
+  // Privacy: by default, mask customer names in /list output. Operator can
+  // request `/list full` for unmasked. (LINE account compromise is the new
+  // attack surface — limit blast radius.)
+  const maskName = (name: string | null | undefined): string => {
+    const n = (name || '').trim();
+    if (!n) return '(無名)';
+    if (n.length === 1) return n;
+    if (n.length === 2) return n[0] + '*';
+    return n[0] + '*'.repeat(Math.max(1, n.length - 2)) + n[n.length - 1];
+  };
+
+  if (cmd.kind === 'list') {
+    const list = await db.listConversations({ channel: 'line', limit: 5 });
+    const items = list?.items || [];
+    if (items.length === 0) {
+      await reply("目前沒有 LINE 對話");
+      return;
+    }
+    const showFull = (cmd.target ?? '').toLowerCase() === 'full';
+    const lines = [showFull ? "📋 最近 5 筆 LINE 對話 (full)：" : "📋 最近 5 筆 LINE 對話："];
+    for (const c of items) {
+      const last8 = c.sessionId.slice(-8);
+      const lock = (c as any).aiDisabled === 1 ? "🔒" : (c.status === 'human_handoff' ? "🟡" : "🟢");
+      const name = showFull ? (c.customerName || '(無名)') : maskName(c.customerName);
+      const score = c.leadScore ?? 0;
+      lines.push(`${lock} ${name} | ${last8} | ${score}分`);
+    }
+    lines.push("", "🔒=AI已鎖 🟡=暫時 handoff 🟢=AI正常", showFull ? "" : "（完整名字：/list full）");
+    await reply(lines.join("\n"));
+    return;
+  }
+
+  if (cmd.kind === 'status') {
+    const matches = await findBySuffix(cmd.target);
+    if (matches.length === 0) {
+      await reply(`找不到對話「${cmd.target ?? ''}」`);
+      return;
+    }
+    if (matches.length > 1) {
+      await reply(`「${cmd.target}」對應到多筆，請給更完整的後綴`);
+      return;
+    }
+    const c = matches[0];
+    const lock = (c as any).aiDisabled === 1 ? "🔒 AI 已鎖定" : (c.status === 'human_handoff' ? "🟡 暫時 handoff" : "🟢 AI 正常");
+    await reply(`${c.customerName || '(無名)'}\n狀態：${lock}\n分數：${c.leadScore ?? 0}\n電話：${c.customerContact || '未提供'}`);
+    return;
+  }
+
+  if (cmd.kind === 'lock') {
+    let target;
+    let resolvedFromMostRecent = false;
+    if (cmd.target) {
+      const matches = await findBySuffix(cmd.target);
+      if (matches.length === 0) { await reply(`找不到對話「${cmd.target}」`); return; }
+      if (matches.length > 1) { await reply(`「${cmd.target}」對應多筆，請給更完整的後綴`); return; }
+      target = matches[0];
+    } else {
+      const items = (await db.listConversations({ channel: 'line', limit: 5 }))?.items || [];
+      const firstUnlocked = items.find(c => (c as any).aiDisabled !== 1);
+      if (!firstUnlocked) { await reply("找不到可以鎖定的對話（最近 5 筆都已鎖定）"); return; }
+      target = firstUnlocked;
+      resolvedFromMostRecent = true;
+    }
+
+    const last8 = target.sessionId.slice(-8);
+    const displayName = target.customerName || `(無名)`;
+
+    // Idempotency: if already locked, just confirm — don't double-write
+    if ((target as any).aiDisabled === 1) {
+      await reply(`ℹ️ 「${displayName}」(${last8}) 早就鎖定了 — 不用再鎖一次`);
+      return;
+    }
+
+    await db.updateConversation(target.id, { status: 'human_handoff', aiDisabled: 1 });
+    await db.addAnalyticsEvent({
+      conversationId: target.id,
+      userId: operatorUserId,
+      eventCategory: 'operator_takeover',
+      eventAction: 'ai_disabled_via_command',
+      eventLabel: cmd.target ?? 'most_recent',
+      channel: 'line',
+    });
+
+    // CRITICAL UX: when /lock has no target, we resolved against "most recent
+    // active" — which can race with an inbound message from a different customer.
+    // Always show last8 so Megan can `/unlock <last8>` instantly if wrong.
+    const undoHint = `\n\n要解除：傳「/unlock ${last8}」`;
+    const raceWarning = resolvedFromMostRecent
+      ? `\n⚠️ 你沒指定客人，鎖到的是「最近一筆」。如果不是你想鎖的人，馬上用上面的指令解鎖。`
+      : '';
+    await reply(`✅ 已鎖定 AI：「${displayName}」(${last8})\n從現在起 AI 不會回覆。${raceWarning}${undoHint}`);
+    console.log(`[LINE Operator] ${operatorUserId.slice(0,8)}... locked conversation ${target.id} via /lock`);
+    return;
+  }
+
+  if (cmd.kind === 'unlock') {
+    if (!cmd.target) { await reply("用法：/unlock <userId 後 8 碼>"); return; }
+    const matches = await findBySuffix(cmd.target);
+    if (matches.length === 0) { await reply(`找不到對話「${cmd.target}」`); return; }
+    if (matches.length > 1) { await reply(`「${cmd.target}」對應多筆，請給更完整的後綴`); return; }
+    const target = matches[0];
+    await db.updateConversation(target.id, { status: 'active', aiDisabled: 0 });
+    await db.addAnalyticsEvent({
+      conversationId: target.id,
+      userId: operatorUserId,
+      eventCategory: 'operator_takeover',
+      eventAction: 'ai_enabled_via_command',
+      eventLabel: cmd.target,
+      channel: 'line',
+    });
+    await reply(`🔓 已恢復 AI：「${target.customerName || target.sessionId.slice(-8)}」`);
+    console.log(`[LINE Operator] ${operatorUserId.slice(0,8)}... unlocked conversation ${target.id} via /unlock`);
+    return;
+  }
 }
 
 // ============ FRUSTRATION / EMOTION DETECTION ============
@@ -581,6 +754,89 @@ async function processLineEvent(
       console.log(`[LINE] Postback action: ${action}`);
     }
 
+    // ============ OPERATOR TAKEOVER POSTBACK ============
+    // Megan/owner taps "🔒 我來接手" on the handoff/lead Flex card → permanently
+    // lock AI for that conversation. Source userId must be in the operator
+    // whitelist (env: LINE_OPERATOR_USER_IDS / LINE_OWNER_USER_ID / LINE_ADDITIONAL_NOTIFY_USER_IDS).
+    if (action === "operator_takeover") {
+      const replyToken = event.replyToken;
+      const senderId = event.source?.userId;
+      const targetConvId = parseInt(params.get("convId") || "0", 10);
+
+      if (!isOperator(senderId)) {
+        console.warn(`[LINE] operator_takeover postback rejected: ${senderId?.slice(0,8)}... not in operator whitelist`);
+        if (replyToken) {
+          try {
+            await fetch("https://api.line.me/v2/bot/message/reply", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+              body: JSON.stringify({ replyToken, messages: [{ type: "text", text: "❌ 此功能僅限授權業務使用" }] }),
+            });
+          } catch {}
+        }
+        return;
+      }
+
+      if (!targetConvId) {
+        console.warn(`[LINE] operator_takeover postback missing convId`);
+        return;
+      }
+
+      try {
+        const db2 = await db.getDb();
+        const { conversations: convTable } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const [targetConv] = db2 ? await db2.select().from(convTable).where(eq(convTable.id, targetConvId)).limit(1) : [];
+        if (!targetConv) {
+          if (replyToken) {
+            await fetch("https://api.line.me/v2/bot/message/reply", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+              body: JSON.stringify({ replyToken, messages: [{ type: "text", text: `❌ 找不到對話 #${targetConvId}` }] }),
+            });
+          }
+          return;
+        }
+
+        // Idempotency: re-tapping the button on the same flex card shouldn't
+        // re-write the row + re-log analytics. Confirm and exit.
+        if ((targetConv as any).aiDisabled === 1) {
+          if (replyToken) {
+            await fetch("https://api.line.me/v2/bot/message/reply", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+              body: JSON.stringify({ replyToken, messages: [{ type: "text", text: `ℹ️ 「${targetConv.customerName || `對話 #${targetConvId}`}」早就鎖定了` }] }),
+            });
+          }
+          return;
+        }
+
+        await db.updateConversation(targetConvId, { status: 'human_handoff', aiDisabled: 1 });
+        await db.addAnalyticsEvent({
+          conversationId: targetConvId,
+          userId: senderId,
+          eventCategory: 'operator_takeover',
+          eventAction: 'ai_disabled_via_postback',
+          eventLabel: `convId=${targetConvId}`,
+          channel: 'line',
+        });
+
+        const customerLabel = targetConv.customerName || `對話 #${targetConvId}`;
+        const confirmText = `✅ 已接手「${customerLabel}」\n從現在起 AI 不會回覆這位客人，請繼續用 LINE 官方帳號跟客人對話。\n\n要恢復 AI：傳「/unlock ${targetConv.sessionId.slice(-8)}」`;
+        if (replyToken) {
+          await fetch("https://api.line.me/v2/bot/message/reply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+            body: JSON.stringify({ replyToken, messages: [{ type: "text", text: confirmText }] }),
+          });
+        }
+        console.log(`[LINE] ✅ Operator ${senderId?.slice(0,8)}... took over conversation ${targetConvId}`);
+      } catch (err) {
+        console.error("[LINE] operator_takeover postback failed:", err);
+      }
+      return;
+    }
+
     if (action === "appointment_datetime") {
       const replyToken = event.replyToken;
       const postbackUserId = event.source?.userId;
@@ -739,6 +995,18 @@ async function processLineEvent(
   if (messageId && isDuplicate(messageId)) {
     console.log(`[LINE] Duplicate message ${messageId}, skipping`);
     return;
+  }
+
+  // ============ OPERATOR SLASH COMMANDS (sender's own LINE → bot) ============
+  // Megan can text the bot from her own LINE: /lock, /unlock <last8>, /list, etc.
+  // Recognized BEFORE any customer-flow handling so operator's control commands
+  // never get treated as a sales-funnel message. Whitelist via env vars.
+  if (isOperator(userId)) {
+    const cmd = parseOperatorCommand(userMessage);
+    if (cmd) {
+      await handleOperatorCommand(cmd, userId, replyToken, channelAccessToken);
+      return;
+    }
   }
 
   // Get conversation FIRST so we can short-circuit on operator-takeover lock

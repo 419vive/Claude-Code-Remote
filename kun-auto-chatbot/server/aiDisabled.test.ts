@@ -13,7 +13,8 @@
  *     behavior (rich menu / new inquiry / expired timeout reactivate AI)
  *   - aiDisabled=0 + status=active → AI replies normally
  */
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { isOperator, getOperatorUserIds, parseOperatorCommand } from "./lineUtils";
 
 // Mirror of the lineWebhook.ts + routers.ts gating logic. If the webhook
 // changes, update this predicate to match — both must stay in lockstep.
@@ -231,6 +232,158 @@ describe("handoff trigger predicates (set-points that auto-flip aiDisabled)", ()
     it("does NOT flag confident replies", () => {
       expect(uncertaintyPattern.test("這台車現在還在！")).toBe(false);
     });
+  });
+});
+
+describe("operator command parser (lineUtils.parseOperatorCommand)", () => {
+  it("returns null for messages without a command prefix", () => {
+    expect(parseOperatorCommand("你好")).toBeNull();
+    expect(parseOperatorCommand("")).toBeNull();
+  });
+
+  it("any prefixed-but-unknown command returns 'help' (not null)", () => {
+    // Critical: if an operator typos a command, we must NOT fall through to
+    // customer-flow handling. Returning 'help' guarantees the slash-command
+    // handler always intercepts and never accidentally treats the operator's
+    // command as a sales message.
+    expect(parseOperatorCommand("/")).toEqual({ kind: "help" });
+    expect(parseOperatorCommand("/foo")).toEqual({ kind: "help" });
+    expect(parseOperatorCommand("/dev")).toEqual({ kind: "help" });
+  });
+
+  it("parses /lock with no target → most-recent intent", () => {
+    expect(parseOperatorCommand("/lock")).toEqual({ kind: "lock", target: null });
+    expect(parseOperatorCommand("!lock")).toEqual({ kind: "lock", target: null });
+  });
+
+  it("parses /lock <last8>", () => {
+    expect(parseOperatorCommand("/lock abc12345")).toEqual({ kind: "lock", target: "abc12345" });
+    expect(parseOperatorCommand("/lock   abc12345  ")).toEqual({ kind: "lock", target: "abc12345" });
+  });
+
+  it("parses /unlock <last8>", () => {
+    expect(parseOperatorCommand("/unlock xyz")).toEqual({ kind: "unlock", target: "xyz" });
+  });
+
+  it("parses /list and /ls (with optional 'full' modifier)", () => {
+    expect(parseOperatorCommand("/list")).toEqual({ kind: "list", target: null });
+    expect(parseOperatorCommand("/ls")).toEqual({ kind: "list", target: null });
+    expect(parseOperatorCommand("/list full")).toEqual({ kind: "list", target: "full" });
+  });
+
+  it("parses /status <last8>", () => {
+    expect(parseOperatorCommand("/status abc")).toEqual({ kind: "status", target: "abc" });
+  });
+
+  it("parses /help and aliases", () => {
+    expect(parseOperatorCommand("/help")).toEqual({ kind: "help" });
+    expect(parseOperatorCommand("/?")).toEqual({ kind: "help" });
+    expect(parseOperatorCommand("/？")).toEqual({ kind: "help" });
+  });
+
+  it("accepts Chinese command names", () => {
+    expect(parseOperatorCommand("/鎖")).toEqual({ kind: "lock", target: null });
+    expect(parseOperatorCommand("/鎖定 abc")).toEqual({ kind: "lock", target: "abc" });
+    expect(parseOperatorCommand("/接手")).toEqual({ kind: "lock", target: null });
+    expect(parseOperatorCommand("/解鎖 abc")).toEqual({ kind: "unlock", target: "abc" });
+    expect(parseOperatorCommand("/清單")).toEqual({ kind: "list", target: null });
+  });
+
+  it("does NOT match messages without / or ! prefix (no false positives)", () => {
+    expect(parseOperatorCommand("lock abc12345")).toBeNull();
+    expect(parseOperatorCommand("接手這位客人")).toBeNull();
+  });
+
+  it("accepts full-width ／and ！ prefixes (Chinese IME default)", () => {
+    expect(parseOperatorCommand("／lock")).toEqual({ kind: "lock", target: null });
+    expect(parseOperatorCommand("！list")).toEqual({ kind: "list", target: null });
+  });
+});
+
+describe("isOperator whitelist matching (lineUtils.isOperator)", () => {
+  // Save + restore env between tests
+  const saved = {
+    op: process.env.LINE_OPERATOR_USER_IDS,
+    owner: process.env.LINE_OWNER_USER_ID,
+    extra: process.env.LINE_ADDITIONAL_NOTIFY_USER_IDS,
+  };
+  beforeEach(() => {
+    delete process.env.LINE_OPERATOR_USER_IDS;
+    delete process.env.LINE_OWNER_USER_ID;
+    delete process.env.LINE_ADDITIONAL_NOTIFY_USER_IDS;
+  });
+  afterAll(() => {
+    if (saved.op) process.env.LINE_OPERATOR_USER_IDS = saved.op; else delete process.env.LINE_OPERATOR_USER_IDS;
+    if (saved.owner) process.env.LINE_OWNER_USER_ID = saved.owner; else delete process.env.LINE_OWNER_USER_ID;
+    if (saved.extra) process.env.LINE_ADDITIONAL_NOTIFY_USER_IDS = saved.extra; else delete process.env.LINE_ADDITIONAL_NOTIFY_USER_IDS;
+  });
+
+  it("returns false when no env is configured", () => {
+    expect(isOperator("Uany")).toBe(false);
+    expect(getOperatorUserIds()).toEqual([]);
+  });
+
+  it("matches against LINE_OPERATOR_USER_IDS (preferred)", () => {
+    process.env.LINE_OPERATOR_USER_IDS = "Umegan,Uowner";
+    expect(isOperator("Umegan")).toBe(true);
+    expect(isOperator("Uother")).toBe(false);
+  });
+
+  it("falls back to LINE_OWNER_USER_ID", () => {
+    process.env.LINE_OWNER_USER_ID = "Uowner123";
+    expect(isOperator("Uowner123")).toBe(true);
+  });
+
+  it("falls back to LINE_ADDITIONAL_NOTIFY_USER_IDS", () => {
+    process.env.LINE_ADDITIONAL_NOTIFY_USER_IDS = "Ujerry, Uassist";
+    expect(isOperator("Ujerry")).toBe(true);
+    expect(isOperator("Uassist")).toBe(true);
+  });
+
+  it("merges all three sources with dedup", () => {
+    process.env.LINE_OPERATOR_USER_IDS = "Umegan";
+    process.env.LINE_OWNER_USER_ID = "Umegan"; // duplicate
+    process.env.LINE_ADDITIONAL_NOTIFY_USER_IDS = "Ujerry";
+    const ids = getOperatorUserIds();
+    expect(ids.sort()).toEqual(["Ujerry", "Umegan"]);
+  });
+
+  it("returns false for null/empty userId", () => {
+    process.env.LINE_OPERATOR_USER_IDS = "Umegan";
+    expect(isOperator(null)).toBe(false);
+    expect(isOperator(undefined)).toBe(false);
+    expect(isOperator("")).toBe(false);
+  });
+});
+
+describe("operator_takeover postback data format", () => {
+  // The postback button on the handoff/lead Flex card sends:
+  //   action=operator_takeover&convId=<id>
+  // Lock down both the URL-encoding shape AND the conversation-id parse.
+  function parsePostback(data: string): { action: string | null; convId: number } {
+    const params = new URLSearchParams(data);
+    return {
+      action: params.get("action"),
+      convId: parseInt(params.get("convId") || "0", 10),
+    };
+  }
+
+  it("parses action + convId from the buttons we render", () => {
+    const r = parsePostback("action=operator_takeover&convId=42");
+    expect(r.action).toBe("operator_takeover");
+    expect(r.convId).toBe(42);
+  });
+
+  it("returns falsy convId (handler rejects) when missing or non-numeric", () => {
+    // The handler uses `if (!targetConvId)` to reject — so 0, NaN, undefined
+    // all short-circuit. We just lock down the falsy contract.
+    expect(parsePostback("action=operator_takeover").convId).toBeFalsy();
+    expect(parsePostback("action=operator_takeover&convId=").convId).toBeFalsy();
+    expect(parsePostback("action=operator_takeover&convId=abc").convId).toBeFalsy();
+  });
+
+  it("doesn't accept other actions as takeover", () => {
+    expect(parsePostback("action=appointment_datetime&convId=42").action).not.toBe("operator_takeover");
   });
 });
 
