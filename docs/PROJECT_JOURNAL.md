@@ -14,6 +14,171 @@
 
 ---
 
+## 2026-04-15 (later) — In-LINE operator controls (Megan can lock from her phone)
+
+**Context:**
+After the morning's `aiDisabled` work, Jerry pushed back: "What do you mean
+'LINE limitation'? Find a way." The dashboard-only solution required Megan to
+context-switch to a desktop UI — too slow when she's already replying on her
+phone via LINE OA Manager.
+
+**Insight:**
+The webhook can't see Megan's outbound messages, but it CAN see Megan's
+inbound messages to the bot. So: let Megan signal "I've taken over" using
+LINE itself, two ways: (1) tap a button on the notification card she
+already gets, (2) text the bot a slash command from her own LINE.
+
+**Decision:**
+
+1. **One-tap takeover button on existing Flex cards** — added a
+   `🔒 我來接手 (停止 AI)` postback button to both `buildHumanHandoffFlex`
+   and `buildOwnerNotificationFlex`. Postback data: `action=operator_takeover&convId=<id>`.
+   Postback handler in `lineWebhook.ts` verifies sender via `isOperator()`,
+   locks the conversation, replies a confirmation including the last8 of
+   the customer's userId for one-tap undo (`/unlock <last8>`).
+
+2. **Slash commands from operator's own LINE** — `/lock`, `/lock <last8>`,
+   `/unlock <last8>`, `/list`, `/list full`, `/status <last8>`, `/help`.
+   Also accepts `!` prefix and Chinese aliases (`/鎖`, `/接手`, `/解鎖`,
+   `/清單`, `/狀態`, `/幫助`) and full-width `／`/`！` (Chinese IME default).
+   Customer resolution: suffix-match against `sessionId` (last8 chars from
+   the 33-char LINE userId, visible on notification cards).
+
+3. **Operator whitelist** — `getOperatorUserIds()` reads from 3 env vars
+   (`LINE_OPERATOR_USER_IDS` preferred, falling back to existing
+   `LINE_OWNER_USER_ID` and `LINE_ADDITIONAL_NOTIFY_USER_IDS`), merged + dedup.
+
+4. **Slash-command handler at the very TOP of text processing** — runs
+   before the operator-takeover lock check, before 8891 short-circuit,
+   before everything else. So Megan's commands never get treated as
+   customer messages, even if her own conversation happens to be locked.
+
+**Reviewer (subagent) findings + all fixed:**
+- **MAJOR**: `/lock` with no target races with inbound messages → confirmation
+  now shows last8 + race warning ("⚠️ 沒指定客人，鎖到的是最近一筆") + undo hint
+- **MAJOR**: unknown `/foo` previously returned `null` → fell through to customer
+  flow. Now returns `{kind:'help'}` so the slash-command handler always intercepts.
+- **MINOR**: `/list` now masks customer names by default (`王*玲`); operator
+  can request `/list full` for unmasked. Limits LINE-account-compromise blast radius.
+- **MINOR**: parser now accepts full-width `／`/`！` (Chinese IME defaults).
+- **MINOR**: `findBySuffix` limit bumped 50 → 200.
+- **NIT**: postback handler + `/lock` are now idempotent — re-tapping doesn't
+  re-write the row or re-log the analytics event.
+- **NOT FIXED** (reviewer also flagged): suffix-collision is rejected
+  via "對應多筆，請給更完整的後綴" — acceptable. Direct drizzle import in
+  postback handler — could refactor to `db.getConversationById()` but
+  one-line abstraction not worth its own helper right now.
+
+**How Megan uses this in practice:**
+- Most common path: customer triggers handoff → Megan gets Flex card on
+  her LINE → she taps "🔒 我來接手" → AI silenced. Zero typing.
+- Pro-active path: she sees a customer she wants to take over → texts
+  `/list` to bot → sees last8 → sends `/lock abc12345`.
+- Recovery: she locks the wrong customer → confirmation shows
+  `/unlock <last8>` → she taps-paste-send.
+
+**Outcome:**
+- 68/68 unit tests pass on `server/aiDisabled.test.ts` (added 22 new tests
+  for parser variants, whitelist matching, postback format)
+- esbuild server bundle: 505.6kb, 20ms, no errors
+- Pre-existing tsc errors (6) still all in `client/` files unrelated to this change
+
+**Artifacts (delta from morning):**
+- `kun-auto-chatbot/server/lineUtils.ts` (+`getOperatorUserIds`, `isOperator`, `parseOperatorCommand`)
+- `kun-auto-chatbot/server/lineNotification.ts` (+`🔒 我來接手` postback button on 2 Flex cards)
+- `kun-auto-chatbot/server/lineWebhook.ts` (postback handler for `operator_takeover` + slash-command handler `handleOperatorCommand` + early gate)
+- `kun-auto-chatbot/server/aiDisabled.test.ts` (+22 tests, total 68)
+
+**Env var to set in production:**
+```
+LINE_OPERATOR_USER_IDS=Umegan-line-userid,Uowner-line-userid
+```
+(Falls back to existing `LINE_OWNER_USER_ID` + `LINE_ADDITIONAL_NOTIFY_USER_IDS`
+if not set, so deployment is non-breaking.)
+
+---
+
+## 2026-04-15 — Operator-takeover lock for LINE chatbot (permanent AI silence)
+
+**Context:**
+Jerry's directive: 「只要我們操作人員介入答覆後，之後一律禁止所有AI的答覆，調整完
+再用 reviewer 和 tester 檢查」. The existing `human_handoff` state is **temporary**
+— it auto-reactivates after 30 min, on rich-menu tap, or on "我想了解" phrase.
+Jerry wants a **permanent** lock that survives those reactivation triggers.
+
+LINE platform reality: when an operator replies via the LINE Official Account
+Manager console, the bot webhook does NOT receive those outbound messages. So
+the bot has no automatic way to detect operator intervention. We need explicit
+admin controls.
+
+**Decision:**
+Two-layer architecture:
+1. **`aiDisabled: int` column on `conversations`** — permanent flag, distinct
+   from `status='human_handoff'`. Once `aiDisabled=1`, AI is locked out
+   regardless of timeouts, rich menus, or "new inquiry" reactivation.
+2. **3 admin tRPC mutations** in `server/routes/adminRoutes.ts`:
+   - `disableAi(conversationId, reason?)` — one-click lock after operator
+     replies via LINE OA console. Audit-logged.
+   - `enableAi(conversationId, reason?)` — re-enable AI (rare). Audit-logged.
+   - `operatorReply(conversationId, message)` — push to LINE customer via
+     `pushMessage` API + auto-lock + audit log. Returns 4-state
+     `linePushStatus: sent | failed | no_token | skipped`. Transcript is
+     ONLY recorded when `delivered = (sent || skipped)` — failed pushes
+     don't pollute the transcript with messages the customer never saw.
+3. **Auto-set `aiDisabled=1` at all 4 existing handoff trigger sites:**
+   - User says "想跟真人" (`lineWebhook.ts` ~885)
+   - AI emits `[HUMAN_HANDOFF]` token (`lineWebhook.ts` ~1431)
+   - Flexible-time silent handoff (`lineWebhook.ts` ~1174)
+   - Web chat handoff (`routers.ts:909`)
+4. **Early gate** moved BEFORE typing indicator + 8891 referral short-circuit
+   in `lineWebhook.ts:739` — so locked customers don't see "AI typing" or get
+   8891 offer messages. Also covers: image messages, non-text (sticker etc.),
+   postback (datetime confirmations), returning-user follow welcome, recovery
+   nudges, follow-up pushes.
+
+**Reviewer (subagent) findings + fixes applied:**
+- **BLOCKER**: 8891 short-circuit ran before lock check → moved gate up
+- **BLOCKER**: typing indicator fired on locked conv → moved after gate
+- **MAJOR**: `lineRecovery.ts` nudges only checked status — added aiDisabled
+- **MAJOR**: returning-user re-follow welcome bypassed lock — added gate
+- **MINOR**: operatorReply transcript saved on push fail → only saves on sent
+- **MINOR**: `as any` casts on update payloads → dropped (schema includes column)
+- Added audit trail (`analyticsEvents` rows with `eventCategory='operator_takeover'`)
+
+**Tester (subagent) findings + fixes applied:**
+- Set-point trigger predicates had no tests → added 13 (humanHandoffPattern,
+  flexTime pattern, [HUMAN_HANDOFF] parser, uncertainty pattern)
+- operatorReply state machine had no tests → added 6 covering all 4 statuses
+  + the `delivered` lock guard
+- Migration safety: `ALTER TABLE ... ADD COLUMN ... DEFAULT 0` is INSTANT on
+  MySQL 8.0.12+ (Railway runs current 8.x → safe). No index needed.
+
+**Outcome:**
+- 48/48 unit tests pass on `server/aiDisabled.test.ts`
+- esbuild server bundle: 492.4kb, 21ms, no errors
+- Pre-existing tsc errors (6) all in `client/` files unrelated to this change
+- Pre-existing test failures (env-var dependent) unaffected
+
+**Artifacts:**
+- `kun-auto-chatbot/drizzle/schema.ts` (added `aiDisabled` column)
+- `kun-auto-chatbot/drizzle/0004_add_ai_disabled.sql` (manual migration, follows
+  0002/0003 convention — not journaled in `_journal.json`)
+- `kun-auto-chatbot/server/lineWebhook.ts` (gate at ~739, lock-set at ~290, ~885, ~1174, ~1610)
+- `kun-auto-chatbot/server/lineRecovery.ts` (gate on nudges + follow-ups)
+- `kun-auto-chatbot/server/routers.ts` (gate at web-chat path:511, lock-set:909)
+- `kun-auto-chatbot/server/routes/adminRoutes.ts` (3 new mutations + audit log)
+- `kun-auto-chatbot/server/aiDisabled.test.ts` (48 unit tests, all green)
+
+**What still needs human eyes:**
+- Frontend Dashboard UI does NOT yet expose the new mutations — operators
+  can't click "lock" yet. Backend is ready; UI is the next session.
+- Remaining minor: TOCTOU race (operator clicks `disableAi` while LLM call
+  is in flight, ~1-5s window). Reviewer flagged it; not fixed (would require
+  a re-check before LINE reply call). Acceptable for now — operator can
+  always send the next correction message manually.
+
+---
+
 ## 2026-04-11 — graphify sandbox shipped + measured (mixed verdict)
 
 **Context:**

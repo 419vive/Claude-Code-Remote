@@ -94,6 +94,103 @@ export function getGenderGreeting(gender: 'male' | 'female' | 'unknown'): string
   }
 }
 
+// ============ OPERATOR (STAFF) IDENTIFICATION ============
+//
+// LINE Webhook does NOT receive outbound messages sent by staff via the
+// LINE Official Account Manager console. To work around this, we let
+// staff (Megan etc.) send control commands or tap takeover buttons from
+// THEIR OWN personal LINE chat with the bot — those messages DO fire the
+// webhook and we recognize them by the sender's LINE userId.
+//
+// Whitelist sources (any-of):
+//   1. LINE_OPERATOR_USER_IDS  — preferred, comma-separated
+//   2. LINE_OWNER_USER_ID      — already-existing single owner
+//   3. LINE_ADDITIONAL_NOTIFY_USER_IDS — already-existing notify list
+export function getOperatorUserIds(): string[] {
+  const set = new Set<string>();
+  const sources = [
+    process.env.LINE_OPERATOR_USER_IDS,
+    process.env.LINE_OWNER_USER_ID,
+    process.env.LINE_ADDITIONAL_NOTIFY_USER_IDS,
+  ];
+  for (const raw of sources) {
+    if (!raw) continue;
+    for (const id of raw.split(',').map(s => s.trim()).filter(Boolean)) {
+      set.add(id);
+    }
+  }
+  return Array.from(set);
+}
+
+export function isOperator(userId: string | null | undefined): boolean {
+  if (!userId) return false;
+  return getOperatorUserIds().includes(userId);
+}
+
+// ============ OPERATOR SLASH-COMMAND PARSER ============
+//
+// Operators text the bot from their own LINE. Recognized commands (case-insensitive
+// for the verb; targets are exact-match against the conversation table):
+//
+//   /lock                  → lock the most recently active LINE conversation
+//   /lock <last8>          → lock the conversation whose sessionId ends with <last8>
+//   /unlock <last8>        → re-enable AI on that conversation
+//   /list                  → show the 5 most-recently-active LINE conversations
+//   /status <last8>        → show one conversation's lock state + last message
+//   /help                  → show command help
+//
+// Both /  and ! prefixes are accepted (Chinese keyboards default to ! easily).
+export type OperatorCommand =
+  | { kind: 'lock'; target: string | null }
+  | { kind: 'unlock'; target: string | null }
+  | { kind: 'list'; target: string | null } // optional 'full' modifier
+  | { kind: 'status'; target: string | null }
+  | { kind: 'help' }
+  | null;
+
+export function parseOperatorCommand(text: string): OperatorCommand {
+  if (!text) return null;
+  const trimmed = text.trim();
+  // Only react to messages that start with /, !, or their full-width
+  // counterparts (／／！) — Chinese IMEs default to full-width punctuation.
+  // Never accidentally treat a customer-style message as a command.
+  if (!/^[/!／！]/.test(trimmed)) return null;
+  const body = trimmed.slice(1).trim();
+  const [verbRaw, ...rest] = body.split(/\s+/);
+  const verb = (verbRaw || '').toLowerCase();
+  const target = rest.length > 0 ? rest.join(' ').trim() : null;
+
+  switch (verb) {
+    case 'lock':
+    case '鎖':
+    case '鎖定':
+    case '接手':
+      return { kind: 'lock', target };
+    case 'unlock':
+    case '解鎖':
+    case '解':
+      return { kind: 'unlock', target };
+    case 'list':
+    case 'ls':
+    case '清單':
+    case '列表':
+      return { kind: 'list', target };
+    case 'status':
+    case '狀態':
+      return { kind: 'status', target };
+    case 'help':
+    case '?':
+    case '？':
+    case '幫助':
+      return { kind: 'help' };
+    default:
+      // Unknown verb after a recognized prefix — return 'help' so the operator
+      // gets the command list back instead of the bot silently accepting their
+      // typo as a customer message.
+      return { kind: 'help' };
+  }
+}
+
 // Get a friendly name-based greeting from customer's display name
 // e.g., "王雅玲" → "雅玲", "小明" → "小明", "John" → "John"
 export function getNameGreeting(name: string | null, gender: 'male' | 'female' | 'unknown'): string {

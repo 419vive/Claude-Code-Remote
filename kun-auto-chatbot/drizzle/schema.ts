@@ -72,6 +72,10 @@ export const conversations = mysqlTable("conversations", {
   summary: text("summary"),
   interestedVehicleIds: text("interestedVehicleIds"),
   notifiedOwner: int("notifiedOwner").default(0),
+  // Permanent AI lockout flag. 1 = AI must NEVER reply in this conversation
+  // (operator has taken over). Distinct from status='human_handoff' which is
+  // a temporary/auto-expiring handoff state. Only an admin can clear this.
+  aiDisabled: int("aiDisabled").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

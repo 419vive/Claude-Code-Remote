@@ -136,6 +136,20 @@ export function buildOwnerNotificationFlex(
     },
   });
 
+  // One-tap takeover button — operator taps after replying via LINE OA Manager
+  // to permanently silence the AI for this conversation.
+  footerContents.push({
+    type: "button",
+    style: "secondary",
+    height: "sm",
+    action: {
+      type: "postback",
+      label: "🔒 我來接手 (停止 AI)",
+      data: `action=operator_takeover&convId=${conversation.id}`,
+      displayText: `🔒 接手 ${customerName}，停止 AI`,
+    },
+  });
+
   return {
     type: "flex",
     altText: `🔥 高品質潛客：${customerName}（${score}分）${phone ? ' 📞' + phone : ''}`,
@@ -432,6 +446,20 @@ export function buildHumanHandoffFlex(
       type: "uri",
       label: "💬 立即到LINE回覆客人",
       uri: "https://chat.line.biz/",
+    },
+  });
+
+  // One-tap takeover: operator taps this AFTER they've replied via LINE OA.
+  // Postback is verified against the operator whitelist in lineWebhook.ts.
+  footerContents.push({
+    type: "button",
+    style: "secondary",
+    height: "sm",
+    action: {
+      type: "postback",
+      label: "🔒 我已接手 (停止 AI)",
+      data: `action=operator_takeover&convId=${conversation.id}`,
+      displayText: `🔒 接手 ${customerName}，停止 AI`,
     },
   });
 
