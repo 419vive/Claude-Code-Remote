@@ -26,8 +26,12 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+# Startup migration script — auto-applies pending schema changes (idempotent)
+COPY --from=builder /app/scripts ./scripts
 
 EXPOSE 3000
 
-# Run DB migrations then start server
-CMD ["sh", "-c", "node dist/index.js"]
+# Run DB migrations FIRST (idempotent — safe to re-run on every container start),
+# then start the server. If migrations fail, the script logs and exits 0 so the
+# app still comes up — code has fallbacks for missing columns.
+CMD ["sh", "-c", "node scripts/run-migrations.mjs && node dist/index.js"]
