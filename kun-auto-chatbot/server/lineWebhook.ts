@@ -997,6 +997,31 @@ async function processLineEvent(
     return;
   }
 
+  // ============ UNIVERSAL DIAGNOSTIC: /whoami ============
+  // Any LINE user can text "/whoami" (or "!whoami", full-width, Chinese "/我是誰")
+  // to see their own LINE userId + whether they're in the operator whitelist.
+  // Not gated on isOperator — used specifically to debug "why isn't /help working
+  // for me?" cases (owner's userId might not be in LINE_OWNER_USER_ID, etc.).
+  // Not a security leak: a LINE user already knows their own userId via the app.
+  if (/^[/!／！]\s*(whoami|me|我是誰)\s*$/i.test(userMessage.trim())) {
+    const inWhitelist = isOperator(userId);
+    const whitelistMsg = inWhitelist
+      ? '✅ 你在操作員白名單裡——可以用 /help /lock /list 等指令'
+      : '❌ 你不在操作員白名單。請到 Railway → Variables → 把下面這串加到 LINE_OPERATOR_USER_IDS（逗號分隔）';
+    const diagText = `🔍 LINE userId 診斷\n\n你的 userId：\n${userId}\n\n狀態：${whitelistMsg}`;
+    try {
+      await fetch("https://api.line.me/v2/bot/message/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+        body: JSON.stringify({ replyToken, messages: [{ type: "text", text: diagText }] }),
+      });
+      console.log(`[LINE] /whoami replied to ${userId.slice(0,8)}... (operator=${inWhitelist})`);
+    } catch (err) {
+      console.error('[LINE] /whoami reply failed:', err);
+    }
+    return;
+  }
+
   // ============ OPERATOR SLASH COMMANDS (sender's own LINE → bot) ============
   // Megan can text the bot from her own LINE: /lock, /unlock <last8>, /list, etc.
   // Recognized BEFORE any customer-flow handling so operator's control commands
