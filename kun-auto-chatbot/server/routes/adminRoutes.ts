@@ -407,4 +407,133 @@ export const adminRouter = router({
       ga4Url: "https://analytics.google.com",
     };
   }),
+
+  // ============ OPERATOR TAKEOVER (AI disable / enable / reply) ============
+  // These endpoints exist because LINE Official Account Manager manual replies
+  // do NOT trigger webhook events. Once an operator replies to a customer —
+  // either via the LINE OA console or via `operatorReply` below — the AI must
+  // stop replying for that conversation until an admin explicitly re-enables it.
+
+  /**
+   * Permanently disable AI for a conversation (operator has taken over).
+   * Call this right after an operator replies manually via LINE OA console.
+   * Records an audit entry so we know who/when the lock was applied.
+   */
+  disableAi: adminProcedure
+    .input(z.object({ conversationId: z.number(), reason: z.string().optional() }))
+    .mutation(async ({ input, ctx }) => {
+      await db.updateConversation(input.conversationId, {
+        status: 'human_handoff',
+        aiDisabled: 1,
+      });
+      // Audit trail — log who disabled the AI and when (compliance / dispute resolution)
+      await db.addAnalyticsEvent({
+        conversationId: input.conversationId,
+        userId: (ctx as any).user?.openId ?? null,
+        eventCategory: 'operator_takeover',
+        eventAction: 'ai_disabled',
+        eventLabel: input.reason ?? null,
+        channel: 'line',
+      });
+      return { success: true };
+    }),
+
+  /**
+   * Re-enable AI for a conversation (rare — only when admin wants the bot back).
+   * Clears aiDisabled AND flips status back to 'active'. Audit-logged.
+   */
+  enableAi: adminProcedure
+    .input(z.object({ conversationId: z.number(), reason: z.string().optional() }))
+    .mutation(async ({ input, ctx }) => {
+      await db.updateConversation(input.conversationId, {
+        status: 'active',
+        aiDisabled: 0,
+      });
+      await db.addAnalyticsEvent({
+        conversationId: input.conversationId,
+        userId: (ctx as any).user?.openId ?? null,
+        eventCategory: 'operator_takeover',
+        eventAction: 'ai_enabled',
+        eventLabel: input.reason ?? null,
+        channel: 'line',
+      });
+      return { success: true };
+    }),
+
+  /**
+   * Operator sends a reply to the customer AND auto-disables AI.
+   *
+   * For LINE customers: pushes via LINE Messaging API. If the push fails (network,
+   * bad token, customer blocked the OA), we DO NOT record the message in the
+   * transcript — the customer never received it, so the operator must retry.
+   * For non-LINE channels we record the transcript immediately and assume the
+   * operator is replying on that channel directly.
+   *
+   * Returns linePushStatus: 'sent' | 'failed' | 'no_token' | 'skipped' (non-LINE).
+   */
+  operatorReply: adminProcedure
+    .input(z.object({
+      conversationId: z.number(),
+      message: z.string().min(1).max(2000),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db2 = await db.getDb();
+      if (!db2) throw new Error("Database not available");
+      const { conversations: convTable } = await import("../../drizzle/schema");
+      const [conv] = await db2.select().from(convTable).where(eq(convTable.id, input.conversationId)).limit(1);
+      if (!conv) throw new Error("Conversation not found");
+
+      let linePushStatus: 'sent' | 'failed' | 'no_token' | 'skipped' = 'skipped';
+
+      if (conv.channel === 'line' && conv.sessionId.startsWith('line-')) {
+        const lineUserId = conv.sessionId.slice('line-'.length);
+        const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+        if (!token || !lineUserId) {
+          linePushStatus = 'no_token';
+        } else {
+          try {
+            const res = await fetch('https://api.line.me/v2/bot/message/push', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                to: lineUserId,
+                messages: [{ type: 'text', text: input.message }],
+              }),
+            });
+            linePushStatus = res.ok ? 'sent' : 'failed';
+          } catch {
+            linePushStatus = 'failed';
+          }
+        }
+      }
+
+      // Only record + lock if the customer actually received the message
+      // (or we're on a non-LINE channel where the operator handles delivery themselves).
+      const delivered = linePushStatus === 'sent' || linePushStatus === 'skipped';
+      if (delivered) {
+        await db.addMessage({
+          conversationId: input.conversationId,
+          role: 'assistant',
+          content: input.message,
+          metadata: JSON.stringify({ source: 'operator', operatorOpenId: (ctx as any).user?.openId ?? null }),
+        });
+        await db.updateConversation(input.conversationId, {
+          status: 'human_handoff',
+          aiDisabled: 1,
+        });
+        await db.addAnalyticsEvent({
+          conversationId: input.conversationId,
+          userId: (ctx as any).user?.openId ?? null,
+          eventCategory: 'operator_takeover',
+          eventAction: 'operator_reply_sent',
+          eventLabel: linePushStatus,
+          channel: conv.channel,
+        });
+      }
+
+      return { success: delivered, linePushStatus };
+    }),
 });

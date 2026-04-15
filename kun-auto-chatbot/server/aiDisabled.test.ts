@@ -1,0 +1,280 @@
+/**
+ * Tests for the operator-takeover (`aiDisabled`) gating logic.
+ *
+ * The actual gating is inlined in `lineWebhook.ts` and `routers.ts` for
+ * minimal blast radius. Following the repo convention in `line-webhook.test.ts`,
+ * we replicate the decision predicates here and assert they hold for every
+ * conversation state the webhook/router will hit.
+ *
+ * What we're locking down:
+ *   - aiDisabled=1 ALWAYS blocks the AI (overrides everything: rich menu,
+ *     30-min timeout, "new inquiry" reactivation, etc.)
+ *   - aiDisabled=0 + human_handoff keeps the existing temporary-handoff
+ *     behavior (rich menu / new inquiry / expired timeout reactivate AI)
+ *   - aiDisabled=0 + status=active → AI replies normally
+ */
+import { describe, expect, it } from "vitest";
+
+// Mirror of the lineWebhook.ts + routers.ts gating logic. If the webhook
+// changes, update this predicate to match — both must stay in lockstep.
+type ConvLike = {
+  status: "active" | "closed" | "follow_up" | "human_handoff";
+  aiDisabled: number;
+  updatedAt: Date;
+};
+
+function decideAiGate(
+  conv: ConvLike | undefined | null,
+  userMessage: string,
+  now: number = Date.now()
+): "ai_replies" | "ai_silent_operator_lock" | "ai_silent_handoff" | "ai_replies_handoff_reactivated" {
+  if (!conv) return "ai_replies"; // new conversation, AI replies
+
+  // OPERATOR LOCK — highest priority, never bypassed
+  if (conv.aiDisabled === 1) return "ai_silent_operator_lock";
+
+  if (conv.status === "human_handoff") {
+    const isRichMenuAction = /看車庫存|預約賞車|關於崑家|最新優惠/.test(userMessage);
+    const isNewInquiry = /我想詢問這台車|我想了解/.test(userMessage);
+    const handoffAge = now - conv.updatedAt.getTime();
+    const HANDOFF_TIMEOUT_MS = 30 * 60 * 1000;
+    const isHandoffExpired = handoffAge > HANDOFF_TIMEOUT_MS;
+
+    if (isRichMenuAction || isNewInquiry || isHandoffExpired) {
+      return "ai_replies_handoff_reactivated";
+    }
+    return "ai_silent_handoff";
+  }
+
+  return "ai_replies";
+}
+
+describe("aiDisabled operator-takeover gating", () => {
+  describe("aiDisabled=1 overrides everything (permanent lock)", () => {
+    it("blocks AI even on a brand-new user message", () => {
+      const conv: ConvLike = { status: "active", aiDisabled: 1, updatedAt: new Date() };
+      expect(decideAiGate(conv, "你好，想看看車")).toBe("ai_silent_operator_lock");
+    });
+
+    it("blocks AI even when user taps a rich-menu button", () => {
+      const conv: ConvLike = { status: "active", aiDisabled: 1, updatedAt: new Date() };
+      expect(decideAiGate(conv, "看車庫存")).toBe("ai_silent_operator_lock");
+    });
+
+    it("blocks AI even when user says '我想詢問這台車' (new inquiry)", () => {
+      const conv: ConvLike = { status: "active", aiDisabled: 1, updatedAt: new Date() };
+      expect(decideAiGate(conv, "我想詢問這台車")).toBe("ai_silent_operator_lock");
+    });
+
+    it("blocks AI even after the 30-min handoff timeout would expire", () => {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const conv: ConvLike = { status: "human_handoff", aiDisabled: 1, updatedAt: oneHourAgo };
+      expect(decideAiGate(conv, "你好")).toBe("ai_silent_operator_lock");
+    });
+
+    it("blocks AI for an indefinitely old conversation (no auto-recovery ever)", () => {
+      const daysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const conv: ConvLike = { status: "human_handoff", aiDisabled: 1, updatedAt: daysAgo };
+      expect(decideAiGate(conv, "我想了解")).toBe("ai_silent_operator_lock");
+    });
+  });
+
+  describe("aiDisabled=0 preserves the existing temporary-handoff flow", () => {
+    it("AI silent within 30-min window on plain message", () => {
+      const recent = new Date(Date.now() - 5 * 60 * 1000);
+      const conv: ConvLike = { status: "human_handoff", aiDisabled: 0, updatedAt: recent };
+      expect(decideAiGate(conv, "還在嗎")).toBe("ai_silent_handoff");
+    });
+
+    it("rich-menu action reactivates AI (within window)", () => {
+      const recent = new Date(Date.now() - 5 * 60 * 1000);
+      const conv: ConvLike = { status: "human_handoff", aiDisabled: 0, updatedAt: recent };
+      expect(decideAiGate(conv, "看車庫存")).toBe("ai_replies_handoff_reactivated");
+    });
+
+    it("new-inquiry phrase reactivates AI (within window)", () => {
+      const recent = new Date(Date.now() - 5 * 60 * 1000);
+      const conv: ConvLike = { status: "human_handoff", aiDisabled: 0, updatedAt: recent };
+      expect(decideAiGate(conv, "我想了解")).toBe("ai_replies_handoff_reactivated");
+    });
+
+    it("expired 30-min handoff reactivates AI", () => {
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const conv: ConvLike = { status: "human_handoff", aiDisabled: 0, updatedAt: hourAgo };
+      expect(decideAiGate(conv, "你好")).toBe("ai_replies_handoff_reactivated");
+    });
+  });
+
+  describe("active conversation, AI responds normally", () => {
+    it("status=active + aiDisabled=0 → AI replies", () => {
+      const conv: ConvLike = { status: "active", aiDisabled: 0, updatedAt: new Date() };
+      expect(decideAiGate(conv, "有什麼車在賣")).toBe("ai_replies");
+    });
+
+    it("no conversation (first contact) → AI replies", () => {
+      expect(decideAiGate(null, "你好")).toBe("ai_replies");
+    });
+  });
+});
+
+describe("operatorReply LINE session-id parsing", () => {
+  // operatorReply extracts the LINE userId from sessionId="line-<userId>".
+  // Lock down that parse contract.
+  function extractLineUserId(sessionId: string): string | null {
+    if (!sessionId.startsWith("line-")) return null;
+    return sessionId.slice("line-".length) || null;
+  }
+
+  it("extracts userId from 'line-U1234...' session id", () => {
+    expect(extractLineUserId("line-U1234567890abcdef")).toBe("U1234567890abcdef");
+  });
+
+  it("returns null for non-line sessions (web, fb, etc.)", () => {
+    expect(extractLineUserId("web-abc123")).toBeNull();
+    expect(extractLineUserId("facebook-xyz")).toBeNull();
+  });
+
+  it("returns null for empty line- prefix", () => {
+    expect(extractLineUserId("line-")).toBeNull();
+  });
+});
+
+describe("handoff trigger predicates (set-points that auto-flip aiDisabled)", () => {
+  // Mirrors of the inline patterns in lineWebhook.ts. If these predicates
+  // change, the test fails — protecting the contract that "any of these inputs
+  // permanently locks the AI" (per Jerry's 2026-04-15 requirement).
+
+  describe("'wants real human' pattern (lineWebhook.ts ~885)", () => {
+    const humanHandoffPattern = /想跟真人|想和真人|找真人|要真人|真人客服|人工客服|轉真人|不想跟機器人|找人處理|我想跟真人業務聊聊這台車/;
+
+    it.each([
+      "我想跟真人聊",
+      "想和真人講話",
+      "可以幫我找真人嗎",
+      "我要真人，不要機器人",
+      "請接真人客服",
+      "我要找人工客服",
+      "幫我轉真人",
+      "我不想跟機器人聊",
+      "麻煩找人處理一下",
+      "我想跟真人業務聊聊這台車",
+    ])("matches: %s", (msg) => {
+      expect(humanHandoffPattern.test(msg)).toBe(true);
+    });
+
+    it.each([
+      "你好，我想看車",
+      "這台車多少錢",
+      "BMW X1 還在嗎",
+    ])("does NOT match safe message: %s", (msg) => {
+      expect(humanHandoffPattern.test(msg)).toBe(false);
+    });
+  });
+
+  describe("flexible-time silent handoff pattern (lineWebhook.ts ~1174)", () => {
+    const flexTimePattern = /時間彈性|你們幫我安排|幫我安排就好|幫我安排時間|都可以.*安排|你安排/;
+
+    it.each([
+      "我時間彈性",
+      "你們幫我安排",
+      "幫我安排就好",
+      "幫我安排時間",
+      "都可以，你們安排",
+      "你安排吧",
+    ])("matches: %s", (msg) => {
+      expect(flexTimePattern.test(msg)).toBe(true);
+    });
+
+    it("does NOT match plain availability questions", () => {
+      expect(flexTimePattern.test("你們幾點到幾點")).toBe(false);
+    });
+  });
+
+  describe("AI [HUMAN_HANDOFF] token detection (lineWebhook.ts ~1431)", () => {
+    function detectAndStripHandoff(replyText: string): { isHandoff: boolean; cleaned: string } {
+      const isHandoff = replyText.includes("[HUMAN_HANDOFF]");
+      const cleaned = replyText.replace(/\s*\[HUMAN_HANDOFF\]\s*/g, "").trim();
+      return { isHandoff, cleaned };
+    }
+
+    it("detects + strips a single [HUMAN_HANDOFF] token", () => {
+      const r = detectAndStripHandoff("我幫你查 [HUMAN_HANDOFF]");
+      expect(r.isHandoff).toBe(true);
+      expect(r.cleaned).toBe("我幫你查");
+    });
+
+    it("strips multiple occurrences cleanly", () => {
+      const r = detectAndStripHandoff("[HUMAN_HANDOFF] 嗨 [HUMAN_HANDOFF]");
+      expect(r.isHandoff).toBe(true);
+      expect(r.cleaned).toBe("嗨");
+    });
+
+    it("does not flag normal replies as handoff", () => {
+      const r = detectAndStripHandoff("這台 BMW 還在喔！");
+      expect(r.isHandoff).toBe(false);
+      expect(r.cleaned).toBe("這台 BMW 還在喔！");
+    });
+  });
+
+  describe("uncertainty-detection backup trigger (lineWebhook.ts ~1440)", () => {
+    const uncertaintyPattern = /我幫你確認一下|我幫你問問|我幫你查|我不太確定|這個我要確認|我幫您確認|我幫您查/;
+
+    it.each([
+      "我幫你確認一下",
+      "我幫你問問業務",
+      "這個我要確認",
+      "我不太確定耶",
+    ])("flags uncertain phrase: %s", (msg) => {
+      expect(uncertaintyPattern.test(msg)).toBe(true);
+    });
+
+    it("does NOT flag confident replies", () => {
+      expect(uncertaintyPattern.test("這台車現在還在！")).toBe(false);
+    });
+  });
+});
+
+describe("operatorReply LINE-push status semantics", () => {
+  // Mirror of the linePushStatus state machine in adminRoutes.ts operatorReply.
+  // Ensures the 4-state contract (sent / failed / no_token / skipped) maps
+  // correctly so the frontend can reliably distinguish "ok to lock" vs "retry".
+  type Channel = "line" | "web" | "facebook" | "youtube" | "other";
+  type Status = "sent" | "failed" | "no_token" | "skipped";
+
+  function decideStatus(channel: Channel, sessionId: string, hasToken: boolean, pushOk: boolean | null): Status {
+    if (!(channel === "line" && sessionId.startsWith("line-"))) return "skipped";
+    const userId = sessionId.slice("line-".length);
+    if (!hasToken || !userId) return "no_token";
+    if (pushOk === true) return "sent";
+    return "failed";
+  }
+
+  it("non-LINE channel → skipped (operator handles delivery)", () => {
+    expect(decideStatus("web", "web-xyz", true, null)).toBe("skipped");
+    expect(decideStatus("facebook", "fb-1", true, null)).toBe("skipped");
+  });
+
+  it("LINE without token → no_token", () => {
+    expect(decideStatus("line", "line-Uabc", false, null)).toBe("no_token");
+  });
+
+  it("LINE with empty user id → no_token", () => {
+    expect(decideStatus("line", "line-", true, null)).toBe("no_token");
+  });
+
+  it("LINE push 200 ok → sent", () => {
+    expect(decideStatus("line", "line-Uabc", true, true)).toBe("sent");
+  });
+
+  it("LINE push non-2xx or thrown → failed", () => {
+    expect(decideStatus("line", "line-Uabc", true, false)).toBe("failed");
+  });
+
+  it("delivered = true ONLY for 'sent' or 'skipped' (the lock guard)", () => {
+    const delivered = (s: Status) => s === "sent" || s === "skipped";
+    expect(delivered("sent")).toBe(true);
+    expect(delivered("skipped")).toBe(true);
+    expect(delivered("failed")).toBe(false);
+    expect(delivered("no_token")).toBe(false);
+  });
+});

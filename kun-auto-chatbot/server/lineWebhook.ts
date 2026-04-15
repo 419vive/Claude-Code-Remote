@@ -310,6 +310,14 @@ async function processLineEvent(
         let conversation = await db.getConversationBySessionId(sessionId);
         const isReturning = !!conversation;
 
+        // Operator-takeover lock applies to RETURNING users — if a previous
+        // operator session locked this conversation, do NOT auto-greet on re-follow.
+        // (New users have no conversation row yet, so the lock can't apply.)
+        if (isReturning && conversation && (conversation as any).aiDisabled === 1) {
+          console.log(`[LINE] Returning follower ${userId.slice(0, 8)}... is aiDisabled — skipping auto-welcome`);
+          return;
+        }
+
         if (!conversation) {
           await db.createConversation({
             sessionId,
@@ -389,6 +397,11 @@ async function processLineEvent(
     // C6: Check if conversation is in human_handoff mode — skip AI image processing
     const imageSessionId = `line-${userId}`;
     const imageConv = await db.getConversationBySessionId(imageSessionId);
+    // Operator takeover lock: AI never processes images for aiDisabled conversations
+    if (imageConv && (imageConv as any).aiDisabled === 1) {
+      console.log(`[LINE Image] Conversation ${imageConv.id} is aiDisabled (operator takeover), skipping`);
+      return;
+    }
     if (imageConv && imageConv.status === 'human_handoff') {
       // Check timeout same as text messages
       const handoffAge = Date.now() - new Date(imageConv.updatedAt).getTime();
@@ -582,15 +595,22 @@ async function processLineEvent(
 
         console.log(`[LINE] Appointment datetime selected: ${selectedDatetime} by ${postbackUserId?.slice(0, 8)}...`);
 
-        // Save to conversation
+        // Save to conversation (and short-circuit if operator has taken over)
+        let postbackConvAiDisabled = false;
         if (postbackUserId) {
           const postbackSession = `line-${postbackUserId}`;
           const postbackConv = await db.getConversationBySessionId(postbackSession);
           if (postbackConv) {
             await db.addMessage({ conversationId: postbackConv.id, role: "user", content: `[客戶選擇預約時間：${formattedDatetime}]` });
-            await db.addMessage({ conversationId: postbackConv.id, role: "assistant", content: `已選擇 ${formattedDatetime}，引導至預約表單` });
+            if ((postbackConv as any).aiDisabled === 1) {
+              postbackConvAiDisabled = true;
+              console.log(`[LINE Postback] Conversation ${postbackConv.id} is aiDisabled — skipping confirmation reply`);
+            } else {
+              await db.addMessage({ conversationId: postbackConv.id, role: "assistant", content: `已選擇 ${formattedDatetime}，引導至預約表單` });
+            }
           }
         }
+        if (postbackConvAiDisabled) return;
 
         // Build URL to book-visit page with pre-filled date/time
         const baseUrl = process.env.BASE_URL || "https://claude-code-remote-production.up.railway.app";
@@ -669,6 +689,11 @@ async function processLineEvent(
       const nonTextUserId = event.source?.userId;
       if (nonTextUserId) {
         const nonTextConv = await db.getConversationBySessionId(`line-${nonTextUserId}`);
+        // Operator takeover lock: AI never replies to non-text messages when aiDisabled
+        if (nonTextConv && (nonTextConv as any).aiDisabled === 1) {
+          console.log(`[LINE] Non-text message from ${nonTextUserId.slice(0,8)}... — aiDisabled (operator takeover), skipping`);
+          return;
+        }
         if (nonTextConv?.status === 'human_handoff') {
           console.log(`[LINE] Non-text message from ${nonTextUserId.slice(0,8)}... — in human_handoff mode, skipping`);
           return;
@@ -716,12 +741,25 @@ async function processLineEvent(
     return;
   }
 
-  // Show typing indicator immediately while processing
-  showTypingIndicator(userId, channelAccessToken);
-
-  // Get or create conversation
+  // Get conversation FIRST so we can short-circuit on operator-takeover lock
+  // before showing the typing indicator (a 20s loading animation that would
+  // misleadingly suggest a reply is incoming) and before any auto-reply path
+  // (8891 short-circuit, rich menu trigger, etc.).
   const sessionId = `line-${userId}`;
   let conversation = await db.getConversationBySessionId(sessionId);
+
+  // ============ EARLY OPERATOR-TAKEOVER LOCK ============
+  // If aiDisabled=1, AI must do NOTHING automated for this conversation —
+  // no typing indicator, no 8891 offer, no rich-menu reply, no LLM. We still
+  // record the customer's message so the operator can read it in the dashboard.
+  if (conversation && (conversation as any).aiDisabled === 1) {
+    console.log(`[LINE] Conversation ${conversation.id} is aiDisabled (operator takeover), skipping all automated handling`);
+    await db.addMessage({ conversationId: conversation.id, role: "user", content: userMessage });
+    return;
+  }
+
+  // Show typing indicator immediately while processing (only after lock check)
+  showTypingIndicator(userId, channelAccessToken);
 
   // Always try to get LINE profile for name & gender detection
   let customerName = conversation?.customerName || null;
@@ -825,6 +863,8 @@ async function processLineEvent(
     return;
   }
 
+  // (operator-takeover lock is checked earlier, before typing indicator — see above)
+
   // ============ HUMAN HANDOFF MODE: AI should not respond ============
   // Exception: Rich Menu triggers (看車庫存, 預約賞車 etc.) and new vehicle inquiries
   // should reactivate AI — customer is starting a new interaction
@@ -886,8 +926,9 @@ async function processLineEvent(
     } catch (err) {
       console.error("[LINE] Human handoff reply failed:", err);
     }
-    // Update conversation status
-    await db.updateConversation(convId, { status: 'human_handoff' });
+    // Update conversation status + permanently lock out AI
+    // (customer explicitly asked for a real human; AI must stop until admin unlocks)
+    await db.updateConversation(convId, { status: 'human_handoff', aiDisabled: 1 });
     return;
   }
 
@@ -1147,7 +1188,8 @@ async function processLineEvent(
     console.log('[LINE] 🚨 Flexible time detected — silent handoff, AI does NOT reply');
     await db.addMessage({ conversationId: convId, role: "user", content: userMessage });
     await sendHumanHandoffNotification(conversation!, userMessage, '（AI 未回覆，靜默轉交真人）', channelAccessToken, ownerUserId);
-    await db.updateConversation(convId, { status: 'human_handoff' });
+    // Permanently lock AI out — staff is taking over
+    await db.updateConversation(convId, { status: 'human_handoff', aiDisabled: 1 });
     return;
   }
 
@@ -1576,7 +1618,8 @@ async function processLineEvent(
       }
     }
     // Mark conversation so AI stops responding until staff resolves it
-    await db.updateConversation(convId, { status: 'human_handoff' });
+    // aiDisabled=1 guarantees permanent lock — admin must explicitly re-enable
+    await db.updateConversation(convId, { status: 'human_handoff', aiDisabled: 1 });
   }
 
   // Notify owner for hot leads

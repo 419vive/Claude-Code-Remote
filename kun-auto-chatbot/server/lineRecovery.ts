@@ -71,10 +71,12 @@ async function checkConversationRecovery() {
     if (track.messageCount < 2) continue;
     if (elapsed < FIVE_MIN || elapsed > EIGHT_MIN) continue;
 
-    // Skip nudge if conversation is in human_handoff mode
+    // Skip nudge if conversation is in human_handoff mode OR aiDisabled (operator takeover).
+    // The aiDisabled check is critical: status auto-flips back to 'active' after 30 min, but
+    // aiDisabled persists — so without this gate, nudges would fire on locked conversations.
     const conv = await db.getConversationBySessionId(`line-${userId}`);
-    if (conv?.status === 'human_handoff') {
-      console.log(`[LINE] Skipping nudge for ${userId.slice(0, 8)}... — in human_handoff mode`);
+    if (conv?.status === 'human_handoff' || (conv as any)?.aiDisabled === 1) {
+      console.log(`[LINE] Skipping nudge for ${userId.slice(0, 8)}... — handoff or aiDisabled`);
       continue;
     }
 
@@ -176,6 +178,8 @@ export async function sendFollowUpMessages() {
       if (!conv.sessionId?.startsWith("line-")) continue;
       if (conv.leadStatus === "converted" || conv.leadStatus === "lost") continue;
       if (conv.status === 'human_handoff') continue;
+      // Operator takeover lock — never send follow-up pushes once an operator has intervened
+      if ((conv as any).aiDisabled === 1) continue;
       if ((conv.leadScore || 0) < 30) continue; // Only follow up engaged users
 
       // Check cooldown (max once per 48h) — also check DB to survive restarts

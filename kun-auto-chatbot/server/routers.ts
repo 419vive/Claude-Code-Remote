@@ -507,6 +507,12 @@ export const appRouter = router({
         
         const convId = conversation!.id;
 
+        // Permanent AI lockout (operator takeover) — never run the LLM once admin has disabled AI.
+        if ((conversation as any)!.aiDisabled === 1) {
+          await db.addMessage({ conversationId: convId, role: "user", content: sanitizedMessage });
+          return { reply: "目前由真人業務為你服務中，請稍候！", isHumanHandoff: true, aiDisabled: true };
+        }
+
         // If conversation is in human_handoff mode, save message but don't generate AI response
         if (conversation!.status === 'human_handoff') {
           await db.addMessage({ conversationId: convId, role: "user", content: sanitizedMessage });
@@ -905,8 +911,9 @@ ${targetVehiclePromptWeb}${intentInstructionsWeb}`;
           }
           
           // If human handoff triggered, update DB status and send LINE push to owner + staff
+          // Also permanently disable AI — staff is taking over from here on
           if (isHumanHandoff) {
-            await db.updateConversation(conversation!.id, { status: 'human_handoff' });
+            await db.updateConversation(conversation!.id, { status: 'human_handoff', aiDisabled: 1 });
             try {
               const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
               const ownerUserId = process.env.LINE_OWNER_USER_ID;
