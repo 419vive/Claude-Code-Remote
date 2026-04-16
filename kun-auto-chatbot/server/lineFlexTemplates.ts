@@ -909,21 +909,18 @@ export function buildFaqQuickReply(excludeIds: number[] = []): any {
 
 /**
  * Build Quick Reply for vehicle carousel:
- * - 3 intent questions (多少錢/預約/換車) at the top
+ * - 2 intent questions (預約看車 / 舊車換新) at the top
  * - All 5 FAQ questions
  * - "直接看車" at the end
+ *
+ * NOTE: the "💰 這台多少錢？" chip was removed per Jerry's request (2026-04-16)
+ * — sending ambiguous "這台車多少錢？有優惠嗎？" with no specific car
+ * confuses the LLM and previously triggered the phantom-vehicle fallback.
+ * Price is already visible on the carousel card itself.
  */
 export function buildVehicleCarouselQuickReply(): any {
   const items: any[] = [
-    // === 3 intent questions (matching VehicleLanding.tsx) ===
-    {
-      type: "action",
-      action: {
-        type: "message",
-        label: "💰 這台多少錢？",
-        text: "這台車多少錢？有優惠嗎？",
-      },
-    },
+    // === 2 intent questions (matching VehicleLanding.tsx) ===
     {
       type: "action",
       action: {
