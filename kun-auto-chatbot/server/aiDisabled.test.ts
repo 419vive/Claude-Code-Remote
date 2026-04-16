@@ -15,6 +15,7 @@
  */
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { isOperator, getOperatorUserIds, parseOperatorCommand } from "./lineUtils";
+import { validateLLMOutput } from "./security";
 
 // Mirror of the lineWebhook.ts + routers.ts gating logic. If the webhook
 // changes, update this predicate to match — both must stay in lockstep.
@@ -353,6 +354,79 @@ describe("isOperator whitelist matching (lineUtils.isOperator)", () => {
     expect(isOperator(null)).toBe(false);
     expect(isOperator(undefined)).toBe(false);
     expect(isOperator("")).toBe(false);
+  });
+});
+
+describe("hallucinated-vehicle guardrail (security.validateLLMOutput)", () => {
+  // Mirror of detectHallucinatedVehicles + critical-fail logic. We test via the
+  // public validateLLMOutput because the helper is module-private.
+  // Lock down: any AI mention of common popular Taiwan-market cars NOT in our
+  // 11-car inventory must trigger a critical violation.
+  const REAL_INVENTORY = [
+    "Mazda CX-5", "BMW X1", "Mazda CX-30", "Toyota Corolla Cross",
+    "MG G50 Plus", "Toyota Vios", "Kia Stonic", "Kia Carens",
+    "Volkswagen Tiguan", "Hyundai Tucson", "Mitsubishi Colt Plus",
+  ];
+
+  it("flags Toyota RAV4 (the actual bug Jerry reported)", () => {
+    const result = validateLLMOutput(
+      "我們目前有Honda CR-V Toyota RAV4 Nissan Kicks這些車款",
+      { inventory: REAL_INVENTORY }
+    );
+    expect(result.violations.some(v => v.startsWith('hallucinated_vehicle:'))).toBe(true);
+    expect(result.safe).toBe(false); // critical → caller falls back to rule-based
+  });
+
+  it("flags Honda CR-V", () => {
+    const result = validateLLMOutput("我推薦你看 Honda CR-V", { inventory: REAL_INVENTORY });
+    expect(result.violations.some(v => v.includes('crv') || v.includes('cr-v'))).toBe(true);
+  });
+
+  it("does NOT flag cars actually in our inventory", () => {
+    const result = validateLLMOutput(
+      "Toyota Corolla Cross 是熱門車款，我們也有 Toyota Vios",
+      { inventory: REAL_INVENTORY }
+    );
+    expect(result.violations.filter(v => v.startsWith('hallucinated_vehicle:'))).toEqual([]);
+  });
+
+  it("does not false-positive on the brand alone (e.g. just 'Toyota')", () => {
+    const result = validateLLMOutput(
+      "Toyota 是日本品牌，品質好",
+      { inventory: REAL_INVENTORY }
+    );
+    expect(result.violations.filter(v => v.startsWith('hallucinated_vehicle:'))).toEqual([]);
+  });
+
+  it("flags multiple ghosts in one reply", () => {
+    const result = validateLLMOutput(
+      "你可以看 Camry、Civic、Altis 這些選擇",
+      { inventory: REAL_INVENTORY }
+    );
+    const ghosts = result.violations.filter(v => v.startsWith('hallucinated_vehicle:'));
+    expect(ghosts.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("new-customer notification gating", () => {
+  // Lock down the gate predicate: notification fires ONCE per conversation,
+  // on the FIRST user message (history.length === 1 right after save).
+  function shouldNotifyNewCustomer(historyLengthAfterSave: number): boolean {
+    return historyLengthAfterSave === 1;
+  }
+
+  it("fires on the very first message", () => {
+    expect(shouldNotifyNewCustomer(1)).toBe(true);
+  });
+
+  it("does NOT re-fire on later messages from the same customer", () => {
+    expect(shouldNotifyNewCustomer(2)).toBe(false);
+    expect(shouldNotifyNewCustomer(5)).toBe(false);
+    expect(shouldNotifyNewCustomer(50)).toBe(false);
+  });
+
+  it("does not fire on zero-history (impossible state — message always saved before check)", () => {
+    expect(shouldNotifyNewCustomer(0)).toBe(false);
   });
 });
 

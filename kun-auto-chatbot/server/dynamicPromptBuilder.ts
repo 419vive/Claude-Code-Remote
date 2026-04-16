@@ -34,6 +34,9 @@ export interface PromptContext {
   leadScore?: number;
   userMessage: string;
   isFirstMessage?: boolean; // true if this is the first message in the conversation
+  // Hard inventory list — used to BLOCK the LLM from inventing cars we don't have.
+  // Pass an array like ["Mazda CX-5", "BMW X1", ...] (brand + model only).
+  inventoryList?: string[];
 }
 
 // ============ PROMPT SECTIONS ============
@@ -181,6 +184,22 @@ function buildHumanHandoffSection(): string {
 function buildBreadBottom(ctx: PromptContext): string {
   const parts: string[] = [];
 
+  // ── HARD INVENTORY LOCK (highest recency bias) ──
+  // Lists the EXACT cars we have so the LLM can't fall back on training-data
+  // popular SUVs (RAV4, CR-V, Kicks, etc.) when the customer asks ambiguously.
+  if (ctx.inventoryList && ctx.inventoryList.length > 0) {
+    const inventoryLines = ctx.inventoryList.map((item, i) => `  ${i + 1}. ${item}`).join('\n');
+    parts.push(`
+## 🔒🔒🔒 庫存鎖（絕對不可違反）🔒🔒🔒
+我們**只有**下列 ${ctx.inventoryList.length} 台車。**禁止**提及、推薦、報價任何不在此清單的車款（含 RAV4、CR-V、Kicks、Camry、Civic、Altis、CX-3、CX-9、Q3、Q5、A4、3-series 等任何不在清單上的車）：
+
+${inventoryLines}
+
+如果客人問「這台車多少錢」但沒指定哪一台 → 反問「${ctx.greeting}是看到哪一台呢？」或叫客人點選下方選單；**不要主動猜測或推薦**。
+如果客人問「有沒有 RAV4 / CR-V / 任何不在清單的車」→ 老實說「目前沒有，可以看看我們在售的 11 台」。
+違反這條規則 = 詐欺客人 = 直接被開除。`);
+  }
+
   parts.push(`
 ## 🔴🔴🔴 最後提醒（覆蓋以上所有規則）🔴🔴🔴
 回覆前必須自我檢查：
@@ -190,7 +209,7 @@ function buildBreadBottom(ctx: PromptContext): string {
 4. 客人問價格嗎？→ 直接從在售車輛資料報價，一句話搞定！
 5. 客人要預約嗎？→ 給時段選項了嗎？
 6. 客人問地址/電話嗎？→ 回答了嗎？
-7. 🔴 我的回答有沒有用到在售車輛清單以外的資訊？→ 有的話刪掉！我們是二手車行，只賣清單上的車！
+7. 🔴 我的回答有沒有提到任何不在「庫存鎖」清單上的車款？→ 有的話刪掉重寫！我們是二手車行，只賣清單上的車！
 8. 🔴 我的回答太長了嗎？→ 超過80字就砍短！留空間給真人業務接手！
 9. 🔴 我的回答有分段嗎？→ 不要分段！不要換行！寫成一段話！
 10. 🔴 我有用 markdown 嗎？→ 刪掉！不要用**粗體**、列表、分隔線！LINE不支援！
