@@ -322,6 +322,132 @@ export async function checkAndNotifyOwner(
   }
 }
 
+// ============ NEW-CUSTOMER ARRIVAL: Build Flex Message ============
+// Pushed to operators on a customer's FIRST message — gives Megan a one-tap
+// takeover button BEFORE the AI even replies. Per Jerry's request: every
+// customer entering the chat should give Megan the option to take over,
+// not just hot leads or AI-failure cases.
+export function buildNewCustomerArrivalFlex(
+  conversation: any,
+  userMessage: string
+): any {
+  const customerName = conversation.customerName || "新客戶";
+
+  return {
+    type: "flex",
+    altText: `🆕 新客人 ${customerName}：${userMessage.substring(0, 30)}`,
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "horizontal",
+        contents: [
+          { type: "text", text: "🆕 新客人剛開始對話", color: "#FFFFFF", size: "sm", weight: "bold" },
+          { type: "text", text: "可選擇接手", color: "#FFFFFF", size: "sm", align: "end" },
+        ],
+        backgroundColor: "#0D6EFD",
+        paddingAll: "12px",
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          { type: "text", text: customerName, weight: "bold", size: "lg" },
+          { type: "separator", margin: "md" },
+          { type: "text", text: "客人第一句：", size: "xs", color: "#AAAAAA", margin: "lg" },
+          {
+            type: "text",
+            text: userMessage.length > 120 ? userMessage.substring(0, 120) + "..." : userMessage,
+            size: "sm", color: "#333333", wrap: true, margin: "sm",
+          },
+          { type: "separator", margin: "lg" },
+          {
+            type: "text",
+            text: "AI 會自動回覆。如果你想自己回，按下方接手按鈕。",
+            size: "xs", color: "#888888", wrap: true, margin: "sm",
+          },
+        ],
+        paddingAll: "16px",
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: "#DC3545",
+            action: {
+              type: "postback",
+              label: "🔒 我來接手 (停止 AI)",
+              data: `action=operator_takeover&convId=${conversation.id}`,
+              displayText: `🔒 接手 ${customerName}，停止 AI`,
+            },
+          },
+          {
+            type: "button",
+            style: "secondary",
+            height: "sm",
+            action: {
+              type: "uri",
+              label: "💬 開啟LINE聊天室",
+              uri: "https://chat.line.biz/",
+            },
+          },
+        ],
+        paddingAll: "12px",
+      },
+    },
+  };
+}
+
+// Push the new-customer arrival card to all configured operators.
+// Best-effort: errors are logged but never thrown (the actual customer reply must not block on this).
+export async function sendNewCustomerNotification(
+  conversation: any,
+  userMessage: string,
+  channelAccessToken: string,
+  ownerUserId?: string
+): Promise<void> {
+  const recipientIds: string[] = [];
+  if (ownerUserId) recipientIds.push(ownerUserId);
+  // Reuse the existing notify-list env var; also merge in LINE_OPERATOR_USER_IDS
+  // so explicit operators (Megan etc.) get the heads-up too.
+  const additionalIds = process.env.LINE_ADDITIONAL_NOTIFY_USER_IDS;
+  if (additionalIds) {
+    for (const id of additionalIds.split(',').map(s => s.trim()).filter(Boolean)) {
+      if (!recipientIds.includes(id)) recipientIds.push(id);
+    }
+  }
+  const operatorIds = process.env.LINE_OPERATOR_USER_IDS;
+  if (operatorIds) {
+    for (const id of operatorIds.split(',').map(s => s.trim()).filter(Boolean)) {
+      if (!recipientIds.includes(id)) recipientIds.push(id);
+    }
+  }
+  if (recipientIds.length === 0) {
+    console.warn('[LINE] No operators configured for new-customer notification');
+    return;
+  }
+
+  const flexMsg = buildNewCustomerArrivalFlex(conversation, userMessage);
+
+  for (const recipientId of recipientIds) {
+    try {
+      const res = await fetch("https://api.line.me/v2/bot/message/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+        body: JSON.stringify({ to: recipientId, messages: [flexMsg] }),
+      });
+      console.log(`[LINE] 🆕 New-customer notification sent to operator: ${res.status}`);
+    } catch (err) {
+      console.error('[LINE] new-customer push failed:', err);
+    }
+  }
+}
+
 // ============ HUMAN HANDOFF: Build Flex Message for staff notification ============
 export function buildHumanHandoffFlex(
   conversation: any,

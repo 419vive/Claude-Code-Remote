@@ -813,6 +813,15 @@ ${(conversation!.leadScore || 0) >= 40 ? '- 客戶購買意願較高（Lead Scor
 
 ${vehicleKB}
 
+## 🔒🔒🔒 庫存鎖（絕對不可違反）🔒🔒🔒
+我們**只有**下列 ${allVehiclesForDetection.length} 台車。**禁止**提及、推薦、報價任何不在此清單的車款（含 RAV4、CR-V、Kicks、Camry、Civic、Altis、CX-3、CX-9、Q3、Q5、A4、3-series 等任何不在清單上的車）：
+
+${allVehiclesForDetection.map((v, i) => `  ${i + 1}. ${v.brand} ${v.model}`).join('\n')}
+
+如果客人問「這台車多少錢」但沒指定哪一台 → 反問「人客是看到哪一台呢？」；**不要主動猜測或推薦**。
+如果客人問「有沒有 RAV4 / CR-V / 任何不在清單的車」→ 老實說「目前沒有，可以看看我們在售的這些」。
+違反這條規則 = 詐欺客人 = 直接被開除。
+
 ## 一般回答規則
 - 一律使用繁體中文
 - 每次回覆控制在80字以內，簡潔有力，不要分段、不要換行
@@ -870,7 +879,9 @@ ${targetVehiclePromptWeb}${intentInstructionsWeb}`;
               if ((v as any)?.price != null) allowedPrices.push(String((v as any).price));
               if ((v as any)?.priceDisplay) allowedPrices.push(String((v as any).priceDisplay));
             }
-            const guardrail = validateLLMOutput(assistantContent, { allowedPrices });
+            // Pass inventory so guardrail BLOCKS hallucinated vehicle names.
+            const inventory = allVehiclesForDetection.map((v: any) => `${v.brand} ${v.model}`);
+            const guardrail = validateLLMOutput(assistantContent, { allowedPrices, inventory });
             const guardrailMode = getGuardrailMode();
             if (guardrail.violations.length > 0) {
               logger.warn(

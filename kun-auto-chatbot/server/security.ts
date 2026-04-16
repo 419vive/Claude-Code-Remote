@@ -462,9 +462,81 @@ const SYSTEM_LEAK_PATTERNS: RegExp[] = [
  *          - sanitized:  output with system-leak fragments stripped
  *          - violations: human-readable list for audit logging
  */
+/**
+ * Common car brand+model names the LLM might hallucinate when not constrained.
+ * These are popular Taiwan-market vehicles often seen in training data.
+ * Each pattern is a brand+model combo — we only flag if the brand/model is
+ * NOT in the actual inventory list passed by the caller.
+ *
+ * Format: lowercase brand-model strings (no spaces, no separators).
+ */
+const COMMON_HALLUCINATED_VEHICLES = [
+  // Toyota
+  "toyotarav4", "rav4",
+  "toyotacamry", "camry",
+  "toyotaaltis", "altis",
+  "toyotayaris", "yaris",
+  "toyotahilux", "hilux",
+  "toyotachr", "chr",
+  // Honda
+  "hondacrv", "crv", "cr-v",
+  "hondacivic", "civic",
+  "hondahrv", "hrv", "hr-v",
+  "hondafit", "fit",
+  "hondaaccord", "accord",
+  // Nissan
+  "nissankicks", "kicks",
+  "nissansentra", "sentra",
+  "nissanxtrail", "x-trail", "xtrail",
+  "nissanaltima", "altima",
+  // Mazda (other than what's typically in stock — caller filters)
+  "mazda3", "mazda6", "mazdacx3", "cx-3", "cx3", "mazdacx9", "cx-9", "cx9",
+  // Other common Taiwan market
+  "fordfocus", "fordfiesta", "fordkuga",
+  "vwgolf", "golf",
+  "audia3", "audia4", "audia5", "audiq3", "audiq5", "audiq7",
+  "bmw3series", "3-series", "5series", "5-series",
+  "benzc-class", "benze-class", "benzgla", "benzglc",
+];
+
+/**
+ * Check if the LLM output mentions vehicle brand/model names that are NOT
+ * in the actual inventory. This catches hallucinations like "Toyota RAV4"
+ * when we only have CX-5/X1/Tucson etc.
+ *
+ * @param text       LLM output to check
+ * @param inventory  Real inventory ["Mazda CX-5", "BMW X1", ...] — brand+model
+ * @returns          Array of hallucinated mentions found (empty if clean)
+ */
+function detectHallucinatedVehicles(text: string, inventory: string[]): string[] {
+  // Normalize: remove spaces, hyphens, lowercase. "Toyota RAV4" → "toyotarav4"
+  const norm = (s: string) => s.toLowerCase().replace(/[\s\-_]/g, "");
+  const inventoryNorm = new Set(inventory.map(norm));
+  // Also include just the model part for fuzzy match (e.g., "rav4" alone)
+  for (const item of inventory) {
+    const parts = item.split(/\s+/);
+    if (parts.length >= 2) inventoryNorm.add(norm(parts.slice(1).join("")));
+  }
+
+  const textNorm = norm(text);
+  const hits: string[] = [];
+  for (const candidate of COMMON_HALLUCINATED_VEHICLES) {
+    if (textNorm.includes(candidate) && !inventoryNorm.has(candidate)) {
+      // Double-check no inventory item ends with this candidate
+      // (e.g. "Mazda CX-5" — when candidate is "cx-5" it should NOT trigger)
+      let safe = false;
+      inventoryNorm.forEach(inv => {
+        if (!safe && (inv.endsWith(candidate) || inv === candidate)) safe = true;
+      });
+      if (!safe) hits.push(candidate);
+    }
+  }
+  return hits;
+}
+
 export function validateLLMOutput(
   llmOutput: string,
-  options: { allowedPrices?: string[] } = {}
+  options: { allowedPrices?: string[]; inventory?: string[] } = {}
 ): LLMOutputValidation {
   const violations: string[] = [];
   let sanitized = llmOutput ?? "";
@@ -510,9 +582,20 @@ export function validateLLMOutput(
     }
   }
 
-  // Classify: system-leak and unsafe-promise are hard fails.
+  // 5. Hallucinated vehicle detection (CRITICAL — promises a car we don't have
+  //    is direct customer fraud). Only fires if caller passes the real inventory.
+  if (options.inventory && options.inventory.length > 0) {
+    const ghosts = detectHallucinatedVehicles(sanitized, options.inventory);
+    for (const g of ghosts) {
+      violations.push(`hallucinated_vehicle:${g}`);
+    }
+  }
+
+  // Classify: system-leak, unsafe-promise, and hallucinated_vehicle are hard fails.
   const critical = violations.some(
-    v => v.startsWith("system_leak:") || v.startsWith("unsafe_promise:")
+    v => v.startsWith("system_leak:") ||
+         v.startsWith("unsafe_promise:") ||
+         v.startsWith("hallucinated_vehicle:")
   );
 
   if (violations.length > 0) {

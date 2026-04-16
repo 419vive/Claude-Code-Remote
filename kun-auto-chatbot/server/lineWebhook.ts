@@ -12,7 +12,7 @@ import { isRuleBasedMode, generateRuleBasedReply } from "./ruleBasedReply";
 import { sanitizeChatMessage, validateLLMOutput, getGuardrailMode } from "./security";
 
 import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting, isOperator, parseOperatorCommand, type OperatorCommand } from "./lineUtils";
-import { getAssistantContentForTrigger, buildOwnerNotificationFlex, getMilestoneLevel, checkAndNotifyOwner, buildHumanHandoffFlex, sendHumanHandoffNotification } from "./lineNotification";
+import { getAssistantContentForTrigger, buildOwnerNotificationFlex, getMilestoneLevel, checkAndNotifyOwner, buildHumanHandoffFlex, sendHumanHandoffNotification, sendNewCustomerNotification } from "./lineNotification";
 import { updateConversationTracker, sendFollowUpMessages } from "./lineRecovery";
 
 // ============ TYPING INDICATOR ============
@@ -1458,6 +1458,17 @@ async function processLineEvent(
   const history = allHistory.slice(-10);
   console.log(`[LINE] History: total=${allHistory.length}, using last ${history.length} messages`);
 
+  // ============ NEW-CUSTOMER NOTIFICATION (operator can take over from message #1) ============
+  // Push a notification card with the "🔒 我來接手 (停止 AI)" button to all operators
+  // when a customer sends their FIRST message. Megan can decide to take over before
+  // the AI even replies — without waiting for lead score milestones.
+  // Fires once per conversation: gated on history.length === 1 (only the just-saved
+  // user message exists; no assistant response yet).
+  if (allHistory.length === 1) {
+    sendNewCustomerNotification(conversation!, userMessage, channelAccessToken, ownerUserId)
+      .catch(err => console.error('[LINE] new-customer notification failed:', err));
+  }
+
   const vIndex = buildVehicleIndex(allVehicles);
 
   // ============ VEHICLE DETECTION v5: Context-aware detection ============
@@ -1661,6 +1672,9 @@ async function processLineEvent(
       leadScore: conversation!.leadScore ?? undefined,
       userMessage,
       isFirstMessage: history.length <= 1,
+      // Hard inventory list: brand + model only, used by the "庫存鎖" prompt section
+      // to prevent the LLM from inventing cars (RAV4, CR-V, Kicks etc. were leaking through).
+      inventoryList: allVehicles.map(v => `${v.brand} ${v.model}`),
     };
 
     const llmMessages = buildLLMMessages(promptContext, history.map(m => ({ role: m.role, content: m.content })));
@@ -1700,7 +1714,10 @@ async function processLineEvent(
         if (v?.price != null) allowedPrices.push(String(v.price));
         if (v?.priceDisplay) allowedPrices.push(String(v.priceDisplay));
       }
-      const guardrail = validateLLMOutput(replyText, { allowedPrices });
+      // Pass inventory so guardrail can BLOCK hallucinated vehicle names
+      // (RAV4, CR-V, Kicks etc. that the LLM might invent under ambiguity).
+      const inventory = allVehicles.map(v => `${v.brand} ${v.model}`);
+      const guardrail = validateLLMOutput(replyText, { allowedPrices, inventory });
       const guardrailMode = getGuardrailMode();
       if (guardrail.violations.length > 0) {
         console.warn(
