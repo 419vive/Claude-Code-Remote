@@ -259,6 +259,12 @@ async function handleOperatorCommand(
   }
 
   if (cmd.kind === 'lock') {
+    // SAFETY: refuse to lock the operator's own conversation. This was a real
+    // gotcha — Jerry ran `/lock` (no target) while testing, it resolved to
+    // "most recent active LINE conversation" which was HIS OWN session, and
+    // locked himself out from all AI replies. Now we explicitly filter him out.
+    const operatorSessionId = `line-${operatorUserId}`;
+
     let target;
     let resolvedFromMostRecent = false;
     if (cmd.target) {
@@ -266,10 +272,17 @@ async function handleOperatorCommand(
       if (matches.length === 0) { await reply(`找不到對話「${cmd.target}」`); return; }
       if (matches.length > 1) { await reply(`「${cmd.target}」對應多筆，請給更完整的後綴`); return; }
       target = matches[0];
+      if (target.sessionId === operatorSessionId) {
+        await reply(`❌ 不能鎖自己的對話！\n你就是操作員 ${operatorUserId.slice(-8)}，鎖自己會害你自己收不到 AI 回覆。\n如果真要鎖某位客人，先用 /list 確認 last8。`);
+        return;
+      }
     } else {
-      const items = (await db.listConversations({ channel: 'line', limit: 5 }))?.items || [];
-      const firstUnlocked = items.find(c => (c as any).aiDisabled !== 1);
-      if (!firstUnlocked) { await reply("找不到可以鎖定的對話（最近 5 筆都已鎖定）"); return; }
+      const items = (await db.listConversations({ channel: 'line', limit: 10 }))?.items || [];
+      // Exclude the operator's own conversation from the candidate list.
+      const firstUnlocked = items.find(c =>
+        (c as any).aiDisabled !== 1 && c.sessionId !== operatorSessionId
+      );
+      if (!firstUnlocked) { await reply("找不到可以鎖定的對話（最近 10 筆都已鎖定或都是你自己）"); return; }
       target = firstUnlocked;
       resolvedFromMostRecent = true;
     }
