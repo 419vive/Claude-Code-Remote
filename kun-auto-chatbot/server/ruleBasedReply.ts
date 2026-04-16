@@ -81,6 +81,22 @@ export function generateRuleBasedReply(ctx: RuleContext): string {
     return `${greeting}你好！歡迎來到崑家汽車！我是高雄阿家，在高雄車界40年了，請問${greeting}今天想看什麼車款呢？還是有什麼我可以幫忙的？`;
   }
 
+  // Trade-in / old-car estimation — standard template requested by Jerry 2026-04-16.
+  // Must come BEFORE the appointment branch so "舊車想換" doesn't accidentally
+  // match /換/ and get treated as a visit.
+  if (/我有一台舊車|舊車想換|舊車.*換新|換車.*估|估價.*舊車|舊車.*估價|折讓|我的車.*換|目前開.*換|現在開.*換|以舊換新/.test(userMessage)) {
+    return `🤍 ${greeting} 您好，謝謝您的訊息！
+
+我們這邊估車仍會以實際看到車況為主喔！如果您目前不方便前來，也可以先提供以下資訊給我：
+
+品牌／年份／里程數
+車身外觀與內裝的詳細照片
+保養紀錄
+以及最重要的，請告知是否曾發生事故，或是否有更換過鈑件、零件的情況
+
+不好意思需要先了解得比較仔細，這也是為了保障雙方權益。我們一直都是以「誠信」為原則在做每一筆生意，也希望讓您更安心。`;
+  }
+
   // Viewing/appointment intent
   if (intents.includes("visit") || /看車|試駕|預約|賞車|過去看|去你們那/.test(lower)) {
     return buildAppointmentReply(greeting, customerContact);

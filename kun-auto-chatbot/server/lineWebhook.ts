@@ -1547,6 +1547,40 @@ async function processLineEvent(
     return;
   }
 
+  // ============ TRADE-IN / OLD-CAR ESTIMATION → DIRECT RESPONSE (skip LLM) ============
+  // Triggered by the "🔄 舊車想換這台" quick-reply chip and any free-form trade-in
+  // question. Template written by Jerry (2026-04-16) — estimation requires seeing
+  // the actual car, but we request specific photos/info upfront to move the lead
+  // forward. Uses ${greeting} so the customer's own LINE display name is used,
+  // not any static placeholder.
+  const tradeInPattern = /我有一台舊車|舊車想換|舊車.*換新|換車.*估|估價.*舊車|舊車.*估價|折讓|我的車.*換|目前開.*換|現在開.*換|想換車|以舊換新/;
+  if (tradeInPattern.test(userMessage)) {
+    console.log('[LINE] Trade-in estimation detected — sending standard template');
+    const tradeInReply = `🤍 ${greeting} 您好，謝謝您的訊息！
+
+我們這邊估車仍會以實際看到車況為主喔！如果您目前不方便前來，也可以先提供以下資訊給我：
+
+品牌／年份／里程數
+車身外觀與內裝的詳細照片
+保養紀錄
+以及最重要的，請告知是否曾發生事故，或是否有更換過鈑件、零件的情況
+
+不好意思需要先了解得比較仔細，這也是為了保障雙方權益。我們一直都是以「誠信」為原則在做每一筆生意，也希望讓您更安心。`;
+
+    await db.addMessage({ conversationId: convId, role: "assistant", content: tradeInReply });
+    try {
+      await fetch("https://api.line.me/v2/bot/message/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+        body: JSON.stringify({
+          replyToken,
+          messages: [{ type: "text", text: tradeInReply }],
+        }),
+      });
+    } catch (err) { console.error("[LINE] Trade-in reply failed:", err); }
+    return;
+  }
+
   // ============ APPOINTMENT → DIRECT RESPONSE (skip LLM) ============
   if (customerIntents.includes('appointment')) {
     const vehicleName = detection.vehicle ? `${(detection.vehicle as any).brand} ${(detection.vehicle as any).model}` : '';

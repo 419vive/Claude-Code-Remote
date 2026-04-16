@@ -408,6 +408,41 @@ describe("hallucinated-vehicle guardrail (security.validateLLMOutput)", () => {
   });
 });
 
+describe("trade-in / old-car estimation trigger (standard template)", () => {
+  // The "🔄 舊車想換這台" quick-reply chip sends this exact text.
+  // Template written by Jerry 2026-04-16 — bot must short-circuit LLM entirely
+  // and return the formal estimation request template. Lock down the regex
+  // that gates this short-circuit.
+  const tradeInPattern = /我有一台舊車|舊車想換|舊車.*換新|換車.*估|估價.*舊車|舊車.*估價|折讓|我的車.*換|目前開.*換|現在開.*換|想換車|以舊換新/;
+
+  it.each([
+    "我有一台舊車想換新車，可以估價嗎？", // the quick-reply chip text
+    "舊車想換",
+    "舊車換新",
+    "換車估價",
+    "估價舊車",
+    "舊車估價",
+    "折讓",
+    "我的車想換",
+    "目前開一台Civic想換",
+    "現在開Altis想換",
+    "以舊換新",
+    "想換車",
+  ])("matches: %s", (msg) => {
+    expect(tradeInPattern.test(msg)).toBe(true);
+  });
+
+  it.each([
+    "你好",                         // plain greeting
+    "我想看車",                     // viewing intent, not trade-in
+    "這台多少錢",                   // price query
+    "預約看車",                     // appointment
+    "有什麼車可以推薦",             // recommendation
+  ])("does NOT match non-trade-in message: %s", (msg) => {
+    expect(tradeInPattern.test(msg)).toBe(false);
+  });
+});
+
 describe("/lock self-protection (operator can't lock their own conversation)", () => {
   // Mirror of the selection logic in lineWebhook.ts handleOperatorCommand.
   // This is the UX bug Jerry hit: running `/lock` (no target) resolved to the
