@@ -408,6 +408,68 @@ describe("hallucinated-vehicle guardrail (security.validateLLMOutput)", () => {
   });
 });
 
+describe("/lock self-protection (operator can't lock their own conversation)", () => {
+  // Mirror of the selection logic in lineWebhook.ts handleOperatorCommand.
+  // This is the UX bug Jerry hit: running `/lock` (no target) resolved to the
+  // "most recent active LINE conversation" which happened to be HIS OWN session,
+  // silencing the bot for him too.
+
+  type ConvLike = {
+    id: number;
+    sessionId: string;
+    aiDisabled: number;
+  };
+
+  function pickLockCandidate(
+    items: ConvLike[],
+    operatorUserId: string
+  ): ConvLike | undefined {
+    const operatorSessionId = `line-${operatorUserId}`;
+    return items.find(c => c.aiDisabled !== 1 && c.sessionId !== operatorSessionId);
+  }
+
+  function wouldReject(target: ConvLike, operatorUserId: string): boolean {
+    return target.sessionId === `line-${operatorUserId}`;
+  }
+
+  it("skips operator's own conversation when /lock has no target", () => {
+    const items: ConvLike[] = [
+      { id: 1, sessionId: "line-Ujerry", aiDisabled: 0 }, // Jerry himself
+      { id: 2, sessionId: "line-Ucust1", aiDisabled: 0 }, // real customer
+    ];
+    const picked = pickLockCandidate(items, "Ujerry");
+    expect(picked?.id).toBe(2);
+    expect(picked?.sessionId).not.toBe("line-Ujerry");
+  });
+
+  it("rejects /lock with explicit target pointing to operator themselves", () => {
+    const operatorUserId = "Ujerry";
+    const selfConv: ConvLike = { id: 1, sessionId: "line-Ujerry", aiDisabled: 0 };
+    expect(wouldReject(selfConv, operatorUserId)).toBe(true);
+  });
+
+  it("accepts /lock against any OTHER conversation", () => {
+    const operatorUserId = "Ujerry";
+    const otherConv: ConvLike = { id: 2, sessionId: "line-Ucustomer", aiDisabled: 0 };
+    expect(wouldReject(otherConv, operatorUserId)).toBe(false);
+  });
+
+  it("returns undefined if only candidate is the operator", () => {
+    const items: ConvLike[] = [
+      { id: 1, sessionId: "line-Ujerry", aiDisabled: 0 },
+    ];
+    expect(pickLockCandidate(items, "Ujerry")).toBeUndefined();
+  });
+
+  it("returns undefined if all non-self conversations are already locked", () => {
+    const items: ConvLike[] = [
+      { id: 1, sessionId: "line-Ujerry", aiDisabled: 0 },   // self (skipped)
+      { id: 2, sessionId: "line-Ucust1", aiDisabled: 1 },   // already locked
+    ];
+    expect(pickLockCandidate(items, "Ujerry")).toBeUndefined();
+  });
+});
+
 describe("new-customer notification gating", () => {
   // Lock down the gate predicate: notification fires ONCE per conversation,
   // on the FIRST user message (history.length === 1 right after save).
