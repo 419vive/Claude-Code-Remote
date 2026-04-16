@@ -14,6 +14,91 @@
 
 ---
 
+## 2026-04-16 — Production deploy saga + 3 hotfixes + self-lock prevention
+
+**Context:**
+After merging PR #82 (operator-takeover) + PR #83 (/whoami) locally to
+`main`, Jerry couldn't get `/help` to reply from his LINE. Multiple round-
+trips of debugging against production revealed a chain of issues.
+
+**Four problems, all fixed live:**
+
+1. **Railway Nixpacks ignored my Dockerfile** → my separate
+   `scripts/run-migrations.mjs` never ran → production DB was missing the
+   `aiDisabled` column → every `db.select()` against `conversations` threw
+   "Unknown column" → the entire LINE text webhook silently crashed before
+   reaching my /whoami or /help handlers. **Fix (PR #84)**: appended
+   idempotent `INFORMATION_SCHEMA`-guarded ALTER statements to the built-in
+   `runMigrations()` in `server/_core/index.ts` — part of the compiled
+   bundle, guaranteed to execute regardless of deploy stack.
+
+2. **Railway auto-deploy was stale** → Jerry had to manually Redeploy
+   twice before commits propagated. Root cause unclear; not fixed (it's
+   a Railway dashboard setting / webhook issue, not our code).
+
+3. **AI hallucinated non-existent vehicles** (customer-facing fraud risk).
+   Customer asked "這台車多少錢" ambiguously → AI invented RAV4, CR-V,
+   Kicks (+ 85萬 fake price) from training-data popular-SUV prior. **Fix
+   (merge `ca19b74`)**: 3-layer defense:
+   - **Prompt inventory lock** at end of system prompt (recency bias)
+     explicitly listing the 11 real cars + deny-list (RAV4, CR-V, Kicks,
+     Camry, Civic, Altis, CX-3, CX-9, Q3, Q5, etc.). Instructs LLM to
+     ask clarification when ambiguous, never guess.
+   - **Output guardrail** in `security.ts` `validateLLMOutput` now accepts
+     an `inventory` option. Detects mentions of common Taiwan-market
+     phantom vehicles, records `hallucinated_vehicle:*` violations.
+   - **Critical-fail fallback**: `hallucinated_vehicle:*` treated as hard
+     fail (same severity as system_leak / unsafe_promise) → caller falls
+     back to `generateRuleBasedReply` which only references real DB.
+
+4. **Takeover button only on high-score leads** → Megan had to wait for
+   lead score ≥50 before getting a notification with the 🔒 button. Jerry
+   wanted it on EVERY new customer. **Fix (same merge)**: new
+   `sendNewCustomerNotification()` + Flex card fires once per conversation
+   on message #1 (gated on `allHistory.length === 1`). Pushes to all
+   operators (owner + `LINE_ADDITIONAL_NOTIFY_USER_IDS` +
+   `LINE_OPERATOR_USER_IDS`). Fire-and-forget; doesn't block customer reply.
+
+**UX bug discovered during Jerry's testing + fixed (merge `6b8c95d`):**
+Jerry ran `/lock` (no target) while debugging operator commands. The
+"most recent active LINE conversation" resolution matched HIS OWN session
+(he'd been chatting back-and-forth with the bot via /whoami /help /list),
+so the bot locked *him* out — "這台車多少錢" then silently failed until
+he ran `/unlock`. **Fix**: both `/lock <last8>` and `/lock` (no target)
+now explicitly filter out the operator's own `line-<userId>` sessionId,
+reply "❌ 不能鎖自己的對話" with explanation. Expanded the no-target scan
+from last 5 → last 10 conversations so chatty operators don't starve
+the picker. +5 unit tests.
+
+**End-of-day state (verified live with Jerry):**
+- `/whoami` works, Jerry is on operator whitelist (via
+  `LINE_OPERATOR_USER_IDS` env var he added on Railway)
+- `/lock`, `/unlock`, `/list`, `/status`, `/help` all work
+- Normal customer flow works — no more RAV4 hallucination
+- `/lock` can no longer lock the operator's own session
+- Megan onboarding plan: have her `/whoami` → send userId to Jerry →
+  Jerry appends to `LINE_OPERATOR_USER_IDS` env var → she's operational.
+
+**Final commit on main: `a164351`** (hook noise after merges)
+- `6b8c95d` — merge self-lock prevention
+- `ca19b74` — merge hallucination + new-customer-notification
+- `69636673` — hotfix missing aiDisabled column
+- `06e37de` — /whoami diagnostic
+- `472fb70` — operator takeover lock (original feature)
+
+**Test suite: 81/81 green** on `server/aiDisabled.test.ts`.
+
+**Known non-blockers deferred to future sessions:**
+- Railway auto-deploy unreliable — Jerry keeps manually redeploying
+- Dashboard UI for `admin.disableAi`/`enableAi`/`operatorReply` not built
+  (LINE coverage satisfies primary need, backend ready)
+- TOCTOU race (~1-5s) on lock-vs-in-flight-LLM — acceptable
+- Pre-existing 6 client-side tsc errors unrelated
+- "Responses from operator" subtitle in LINE screenshot — not actually
+  a bug, LINE OA UI quirk (still Bot-mode)
+
+---
+
 ## 2026-04-15 (later) — In-LINE operator controls (Megan can lock from her phone)
 
 **Context:**

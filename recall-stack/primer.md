@@ -1,55 +1,53 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/disable-ai-after-human-L0br5`
-Latest work: in-LINE operator controls (Megan locks AI from her own LINE — button or slash command)
+Branch: `main` (all feature branches merged + deployed)
+Latest: 3-layer phantom-vehicle defense + new-customer takeover notification + self-lock prevention — **all live in production, verified by Jerry**
 
-## Completed This Session
+## Deployed + Working (end of 2026-04-16 session)
 
-- **`aiDisabled` permanent lockout column** (morning):
-  - `conversations.aiDisabled int` + migration `0004_add_ai_disabled.sql`
-  - Gates AI in 7 spots BEFORE typing/8891/etc; auto-locks at 4 handoff trigger sites
-  - 3 admin tRPC mutations (`disableAi`, `enableAi`, `operatorReply`) with audit log
-- **In-LINE operator controls** (afternoon, in response to "find a way"):
-  - **One-tap takeover**: `🔒 我來接手 (停止 AI)` postback button added to both
-    `buildHumanHandoffFlex` and `buildOwnerNotificationFlex` cards. Megan taps the
-    button on a notification she already gets → AI locked. Zero typing.
-  - **Slash commands** from operator's own LINE chat with the bot:
-    `/lock`, `/lock <last8>`, `/unlock <last8>`, `/list`, `/list full`,
-    `/status <last8>`, `/help`. Supports `!` prefix and full-width `／`/`！`.
-    Chinese aliases: `/鎖`, `/接手`, `/解鎖`, `/清單`, `/狀態`, `/幫助`.
-  - Whitelist via env: `LINE_OPERATOR_USER_IDS` (preferred) → falls back to existing
-    `LINE_OWNER_USER_ID` + `LINE_ADDITIONAL_NOTIFY_USER_IDS`.
-  - `/list` masks customer names by default (privacy: limit LINE-account-compromise blast).
-  - `/lock` no-target shows last8 + race warning + undo hint (`/unlock <last8>`).
-  - Both postback handler and `/lock` are idempotent (re-tap = no-op + ack).
-  - Reviewer audit: 3 MAJORs + 4 MINOR/NIT all fixed before commit.
-- **68/68 unit tests** in `server/aiDisabled.test.ts` (gating predicate, set-point patterns,
-  operatorReply state machine, parseOperatorCommand variants, isOperator whitelist,
-  postback data format). esbuild server bundle 505.6kb, no errors.
+- **Permanent AI lockout (`aiDisabled` column)** — operator intervention = silent AI forever
+- **In-LINE operator controls** — `/whoami`, `/help`, `/lock`, `/unlock`, `/list`, `/status` from operator's own LINE (whitelist via `LINE_OPERATOR_USER_IDS` + fallback to `LINE_OWNER_USER_ID` + `LINE_ADDITIONAL_NOTIFY_USER_IDS`)
+- **Postback takeover button** (🔒 我來接手) on handoff + high-quality-lead + new-customer Flex cards
+- **New-customer notification** — operator gets a Flex card with 🔒 button on message #1 of every new LINE conversation (fires once via `allHistory.length === 1` gate)
+- **Phantom-vehicle guardrail** — prompt "庫存鎖" + output detection of RAV4/CR-V/Kicks/Camry/Civic etc. with critical-fail → rule-based fallback
+- **Self-lock prevention** — `/lock` refuses to target the operator's own conversation (both explicit and no-target)
+- **Idempotent DB migration on startup** — `INFORMATION_SCHEMA`-guarded ALTER in `runMigrations()` guarantees `aiDisabled` column exists regardless of Nixpacks/Dockerfile divergence
+- **81/81 unit tests** green in `server/aiDisabled.test.ts`
 
 ## Exact Next Step
 
-**Commit + push, then deploy + set `LINE_OPERATOR_USER_IDS` env var on Railway.**
-Outstanding follow-ups (separate sessions):
-1. Apply `0004_add_ai_disabled.sql` to Railway production MySQL (instant DDL on 8.0.12+)
-2. Optional: Dashboard UI for `disableAi`/`enableAi`/`operatorReply` (backend ready, low priority now that LINE has full coverage)
-3. Megan onboarding: train her on (a) tapping the `🔒` button, (b) sending `/help` from her LINE
+**Megan onboarding** (Jerry has the playbook):
+1. Megan adds 崑家汽車 OA → texts `/whoami` → gets her userId
+2. Megan sends userId to Jerry
+3. Jerry appends to `LINE_OPERATOR_USER_IDS` env var on Railway (comma-separated)
+4. Railway auto-redeploys (or Jerry manually forces if auto fails)
+5. Megan re-tests `/whoami` → ✅ → can now use `/lock` `/list` etc.
 
-## Open Blockers
+## Open Blockers (deferred, not urgent)
 
-- **TOCTOU race** (~1-5s window): if takeover fires while LLM is in flight, AI may send one more reply. Reviewer flagged morning; not fixed.
-- **Pre-existing**: 6 client-side tsc errors (BrandPage, Chat, Home, VehicleVideoPlayer, Root) unrelated.
-- **Pre-existing**: 11 test files fail in sandbox (env-var dependent: DATABASE_URL, LINE secrets). Not caused by this change.
-- **Pre-existing**: TRIBE v2 GPU-blocked, graphify AST-only too weak for concept queries.
+- **Railway auto-deploy unreliable** — Jerry manually redeployed multiple times during this session. Root cause unclear; Railway dashboard issue, not our code.
+- **Dashboard UI for admin mutations** (`disableAi`/`enableAi`/`operatorReply`) not built — backend ready; LINE coverage satisfies primary need
+- **TOCTOU race** (~1-5s): if `/lock` fires while LLM in-flight, one more AI reply may sneak through. Acceptable for now.
+- Pre-existing client-side tsc errors (6) unrelated
+- TRIBE v2 GPU-blocked, graphify AST-only weak
 
 ## Key Knowledge
 
-- **LINE platform reality**: webhook does NOT receive outbound messages from LINE OA Manager. Workaround = let operator signal via inbound message (button or command from THEIR own LINE).
-- **`aiDisabled=1` vs `status='human_handoff'`**: handoff is temporary (auto-reactivates). `aiDisabled=1` is permanent — overrides all reactivation logic. Only operator/admin clears it.
-- **Operator whitelist** is union of 3 env vars (any-of), so deployment is non-breaking — owner already gets operator powers automatically.
-- **Slash-command handler runs FIRST** in the text path, before the operator-takeover lock check. So Megan can always issue commands even if her own conversation is somehow locked.
-- **Suffix-match resolution**: operators see only last8 of customer userId on Flex cards / `/list`. `findBySuffix` matches against `sessionId.endsWith(last8)`. Limit 200 conversations. Ambiguous = rejected with "對應多筆".
-- **`operatorReply` linePushStatus 4-state contract**: `sent` → save+lock; `failed` → don't save (operator must retry); `no_token` → don't save; `skipped` (non-LINE) → save+lock.
+- **Production deploy stack**: Railway uses Nixpacks auto-detect and **ignores the Dockerfile CMD** — my `scripts/run-migrations.mjs` never ran. Any startup-time code MUST go into `server/_core/index.ts runMigrations()` to be guaranteed to execute.
+- **Migration style for production**: use `INFORMATION_SCHEMA.COLUMNS` check before `ALTER TABLE` — idempotent, safe to re-run on every container start.
+- **LINE platform reality**: webhook does NOT receive outbound messages from LINE OA Manager. Workaround = operator signals via inbound (button tap or slash command from THEIR own LINE).
+- **`aiDisabled=1` vs `status='human_handoff'`**: handoff temporary (30-min auto-recovery). `aiDisabled=1` permanent — only admin/operator clears.
+- **Operator whitelist**: union of 3 env vars. Jerry's userId is in `LINE_OPERATOR_USER_IDS` (added during this session).
+- **/lock safety rules**:
+  - Operator's own conversation is ALWAYS filtered out (explicit target rejected + no-target skipped)
+  - No-target scans last 10 conversations (widened from 5 to handle chatty operators)
+  - Always shows last8 + race warning + undo hint in confirmation
+  - Idempotent (re-tap = ack-only, no re-write)
+- **Hallucination guardrail 3-layer defense**:
+  - Prompt inventory lock at END of system prompt (recency bias)
+  - Output validator flags `hallucinated_vehicle:*` against curated deny-list
+  - Critical-fail → `generateRuleBasedReply` (only references real DB)
+- **`operatorReply` linePushStatus 4-state contract**: `sent` → save+lock; `failed` → don't save; `no_token` → don't save; `skipped` (non-LINE) → save+lock.
 - **Production stack**: TypeScript/Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE webhook + 8891.tw sync.
 - **Memory layer priority**: MCP `memory_*` → `docs/PROJECT_JOURNAL.md` → `recall-stack/primer.md` → `CLAUDE.md`.
 - **Before UI work**: read `kun-auto-chatbot/docs/DESIGN.md` (shadcn/ui + Tailwind v4 + oklch tokens, deep navy single accent, 10px radius, `tabular-nums` on prices).
