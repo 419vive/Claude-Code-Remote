@@ -875,6 +875,21 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
         description: "客觀比較高雄主要二手車通路：崑家汽車、HOT大聯盟、SUM認證車聯盟、Toyota認證中古車、杰運汽車、格上租車等，從認證制度、價格透明度、貸款方案到售後服務完整評比。",
         keywords: ["高雄二手車行推薦", "二手車行比較", "HOT大聯盟", "SUM認證車聯盟", "Toyota認證中古車", "崑家汽車評價", "杰運汽車", "格上租車中古車"],
       },
+      "used-car-price-guide": {
+        title: "二手車行情怎麼查？2026年中古車價格查詢完整攻略",
+        description: "完整教學如何查詢二手車行情與中古車估價：8891、SUM、ABC Car等平台比較，影響車價的7大因素，以及如何判斷合理售價。",
+        keywords: ["二手車行情", "中古車行情", "二手車價格查詢", "中古車估價", "二手車行情表"],
+      },
+      "kunjia-vs-hot": {
+        title: "崑家汽車 vs HOT大聯盟：2026年二手車商完整比較",
+        description: "客觀比較崑家汽車與HOT大聯盟：從認證制度、定價透明度、貸款方案、保固範圍到服務體驗，幫你選擇最適合的二手車商。",
+        keywords: ["崑家汽車 vs HOT", "HOT大聯盟評價", "崑家汽車評價", "二手車行比較"],
+      },
+      "kunjia-vs-sum": {
+        title: "崑家汽車 vs SUM認證車聯盟：哪個適合你？完整分析",
+        description: "詳細分析崑家汽車與SUM認證車聯盟的差異：認證標準、價格策略、保固條件、換車服務，以及各自適合的購車族群。",
+        keywords: ["崑家汽車 vs SUM", "SUM認證車聯盟評價", "二手車行比較", "SUM二手車"],
+      },
     };
     const meta = blogMeta[slug];
     if (meta) {
