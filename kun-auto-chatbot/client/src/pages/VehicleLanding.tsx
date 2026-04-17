@@ -467,7 +467,7 @@ export default function VehicleLanding() {
                 <>
                   <ProgressiveImage
                     src={photos[currentPhoto]}
-                    alt={`${name} - 照片 ${currentPhoto + 1}`}
+                    alt={`${vehicle.modelYear ? vehicle.modelYear + '年 ' : ''}${name}${vehicle.color ? ' ' + vehicle.color : ''} 崑家汽車高雄 - 照片 ${currentPhoto + 1}`}
                     containerClassName="w-full h-full"
                     aspectRatio="16/10"
                   />

@@ -21,7 +21,7 @@ const BLOG_LINKS = [
   { label: "第三方認證指南", href: "/blog/third-party-inspection-guide" },
   { label: "過戶流程與費用", href: "/blog/used-car-transfer-guide" },
   { label: "高雄二手車行推薦比較 2026", href: "/blog/kaohsiung-used-car-dealers-comparison" },
-  { label: "二手車行情價格查詢", href: "/blog/used-car-price-guide" },
+  // 二手車行情價格查詢 — blog post pending (removed to fix dead link)
 ];
 
 const LOCAL_AREA_LINKS = [

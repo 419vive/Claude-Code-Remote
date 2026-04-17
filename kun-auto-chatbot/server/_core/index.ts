@@ -387,29 +387,22 @@ async function startServer() {
   app.get(["/line", "/contact"], (req, res) => {
     const ua = req.headers["user-agent"] || "";
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const isCrawler = /bot|crawl|spider|slurp|Googlebot|Bingbot|GPTBot|ClaudeBot|PerplexityBot|facebookexternalhit|Twitterbot/i.test(ua);
 
-    if (!isMobile) {
-      // Desktop: instant redirect, no pixel needed
-      res.status(200).set({ "Content-Type": "text/html" }).end(`<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="refresh" content="0;url=/">
-<title>崑家汽車 — 跳轉中</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1B3A5C;font-family:system-ui,-apple-system,sans-serif;color:#fff}.c{text-align:center;padding:2rem}.s{width:2rem;height:2rem;border:3px solid rgba(196,162,101,.3);border-top-color:#C4A265;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 1rem}@keyframes spin{to{transform:rotate(360deg)}}a{color:#C4A265;text-decoration:underline}</style>
-</head>
-<body>
-<div class="c"><div class="s"></div>
-<p style="font-size:1.1rem;font-weight:600;margin-bottom:.5rem">正在前往崑家汽車官網...</p>
-<p style="font-size:.8rem;opacity:.5">如未自動跳轉，<a href="/">請點此</a></p>
-</div>
-<script>window.location.href="/"</script>
-</body></html>`);
+    // Crawlers get a proper 301 so they follow the redirect and pass link equity.
+    // Previously this was HTTP 200 + JS redirect — invisible to search engines.
+    if (isCrawler) {
+      res.redirect(301, isMobile ? LINE_OA_URL : "/");
       return;
     }
 
-    // Mobile: embed pixel scripts, fire tracking events, then redirect to LINE
+    if (!isMobile) {
+      // Desktop humans: 301 to homepage (no pixel needed for desktop)
+      res.redirect(301, "/");
+      return;
+    }
+
+    // Mobile humans: fire pixel tracking events, then JS-redirect to LINE after 300ms
     res.status(200).set({ "Content-Type": "text/html" }).end(`<!DOCTYPE html>
 <html lang="zh-TW">
 <head>

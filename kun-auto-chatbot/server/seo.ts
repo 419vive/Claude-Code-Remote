@@ -113,6 +113,7 @@ function autoDealer(): object {
       "https://www.sum.com.tw/storeinfo-71008.php",
       "https://www.twcar.com.tw/store_web/?mode=car&SID=2487",
       "https://www.abccar.com.tw/dealer/53764",
+      "https://maps.google.com/?q=崑家汽車+高雄市三民區大順二路269號",
     ],
     "logo": {
       "@type": "ImageObject",
@@ -617,10 +618,42 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
     }
   }
 
+  // ---------- About page ----------
+  else if (path === "/about") {
+    title = `關於崑家汽車｜高雄在地40年二手車商｜誠信經營`;
+    description = `崑家汽車自1986年創立，在地經營超過40年。位於高雄市三民區大順二路269號，堅持全車第三方認證、實車實價、超強貸款方案，守護每一位客人的購車權益。`;
+    jsonLdBlocks.push(breadcrumb([
+      { name: "首頁", url: baseUrl },
+      { name: "關於我們", url: canonicalUrl },
+    ]));
+  }
+
+  // ---------- Car valuation page ----------
+  else if (path === "/car-valuation") {
+    title = `舊車估價｜崑家汽車高價收購｜高雄二手車估價`;
+    description = `想知道你的舊車值多少？崑家汽車提供免費舊車估價、高價收購、以舊換新服務。不經中間商，直接折抵新車車價，省去自己賣車的麻煩。`;
+    jsonLdBlocks.push(breadcrumb([
+      { name: "首頁", url: baseUrl },
+      { name: "舊車估價", url: canonicalUrl },
+    ]));
+  }
+
+  // ---------- Media / press page ----------
+  else if (path === "/media") {
+    title = `媒體報導｜崑家汽車｜高雄二手車新聞`;
+    description = `崑家汽車媒體報導與品牌故事。高雄在地40年二手車商，全車第三方認證，深獲媒體與消費者信賴。`;
+    jsonLdBlocks.push(breadcrumb([
+      { name: "首頁", url: baseUrl },
+      { name: "媒體報導", url: canonicalUrl },
+    ]));
+  }
+
   // ---------- Chat page ----------
   else if (path === "/chat") {
     title = `線上諮詢｜${SITE_NAME}｜AI智慧客服`;
     description = `崑家汽車AI智慧客服，24小時線上為你解答二手車相關問題。即時諮詢車況、價格、貸款方案。`;
+    // robots.txt disallows /chat for all crawlers — meta must agree
+    robotsMeta = "noindex, nofollow";
     jsonLdBlocks.push(breadcrumb([
       { name: "首頁", url: baseUrl },
       { name: "線上諮詢", url: canonicalUrl },
@@ -989,6 +1022,92 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
           { q: "嘉義到崑家汽車怎麼去？", a: "國道1號南下約1.5小時，或搭高鐵到左營站，我們提供免費接送。" },
           { q: "崑家汽車有送車到嘉義嗎？", a: "有，購車後可安排送車到嘉義，交車方便不用再跑一趟。" },
           { q: "嘉義二手車貸款好辦嗎？", a: "崑家合作多家銀行，不限地區皆可申辦，嘉義鄉親一樣享有最優惠方案。" },
+        ],
+      },
+      // ── Kaohsiung district pages (linked from SeoFooter) ──
+      kaohsiung: {
+        name: "高雄",
+        region: "TW-KHH",
+        title: "高雄二手車推薦｜崑家汽車在地40年｜高雄中古車買賣",
+        desc: "高雄買二手車首選崑家汽車！三民區大順二路269號，在地經營40年。全車第三方認證、實車實價、超強貸款方案。高雄最值得信賴的中古車商。",
+        keywords: ["高雄二手車", "高雄中古車", "高雄二手車推薦", "高雄中古車行", "高雄買車"],
+        faqs: [
+          { q: "高雄二手車推薦哪一家？", a: "崑家汽車在地40年，位於三民區大順二路269號（肯德基斜對面），全車第三方認證。" },
+          { q: "崑家汽車在高雄哪裡？", a: "高雄市三民區大順二路269號，近肯德基。營業時間週一至週六 9:00-20:00。" },
+        ],
+      },
+      "kaohsiung-sanmin": {
+        name: "高雄三民區",
+        region: "TW-KHH",
+        title: "三民區二手車｜崑家汽車就在三民區｜高雄三民中古車",
+        desc: "崑家汽車就在高雄三民區大順二路269號！步行即達，免跨區。在地40年正派經營，全車第三方認證、超強貸款方案。三民區鄉親買二手車最方便。",
+        keywords: ["三民區二手車", "高雄三民區中古車", "三民區車行", "高雄三民買車"],
+        faqs: [
+          { q: "三民區有推薦的二手車行嗎？", a: "崑家汽車就在三民區大順二路269號，在地40年老字號，走路就到。" },
+        ],
+      },
+      "kaohsiung-zuoying": {
+        name: "高雄左營區",
+        region: "TW-KHH",
+        title: "左營區二手車｜崑家汽車離左營高鐵10分鐘｜高雄左營中古車",
+        desc: "左營區買二手車推薦崑家汽車！從左營高鐵站開車僅10分鐘，提供高鐵站免費接送。全車第三方認證、實車實價。",
+        keywords: ["左營二手車", "左營區中古車", "左營買車", "高雄左營車行"],
+        faqs: [
+          { q: "左營區有好的二手車行嗎？", a: "崑家汽車離左營高鐵站僅10分鐘車程，提供高鐵站免費接送服務。" },
+        ],
+      },
+      "kaohsiung-fengshan": {
+        name: "高雄鳳山區",
+        region: "TW-KHH",
+        title: "鳳山區二手車｜崑家汽車離鳳山15分鐘｜高雄鳳山中古車",
+        desc: "鳳山區買二手車推薦崑家汽車！從鳳山開車約15分鐘即達。在地40年正派經營，全車第三方認證、超強貸款方案。鳳山鄉親買中古車首選。",
+        keywords: ["鳳山二手車", "鳳山區中古車", "鳳山買車", "高雄鳳山車行"],
+        faqs: [
+          { q: "鳳山區附近有推薦的二手車行嗎？", a: "崑家汽車離鳳山約15分鐘車程，在地40年老字號，全車第三方認證。" },
+        ],
+      },
+      "kaohsiung-lingya": {
+        name: "高雄苓雅區",
+        region: "TW-KHH",
+        title: "苓雅區二手車｜崑家汽車離苓雅10分鐘｜高雄苓雅中古車",
+        desc: "苓雅區買二手車推薦崑家汽車！從苓雅區開車約10分鐘即達三民區。全車第三方認證、實車實價、超強貸款方案。",
+        keywords: ["苓雅二手車", "苓雅區中古車", "苓雅買車"],
+        faqs: [
+          { q: "苓雅區附近有推薦的二手車行嗎？", a: "崑家汽車在三民區大順二路，離苓雅區約10分鐘，在地40年。" },
+        ],
+      },
+      // ── Out-of-city pages (linked from SeoFooter) ──
+      yunlin: {
+        name: "雲林",
+        region: "TW-YUN",
+        title: "雲林二手車推薦｜崑家汽車免費接駁｜雲林中古車買賣",
+        desc: "雲林買二手車推薦崑家汽車！提供雲林免費接駁服務。在地40年正派經營，全車第三方認證、超強貸款方案。雲林鄉親南下買車，選崑家最安心。",
+        keywords: ["雲林二手車", "雲林中古車", "雲林二手車推薦", "雲林買車"],
+        faqs: [
+          { q: "雲林買二手車推薦哪裡？", a: "推薦高雄崑家汽車，提供雲林免費接駁，全車第三方認證，在地40年。" },
+          { q: "雲林到崑家汽車怎麼去？", a: "國道1號南下約1.5小時，或預約免費接駁服務。" },
+        ],
+      },
+      changhua: {
+        name: "彰化",
+        region: "TW-CHA",
+        title: "彰化二手車推薦｜崑家汽車免費接駁｜彰化中古車買賣",
+        desc: "彰化買二手車推薦崑家汽車！提供彰化免費接駁、高鐵接送服務。在地40年正派經營，全車第三方認證。彰化鄉親專程南下，信賴崑家品質。",
+        keywords: ["彰化二手車", "彰化中古車", "彰化二手車推薦", "彰化買車"],
+        faqs: [
+          { q: "彰化買二手車推薦哪裡？", a: "推薦高雄崑家汽車，提供彰化免費接駁與高鐵接送，在地40年老字號。" },
+          { q: "彰化到崑家汽車怎麼去？", a: "搭高鐵到左營站約1小時，提供高鐵站免費接送。開車走國道1號約2小時。" },
+        ],
+      },
+      nantou: {
+        name: "南投",
+        region: "TW-NAN",
+        title: "南投二手車推薦｜崑家汽車免費接駁｜南投中古車買賣",
+        desc: "南投買二手車推薦崑家汽車！提供南投免費接駁服務。在地40年正派經營，全車第三方認證、超強貸款方案。南投鄉親買中古車首選。",
+        keywords: ["南投二手車", "南投中古車", "南投二手車推薦", "南投買車"],
+        faqs: [
+          { q: "南投買二手車推薦哪裡？", a: "推薦高雄崑家汽車，提供南投免費接駁服務，全車第三方認證。" },
+          { q: "南投到崑家汽車怎麼去？", a: "走國道3號南下約2小時，或預約免費接駁服務。" },
         ],
       },
     };

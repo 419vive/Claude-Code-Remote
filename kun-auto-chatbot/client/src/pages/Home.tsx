@@ -94,7 +94,7 @@ function VehicleCard({ vehicle, isComparing, onToggleCompare, onOpenGallery }: {
           <>
             <ProgressiveImage
               src={photos[currentPhoto]}
-              alt={`${vehicle.brand} ${vehicle.model} - 照片 ${currentPhoto + 1}`}
+              alt={`${vehicle.modelYear ? vehicle.modelYear + '年 ' : ''}${vehicle.brand} ${vehicle.model}${vehicle.color ? ' ' + vehicle.color : ''} 崑家汽車高雄 - 照片 ${currentPhoto + 1}`}
               className="transition-transform group-hover:scale-105"
               containerClassName="h-full w-full"
               aspectRatio="4/3"
