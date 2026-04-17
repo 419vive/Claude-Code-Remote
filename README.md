@@ -484,6 +484,7 @@ The server injects SEO metadata into every page before sending to the client:
 | **Database** | MySQL + Drizzle ORM |
 | **AI / LLM** | Google Gemini 2.5 Flash |
 | **Messaging** | LINE Messaging API |
+| **Video AI** | HeyGen (MCP server) |
 | **Scraping** | Axios + Cheerio (8891.tw) |
 | **Auth** | JWT (jose) + secure cookies |
 | **Security** | Helmet, rate limiting, PII masking, XSS filters |
@@ -670,6 +671,9 @@ kun-auto-chatbot/
 | | `appointment.updateStatus` | Mutation | Confirm/cancel booking |
 | **Admin** | `admin.triggerSync` | Mutation | Force 8891 re-sync |
 | | `admin.deployRichMenu` | Mutation | Push rich menu to LINE |
+| | `admin.disableAi` | Mutation | Permanently lock AI for a conversation (operator takeover) |
+| | `admin.enableAi` | Mutation | Re-enable AI for a locked conversation |
+| | `admin.operatorReply` | Mutation | Push text to LINE customer + auto-lock AI |
 
 ### REST Endpoints
 
@@ -797,6 +801,10 @@ ADMIN_USERNAME=admin                      # (optional, defaults to "admin")
 # ── Notifications (optional) ─────────────────
 LINE_OWNER_USER_ID=U...                  # Owner's LINE user ID
 LINE_ADDITIONAL_NOTIFY_USER_IDS=U...,U.. # Extra notification recipients
+
+# ── Operator Controls (optional) ─────────────
+LINE_OPERATOR_USER_IDS=U...,U..          # Operators who can /lock /unlock /list
+                                          # Falls back to OWNER + ADDITIONAL if unset
 
 # ── Cost Saving (optional) ───────────────────
 FORCE_RULE_BASED_REPLY=1                 # Skip LLM, use pattern matching
@@ -1089,6 +1097,86 @@ A comprehensive suite of conversion and engagement features added based on resea
 └─────────────────────────────────────────────────────────────────┘
 
   ┌───────────────────────────────────────────────────────┐
+  │  OPERATOR TAKEOVER SYSTEM (2026-04-16)                 │
+  │                                                        │
+  │  Problem: LINE OA webhook does NOT receive outbound    │
+  │  messages when an operator replies via LINE OA Manager │
+  │  console. So the bot can't auto-detect human handoff.  │
+  │                                                        │
+  │  Solution: 3 signal paths for operators to lock the AI │
+  │                                                        │
+  │  Path 1: ONE-TAP POSTBACK BUTTON                       │
+  │  ├── 🔒 我來接手 (停止 AI) on every notification card │
+  │  ├── Handoff cards, hot-lead cards, new-customer cards │
+  │  ├── Tap once → AI permanently silent for that customer│
+  │  └── Verified against operator whitelist               │
+  │                                                        │
+  │  Path 2: SLASH COMMANDS from operator's own LINE       │
+  │  ├── /whoami    → show your LINE userId + whitelist ✅❌│
+  │  ├── /help      → full command reference               │
+  │  ├── /list      → last 5 conversations (masked names)  │
+  │  ├── /lock <id> → permanently silence AI for customer  │
+  │  ├── /unlock <id> → re-enable AI                       │
+  │  ├── /status <id> → check lock state (🔒🟡🟢)         │
+  │  ├── Supports: ！／ full-width, Chinese aliases        │
+  │  │   (/鎖, /接手, /解鎖, /清單, /幫助)                │
+  │  └── Self-lock prevention: can't lock your own conv    │
+  │                                                        │
+  │  Path 3: ADMIN tRPC API                                │
+  │  ├── admin.disableAi(conversationId)                   │
+  │  ├── admin.enableAi(conversationId)                    │
+  │  └── admin.operatorReply(conversationId, message)      │
+  │      → LINE pushMessage + auto-lock + audit log        │
+  │                                                        │
+  │  Database: conversations.aiDisabled (int, 0/1)         │
+  │  ├── Permanent lock — distinct from temporary handoff  │
+  │  ├── Gates AI at 7 code paths BEFORE typing indicator  │
+  │  ├── Auto-set at all 4 handoff trigger sites           │
+  │  └── Only admin/operator can clear (via /unlock or API)│
+  └───────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────┐
+  │  NEW-CUSTOMER NOTIFICATION (2026-04-16)                │
+  │                                                        │
+  │  Every new customer's FIRST message pushes a Flex card │
+  │  to all operators with:                                │
+  │  ├── Customer name + first message preview             │
+  │  ├── 🔒 我來接手 (停止 AI) postback button             │
+  │  └── 💬 開啟LINE聊天室 link to chat.line.biz          │
+  │                                                        │
+  │  Fires once per conversation (allHistory.length === 1) │
+  │  Operators can take over from message #1 — no need to  │
+  │  wait for lead score milestones or AI handoff triggers  │
+  └───────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────┐
+  │  PHANTOM-VEHICLE HALLUCINATION DEFENSE (2026-04-16)    │
+  │                                                        │
+  │  Problem: AI invented RAV4/CR-V/Kicks when customer    │
+  │  asked ambiguous "這台車多少錢" — cars we don't sell   │
+  │                                                        │
+  │  3-layer defense:                                      │
+  │  ├── Layer 1: Prompt "庫存鎖" at end of system prompt  │
+  │  │   Lists exact inventory + explicit deny-list         │
+  │  │   Instructs: ask clarification, never guess          │
+  │  ├── Layer 2: Output guardrail (security.ts)           │
+  │  │   Scans for 30+ common phantom vehicle names        │
+  │  │   RAV4, CR-V, Kicks, Camry, Civic, Altis, etc.     │
+  │  └── Layer 3: Critical-fail fallback                   │
+  │      hallucinated_vehicle → generateRuleBasedReply     │
+  │      (only references real DB inventory)                │
+  └───────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────┐
+  │  TRADE-IN STANDARD TEMPLATE (2026-04-16)               │
+  │                                                        │
+  │  "舊車想換新車" → deterministic reply (skip LLM)       │
+  │  ├── Requests: brand/year/mileage + photos + history   │
+  │  ├── Emphasizes honesty + both-party protection        │
+  │  └── Applies to LINE quick-reply chip + free-form text │
+  └───────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────┐
   │  RETURNING USER MEMORY                                 │
   │                                                        │
   │  Re-follow / return visit:                             │
@@ -1239,6 +1327,9 @@ Critical security upgrades implemented across multiple phases:
   │  ├── Strips prompt-injection / system prompt leaks   │
   │  ├── Masks PII echoes (phone, email, LINE ID)        │
   │  ├── Flags hallucinated prices not in inventory      │
+  │  ├── Flags hallucinated vehicle names (RAV4, CR-V,   │
+  │  │   Kicks, Camry, Civic, Altis, + 25 more)          │
+  │  │   → Critical violation → fallback to rule-based   │
   │  ├── Critical violations → fallback to ruleBasedReply │
   │  └── Mode controlled by LLM_GUARDRAIL_MODE env var   │
   │      (default: enforce, fail-secure)                  │
@@ -1474,6 +1565,41 @@ You run `/simplify` twice: once to gate the plan, once to clean the output. The 
 
 ---
 
+## HeyGen — AI Video Generation
+
+AI-powered avatar video generation for vehicle showcase videos, social media content, and customer engagement. Integrated as a Claude Code MCP server for direct orchestration.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  HEYGEN MCP INTEGRATION                          │
+└─────────────────────────────────────────────────────────────────┘
+
+  Claude Code Session
+       │
+       ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │  HeyGen MCP Server (https://mcp.heygen.com/mcp/v1/)         │
+  │                                                              │
+  │  Tools available:                                            │
+  │  ├── Create avatar videos with custom scripts               │
+  │  ├── List available avatars & voices                         │
+  │  ├── Generate vehicle walkthrough videos                     │
+  │  ├── Create social media promotional content                 │
+  │  └── Check generation status & download results              │
+  └──────────────────────────────────────────────────────────────┘
+```
+
+### Setup
+
+```bash
+# Already configured via Claude Code MCP:
+claude mcp add --transport http heygen https://mcp.heygen.com/mcp/v1/
+
+# Requires HeyGen API key (set during first use)
+```
+
+---
+
 ## Codebase Knowledge Graph
 
 Generated by [Understand-Anything](https://github.com/Lum1104/Understand-Anything) — an interactive knowledge graph plugin for Claude Code.
@@ -1499,7 +1625,7 @@ Generated by [Understand-Anything](https://github.com/Lum1104/Understand-Anythin
 | **Server Core** | 17 | `server/_core/` infrastructure — auth, LLM, OAuth, env, tRPC setup |
 | **Service Layer** | 12 | Vehicle detection NLP, 8891 sync, LINE templates, security, logging |
 | **Data Layer** | 7 | Drizzle ORM schema (8 tables), DB operations, shared types/constants |
-| **Test Layer** | 18 | Vitest suites covering vehicle detection, LINE webhook, security, etc. |
+| **Test Layer** | 19 | Vitest suites covering vehicle detection, LINE webhook, security, operator takeover (98 tests), etc. |
 | **Utility & Config** | 18 | Debug scripts, build configs (Vite, Vitest, Drizzle), seed/update tools |
 
 ### Guided Tour (12 Steps)
