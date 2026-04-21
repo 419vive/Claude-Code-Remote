@@ -7,7 +7,69 @@
 
 ---
 
-## 🚀 One-command setup (copy-paste this whole block into Terminal)
+## 🤖 EASIEST PATH — let Claude Code do it for you
+
+1. Open Terminal on your Mac
+2. Run:
+   ```bash
+   cd /Users/jerrylaivivemachi/jerry_job_hunt   # create with `mkdir -p` first if missing
+   claude
+   ```
+3. Paste this entire prompt into Claude Code and press Enter:
+
+> **Copy the block below — everything between the triple-backticks.**
+
+````
+Please set up this project folder with all the agents and skills documented at
+https://github.com/419vive/kunjia-autos-ai-chatbot/blob/claude/review-agency-agents-56rSZ/docs/TOOL_INVENTORY.md
+
+My project root is: /Users/jerrylaivivemachi/jerry_job_hunt
+Target branch for the Kunjia repo: claude/review-agency-agents-56rSZ
+
+Do these steps in order, stopping if anything fails:
+
+1. Verify git is installed (`git --version`). If not, tell me to run `xcode-select --install`.
+
+2. Create `~/.claude/agents/` if missing, then install 184 user-level agents from
+   https://github.com/msitarzewski/agency-agents:
+   - Clone with `--depth 1` to `/tmp/agency-agents`
+   - Copy `.md` files from these directories only: academic, design, engineering,
+     finance, game-development, marketing, paid-media, product, project-management,
+     sales, spatial-computing, specialized, strategy, support, testing
+   - Flatten into `~/.claude/agents/` (no subdirs)
+   - Purge any file in `~/.claude/agents/` whose first line is NOT `---` (strips
+     non-agent docs like QUICKSTART.md, phase-*.md, scenario-*.md)
+   - Verify count is exactly 184 — if not, report the mismatch
+
+3. Clone https://github.com/419vive/kunjia-autos-ai-chatbot (branch
+   claude/review-agency-agents-56rSZ, `--depth 1`) to `/tmp/kunjia`.
+
+4. In my project root (/Users/jerrylaivivemachi/jerry_job_hunt):
+   - Create `.claude/` and `docs/` if missing
+   - Copy `/tmp/kunjia/.claude/agents` → `./.claude/agents` (244 files expected)
+   - Copy `/tmp/kunjia/.claude/skills` → `./.claude/skills` (192 dirs expected)
+   - Copy `/tmp/kunjia/docs/TOOL_INVENTORY.md` → `./docs/TOOL_INVENTORY.md`
+   - Copy `/tmp/kunjia/docs/JERRY_JOB_HUNT_SETUP.md` → `./docs/JERRY_JOB_HUNT_SETUP.md`
+   - Copy `/tmp/kunjia/scripts/build_tool_inventory.py` → `./scripts/build_tool_inventory.py`
+
+5. Clean up `/tmp/agency-agents` and `/tmp/kunjia`.
+
+6. Print a final summary with these four counts:
+   - `~/.claude/agents/` count (expect 184)
+   - `./.claude/agents/*.md` recursive count (expect 244)
+   - `./.claude/skills/` subdir count (expect 192)
+   - Whether `./docs/TOOL_INVENTORY.md` exists
+
+Do NOT modify any existing files in my project. Do NOT commit or push anything.
+Only install/copy the files above. If a target file already exists with the
+same name, ask me before overwriting.
+````
+
+4. Claude will run the install and show you a final count. Done.
+
+---
+
+## 🚀 Alternative: one-command setup (copy-paste this whole block into Terminal)
 
 > Adjust `PROJECT` on line 1 if your `jerry_job_hunt` folder lives somewhere else.
 
