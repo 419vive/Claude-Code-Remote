@@ -1,0 +1,138 @@
+name: Fetch Tenfold Marketing resources (temporary, review-only)
+
+# One-shot fetcher for learning from https://guides.tenfoldmarketing.com/free-resources
+# Runs on GitHub's infra (not the sandbox which has a tight egress allowlist).
+# Commits extracted text to .external-reading/tenfold/ for offline review.
+# DELETE THIS WORKFLOW + .external-reading/ BEFORE MERGING THIS BRANCH.
+
+on:
+  push:
+    branches: [claude/review-marketing-resources-8ZrTK]
+    paths: ['.github/workflows/fetch-tenfold.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/review-marketing-resources-8ZrTK
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install --quiet requests beautifulsoup4 html2text
+
+      - name: Fetch and extract
+        env:
+          LANDING_URL: https://guides.tenfoldmarketing.com/free-resources
+        run: |
+          mkdir -p .external-reading/tenfold
+          python3 <<'PY'
+          import os, re, sys, time, json
+          from urllib.parse import urljoin, urlparse
+          import requests
+          from bs4 import BeautifulSoup
+          import html2text
+
+          OUT = ".external-reading/tenfold"
+          UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          HEADERS = {
+              "User-Agent": UA,
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Accept-Language": "en-US,en;q=0.9",
+          }
+          MAX_PAGES = 30
+          MAX_BYTES = 1_500_000
+
+          landing = os.environ["LANDING_URL"]
+          seen = set()
+          queue = [landing]
+          index = []
+
+          h = html2text.HTML2Text()
+          h.ignore_images = True
+          h.ignore_emphasis = False
+          h.body_width = 0
+
+          def slug(u):
+              p = urlparse(u)
+              s = (p.path + ("?" + p.query if p.query else "")).strip("/").replace("/", "__") or "index"
+              s = re.sub(r"[^A-Za-z0-9_.\-]", "_", s)
+              return (p.netloc.replace(".", "_") + "__" + s)[:160]
+
+          def same_or_linked_host(u):
+              host = urlparse(u).netloc.lower()
+              return host.endswith("tenfoldmarketing.com") or host.endswith("tenfoldmarketing.ca")
+
+          while queue and len(seen) < MAX_PAGES:
+              url = queue.pop(0)
+              if url in seen:
+                  continue
+              seen.add(url)
+              try:
+                  r = requests.get(url, headers=HEADERS, timeout=15, allow_redirects=True)
+                  print(f"[{r.status_code}] {url} -> {len(r.content)} bytes")
+                  if r.status_code != 200 or not r.content:
+                      index.append({"url": url, "status": r.status_code, "bytes": len(r.content), "saved": None})
+                      continue
+                  if len(r.content) > MAX_BYTES:
+                      print(f"  skip: too large")
+                      index.append({"url": url, "status": r.status_code, "bytes": len(r.content), "saved": None})
+                      continue
+                  ctype = r.headers.get("content-type", "")
+                  if "html" not in ctype.lower():
+                      print(f"  skip: non-html ({ctype})")
+                      continue
+                  html = r.text
+                  soup = BeautifulSoup(html, "html.parser")
+                  # Strip noise
+                  for tag in soup(["script", "style", "nav", "footer", "svg", "noscript"]):
+                      tag.decompose()
+                  title = (soup.title.string.strip() if soup.title and soup.title.string else url)
+                  md = h.handle(str(soup))
+                  md = re.sub(r"\n{3,}", "\n\n", md).strip()
+                  fname = slug(url) + ".md"
+                  with open(os.path.join(OUT, fname), "w", encoding="utf-8") as f:
+                      f.write(f"# {title}\n\nSource: {url}\n\n---\n\n{md}\n")
+                  index.append({"url": url, "status": 200, "bytes": len(r.content), "saved": fname, "title": title})
+                  # Enqueue links from landing page only (one hop)
+                  if url == landing:
+                      for a in soup.find_all("a", href=True):
+                          href = urljoin(url, a["href"]).split("#")[0]
+                          if href.startswith("http") and same_or_linked_host(href) and href not in seen:
+                              queue.append(href)
+                  time.sleep(0.5)
+              except Exception as e:
+                  print(f"  error: {e}")
+                  index.append({"url": url, "error": str(e)})
+
+          with open(os.path.join(OUT, "_index.json"), "w") as f:
+              json.dump(index, f, indent=2)
+          with open(os.path.join(OUT, "_index.md"), "w") as f:
+              f.write("# Fetch index\n\n")
+              for item in index:
+                  f.write(f"- `{item.get('status', 'err')}` [{item.get('title', item['url'])}]({item['url']}) -> {item.get('saved', '(not saved)')}\n")
+          print(f"Done. Pages saved: {sum(1 for i in index if i.get('saved'))}, total attempted: {len(index)}")
+          PY
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .external-reading/tenfold
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(fetch): tenfold marketing resources for review [skip ci]"
+            git push origin HEAD:claude/review-marketing-resources-8ZrTK
+          fi
