@@ -1,53 +1,63 @@
-# Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
+# Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard + video studio
 
-Branch: `main` (all feature branches merged + deployed)
-Latest: 3-layer phantom-vehicle defense + new-customer takeover notification + self-lock prevention — **all live in production, verified by Jerry**
+Branch: `claude/ai-video-editing-guide-kUVo4` (video studio scaffold, uncommitted at session end)
+Main: all 2026-04-16 chatbot features live in production, 81/81 tests green.
 
-## Deployed + Working (end of 2026-04-16 session)
+## In Progress (end of 2026-04-21 session) — Video Studio
 
-- **Permanent AI lockout (`aiDisabled` column)** — operator intervention = silent AI forever
-- **In-LINE operator controls** — `/whoami`, `/help`, `/lock`, `/unlock`, `/list`, `/status` from operator's own LINE (whitelist via `LINE_OPERATOR_USER_IDS` + fallback to `LINE_OWNER_USER_ID` + `LINE_ADDITIONAL_NOTIFY_USER_IDS`)
-- **Postback takeover button** (🔒 我來接手) on handoff + high-quality-lead + new-customer Flex cards
-- **New-customer notification** — operator gets a Flex card with 🔒 button on message #1 of every new LINE conversation (fires once via `allHistory.length === 1` gate)
-- **Phantom-vehicle guardrail** — prompt "庫存鎖" + output detection of RAV4/CR-V/Kicks/Camry/Civic etc. with critical-fail → rule-based fallback
-- **Self-lock prevention** — `/lock` refuses to target the operator's own conversation (both explicit and no-target)
-- **Idempotent DB migration on startup** — `INFORMATION_SCHEMA`-guarded ALTER in `runMigrations()` guarantees `aiDisabled` column exists regardless of Nixpacks/Dockerfile divergence
-- **81/81 unit tests** green in `server/aiDisabled.test.ts`
+Built TWO pipelines on top of existing Remotion + Gemini + VideoDB stack. Nothing parallel.
 
-## Exact Next Step
+**Part A — IG → vehicle page / chatbot (scaffolded, NOT yet wired to DB):**
+- `scripts/ig-sync/download_ig_videos.py` — yt-dlp Phase 1 for `@mrlai_gogoya` (Jerry's sister, public IG). Phase 2 upgrade path (Graph API) documented.
+- `scripts/ig-sync/match_to_vehicle.ts` — caption → vehicle row matcher. Writes `match-plan.json` for human review. `--apply` deliberately NOT connected to DB writes (fraud risk).
 
-**Megan onboarding** (Jerry has the playbook):
-1. Megan adds 崑家汽車 OA → texts `/whoami` → gets her userId
-2. Megan sends userId to Jerry
-3. Jerry appends to `LINE_OPERATOR_USER_IDS` env var on Railway (comma-separated)
-4. Railway auto-redeploys (or Jerry manually forces if auto fails)
-5. Megan re-tests `/whoami` → ✅ → can now use `/lock` `/list` etc.
+**Part B — AI podcast studio (scaffolded, render not yet run):**
+- `scripts/podcast/episodes/ep01-road-rage/script.json` — 8 chapters, kai (`Puck`) + wen (`Kore`), ~300s estimated. Topic: 路怒心理學.
+- `scripts/podcast/generate_voices.py` — Gemini 2.5 TTS per-line WAVs + `timing.json`.
+- `scripts/podcast/generate_portraits.py` — Gemini image gen 寫實 portraits → `public/podcast/portraits/`.
+- `client/src/remotion/compositions/PodcastRoadRage.tsx` — renders ANY `PodcastScript`-shaped episode (name historical).
+- `scripts/podcast/render-podcast.ts` — ffmpeg concat + pick most-expensive vehicle + Remotion render.
+- Registered `Podcast` composition in `Root.tsx` with `calculateMetadata` hook.
+- `types.ts` extended with Podcast* interfaces.
+- Cost per 5-min ep: ~$2.60 USD.
+- Full docs: `docs/PODCAST-STUDIO.md`.
 
-## Open Blockers (deferred, not urgent)
+## Exact Next Action (for Jerry)
 
-- **Railway auto-deploy unreliable** — Jerry manually redeployed multiple times during this session. Root cause unclear; Railway dashboard issue, not our code.
-- **Dashboard UI for admin mutations** (`disableAi`/`enableAi`/`operatorReply`) not built — backend ready; LINE coverage satisfies primary need
-- **TOCTOU race** (~1-5s): if `/lock` fires while LLM in-flight, one more AI reply may sneak through. Acceptable for now.
-- Pre-existing client-side tsc errors (6) unrelated
-- TRIBE v2 GPU-blocked, graphify AST-only weak
+Commit + push current branch; then run locally:
 
-## Key Knowledge
+```bash
+pip install -r kun-auto-chatbot/scripts/podcast/requirements.txt
+brew install ffmpeg
+cd kun-auto-chatbot && npm run dev &
+python scripts/podcast/generate_portraits.py ep01-road-rage
+# edit script.json hosts.*.portraitUrl
+python scripts/podcast/generate_voices.py ep01-road-rage
+npx tsx scripts/podcast/render-podcast.ts ep01-road-rage
+# → output/podcast/ep01-road-rage.mp4 (~15-25 min first run)
+```
 
-- **Production deploy stack**: Railway uses Nixpacks auto-detect and **ignores the Dockerfile CMD** — my `scripts/run-migrations.mjs` never ran. Any startup-time code MUST go into `server/_core/index.ts runMigrations()` to be guaranteed to execute.
-- **Migration style for production**: use `INFORMATION_SCHEMA.COLUMNS` check before `ALTER TABLE` — idempotent, safe to re-run on every container start.
-- **LINE platform reality**: webhook does NOT receive outbound messages from LINE OA Manager. Workaround = operator signals via inbound (button tap or slash command from THEIR own LINE).
-- **`aiDisabled=1` vs `status='human_handoff'`**: handoff temporary (30-min auto-recovery). `aiDisabled=1` permanent — only admin/operator clears.
-- **Operator whitelist**: union of 3 env vars. Jerry's userId is in `LINE_OPERATOR_USER_IDS` (added during this session).
-- **/lock safety rules**:
-  - Operator's own conversation is ALWAYS filtered out (explicit target rejected + no-target skipped)
-  - No-target scans last 10 conversations (widened from 5 to handle chatty operators)
-  - Always shows last8 + race warning + undo hint in confirmation
-  - Idempotent (re-tap = ack-only, no re-write)
-- **Hallucination guardrail 3-layer defense**:
-  - Prompt inventory lock at END of system prompt (recency bias)
-  - Output validator flags `hallucinated_vehicle:*` against curated deny-list
-  - Critical-fail → `generateRuleBasedReply` (only references real DB)
-- **`operatorReply` linePushStatus 4-state contract**: `sent` → save+lock; `failed` → don't save; `no_token` → don't save; `skipped` (non-LINE) → save+lock.
-- **Production stack**: TypeScript/Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE webhook + 8891.tw sync.
-- **Memory layer priority**: MCP `memory_*` → `docs/PROJECT_JOURNAL.md` → `recall-stack/primer.md` → `CLAUDE.md`.
-- **Before UI work**: read `kun-auto-chatbot/docs/DESIGN.md` (shadcn/ui + Tailwind v4 + oklch tokens, deep navy single accent, 10px radius, `tabular-nums` on prices).
+## Open Blockers
+
+- Part A `--apply` not wired to DB (needs VideoDB upload + admin API PATCH)
+- Part A Phase 2 Graph API needs sister OAuth-grant
+- `VehicleVideoPlayer.tsx` still only plays Remotion photo showcase; needs branch for real MP4
+- Railway auto-deploy still unreliable (from 2026-04-16)
+- Megan onboarding: add her userId to `LINE_OPERATOR_USER_IDS` env on Railway
+
+## Key Knowledge (video studio specific)
+
+- **Video brand tokens** = `#C4A265` gold + `#0a0a0a` dark + Noto Sans TC (`KUNJIA_BRAND` in `client/src/remotion/types.ts`). Distinct from dashboard's navy (DESIGN.md).
+- **`PodcastRoadRage.tsx` is episode-agnostic** — new episode = new `script.json` only, do NOT duplicate the tsx.
+- **Featured vehicle is dynamic** — most-expensive available via tRPC at render time. If sold, swap with `--vehicle-id` or re-render.
+- **Gemini is the ONLY new AI dep** — TTS + images both go through existing `GEMINI_API_KEY`. No OpenAI/Azure/ElevenLabs.
+- **IG raw files NEVER commit** — `scripts/ig-sync/.gitignore` excludes `ig-raw/` + `match-plan.json`.
+- **Output MP4s NEVER commit** — `output/.gitignore` excludes everything.
+
+## Key Knowledge (unchanged from 2026-04-16)
+
+- Production: Nixpacks ignores Dockerfile → migrations MUST live in `server/_core/index.ts runMigrations()`.
+- LINE webhook doesn't receive OA-Manager outbound; operator signals via inbound (button tap or slash cmd).
+- `aiDisabled=1` permanent vs `status='human_handoff'` temporary (30-min).
+- Operator whitelist = union of `LINE_OPERATOR_USER_IDS` + `LINE_OWNER_USER_ID` + `LINE_ADDITIONAL_NOTIFY_USER_IDS`.
+- Memory priority: MCP `memory_*` → `docs/PROJECT_JOURNAL.md` → `recall-stack/primer.md` → `CLAUDE.md`.

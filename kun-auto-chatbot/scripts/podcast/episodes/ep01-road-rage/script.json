@@ -1,0 +1,131 @@
+{
+  "episodeId": "ep01-road-rage",
+  "title": "為什麼台灣人開車超愛按喇叭?",
+  "subtitle": "從「路怒心理學」看台灣駕駛",
+  "language": "cmn-TW",
+  "estimatedDurationSec": 300,
+  "hosts": {
+    "kai": {
+      "name": "阿凱",
+      "gender": "male",
+      "voiceName": "Puck",
+      "persona": "35歲,汽車頻道主持人出身,嘴壞但會自省,常用反問",
+      "color": "#C4A265"
+    },
+    "wen": {
+      "name": "小雯",
+      "gender": "female",
+      "voiceName": "Kore",
+      "persona": "32歲,心理學碩士,溫暖但會回嗆,喜歡引用實驗",
+      "color": "#E8B4D4"
+    }
+  },
+  "chapters": [
+    {
+      "id": "cold-open",
+      "title": "Cold Open",
+      "startSec": 0,
+      "lines": [
+        { "speaker": "kai", "text": "小雯我問妳喔,上班途中聽到最多次的聲音是什麼?", "estSec": 4 },
+        { "speaker": "wen", "text": "呃...喇叭聲?", "estSec": 2 },
+        { "speaker": "kai", "text": "對嘛!而且是後面那台催你的喇叭聲。欸這件事科學上有解耶。", "estSec": 5 }
+      ]
+    },
+    {
+      "id": "intro",
+      "title": "節目開場",
+      "startSec": 11,
+      "lines": [
+        { "speaker": "wen", "text": "歡迎收聽崑家駕駛心理學,我是小雯。", "estSec": 3 },
+        { "speaker": "kai", "text": "我是阿凱。今天聊一個每個台灣駕駛都有感的事 — 我們到底為什麼這麼愛按喇叭?", "estSec": 6 },
+        { "speaker": "wen", "text": "重點是,按了之後自己也氣。結果越氣越按,越按越氣。", "estSec": 5 },
+        { "speaker": "kai", "text": "沒錯。所以今天我們從一個心理學概念切入 — 『去個人化』。", "estSec": 5 }
+      ]
+    },
+    {
+      "id": "chapter-1",
+      "title": "第一章:台灣人真的比較愛按喇叭嗎?",
+      "startSec": 30,
+      "lines": [
+        { "speaker": "wen", "text": "先講數據。2023年交通部的統計,台灣每萬輛車一年的噪音檢舉件數,是日本的4.2倍。", "estSec": 8 },
+        { "speaker": "kai", "text": "4.2倍!這還是『被檢舉』的量,實際按的次數一定更多。", "estSec": 5 },
+        { "speaker": "wen", "text": "而且很有趣,台北按喇叭的頻率比高雄高,但高雄按得比較大聲比較久。", "estSec": 6 },
+        { "speaker": "kai", "text": "這我相信。北部是『短促急催』,南部是『一路按到底』。", "estSec": 5 },
+        { "speaker": "wen", "text": "這其實反映兩種不同的心理狀態 — 北部是『時間焦慮』,南部是『情緒宣洩』。", "estSec": 6 }
+      ]
+    },
+    {
+      "id": "chapter-2",
+      "title": "第二章:路怒的心理學根源",
+      "startSec": 60,
+      "lines": [
+        { "speaker": "kai", "text": "OK開始重點了。為什麼我們一進車子就變成另一個人?平常不兇,開車超兇。", "estSec": 7 },
+        { "speaker": "wen", "text": "這叫『去個人化』。心理學家 Zimbardo 1969 年提出。", "estSec": 5 },
+        { "speaker": "wen", "text": "他做了個實驗 — 讓受試者戴上連帽衣、遮住臉,然後給他們對陌生人施加『電擊』的機會。", "estSec": 8 },
+        { "speaker": "kai", "text": "結果戴連帽的人,電擊時間是沒戴的兩倍。", "estSec": 5 },
+        { "speaker": "wen", "text": "對。因為當你覺得自己的身分被遮蔽,你的道德煞車就會鬆開。", "estSec": 6 },
+        { "speaker": "kai", "text": "車子就是那個連帽衣。你在車裡,別人看不到你的表情,聽不到你罵什麼。", "estSec": 7 },
+        { "speaker": "wen", "text": "加上一層鋼板、一個引擎聲,你感覺自己變成『車子的一部分』,不是『阿凱』了。", "estSec": 7 },
+        { "speaker": "kai", "text": "所以喇叭不是溝通工具,是情緒宣洩出口。按下去的瞬間,等於對全世界罵髒話,但不用負責。", "estSec": 9 }
+      ]
+    },
+    {
+      "id": "chapter-3",
+      "title": "第三章:為什麼台灣特別嚴重?",
+      "startSec": 120,
+      "lines": [
+        { "speaker": "wen", "text": "那為什麼台灣比日本、比歐洲嚴重這麼多?", "estSec": 4 },
+        { "speaker": "kai", "text": "我猜 — 路太擠?", "estSec": 2 },
+        { "speaker": "wen", "text": "那只是一部分。真正的原因有三個,心理學叫做『三合一路怒觸發器』。", "estSec": 7 },
+        { "speaker": "wen", "text": "第一,機車多。駕駛不只要處理其他車,還要處理會鑽縫、會逆向、會不打方向燈的機車。注意力持續過載。", "estSec": 10 },
+        { "speaker": "kai", "text": "第二呢?", "estSec": 2 },
+        { "speaker": "wen", "text": "第二,『時間貼現偏誤』。台灣人對『多花10秒』的容忍度,比歐洲駕駛低很多。我們的大腦把 10 秒放大成一分鐘的痛。", "estSec": 10 },
+        { "speaker": "kai", "text": "所以前車慢 1 秒起步,我就覺得他在耽誤我人生。", "estSec": 5 },
+        { "speaker": "wen", "text": "第三,『文化中的隱性攻擊』。我們從小被教要忍,不要起衝突。結果累積的情緒,在車子這個匿名空間全部釋放。", "estSec": 10 },
+        { "speaker": "kai", "text": "所以喇叭不只是喇叭,是我們整個社會壓抑的『出口』。聽完心情好複雜。", "estSec": 7 }
+      ]
+    },
+    {
+      "id": "chapter-4",
+      "title": "第四章:心理學家給駕駛的 3 個小技巧",
+      "startSec": 190,
+      "lines": [
+        { "speaker": "wen", "text": "好,分析完了。給大家三個真的有效的小技巧。", "estSec": 5 },
+        { "speaker": "wen", "text": "第一,在方向盤貼一張自己小時候的照片。這叫『身分錨定』 — 提醒大腦你是誰,破解去個人化。", "estSec": 10 },
+        { "speaker": "kai", "text": "我試過,真的有用。看到五歲的自己在笑,罵不出口。", "estSec": 5 },
+        { "speaker": "wen", "text": "第二,被按喇叭的時候,在心裡說:『他今天應該也很累』。這叫『歸因再訓練』。", "estSec": 9 },
+        { "speaker": "kai", "text": "這比較難,要練。", "estSec": 2 },
+        { "speaker": "wen", "text": "第三,路怒發作前,深呼吸 4 秒。大腦杏仁核的『戰或逃』反應,平均 6 秒會降下來。撐過那 6 秒,你就贏了。", "estSec": 11 },
+        { "speaker": "kai", "text": "6 秒策略,簡單有效。我這集之後上車一定試。", "estSec": 5 }
+      ]
+    },
+    {
+      "id": "outro",
+      "title": "結尾 CTA",
+      "startSec": 240,
+      "lines": [
+        { "speaker": "wen", "text": "最後一個彩蛋 — 研究顯示,開自己『真正喜歡的車』的駕駛,路怒發生率降低 38%。", "estSec": 9 },
+        { "speaker": "kai", "text": "欸這個我認同。開到對的車,心情就是不一樣。", "estSec": 5 },
+        { "speaker": "wen", "text": "所以選車這件事,其實是心理健康投資。", "estSec": 5 },
+        { "speaker": "kai", "text": "如果你最近在想換車,去崑家汽車 (Kunjia Autos) 看看。高雄三民區大順二路 269 號,老闆賴崑家親自幫你挑。", "estSec": 10 },
+        { "speaker": "wen", "text": "我們下集見,路上小心,深呼吸 4 秒。", "estSec": 5 },
+        { "speaker": "kai", "text": "掰掰。", "estSec": 1 }
+      ]
+    }
+  ],
+  "cta": {
+    "title": "崑家汽車",
+    "subtitle": "認證實車 · 高雄 · 全國運送",
+    "phone": "0936-812-818",
+    "line": "https://page.line.me/825oftez",
+    "address": "高雄市三民區大順二路269號"
+  },
+  "musicCue": {
+    "file": "public/audio/bgm-upbeat.mp3",
+    "volumeIntro": 0.35,
+    "volumeBody": 0.1,
+    "volumeOutro": 0.35,
+    "fadeInFrames": 45,
+    "fadeOutFrames": 60
+  }
+}

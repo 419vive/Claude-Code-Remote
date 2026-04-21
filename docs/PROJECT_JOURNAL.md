@@ -14,6 +14,140 @@
 
 ---
 
+## 2026-04-21 — Video studio unification: IG sync + AI podcast pipeline
+
+**Context:**
+Jerry came in wanting "AI video editing" after reading a Facebook-shared
+guide (Hyperframes + Claude Design). Separately he'd seen a suspicious
+tokened URL for `Anil-matcha/Open-Generative-AI` and wanted that
+incorporated too. Both turned out to solve different problems than he
+actually needed. What he actually wants is:
+
+- Part A: pull sister's (`@mrlai_gogoya`) real-car videos from IG into
+  our vehicle pages + chatbot. Sister's IG workflow untouched.
+- Part B: fully AI-generated podcast drama, 一男一女 hosts,
+  台灣生活 + 心理學 topic. First episode: 路怒心理學. Most-expensive
+  vehicle as visual backdrop. No schedule until we see one.
+
+**Decision:**
+Both use the EXISTING Remotion engine (`client/src/remotion/`) + Gemini
+API + VideoDB stack. Nothing parallel. Specifically:
+
+1. **Part A (IG sync):**
+   - yt-dlp Phase 1 scraper (`scripts/ig-sync/download_ig_videos.py`) —
+     POC, documented TOS risk, upgrade path to IG Graph API in README
+   - Caption → vehicle matcher (`scripts/ig-sync/match_to_vehicle.ts`) —
+     brand/model/year heuristics + 8891 URL detection. Writes a
+     `match-plan.json` for human review. Deliberately does NOT auto-write
+     `videoUrl` to DB — consumer-fraud risk if mismatched (消費者保護法).
+   - Re-uses: `vehicles.videoUrl` column (migration 0002 already exists),
+     `VehicleVideoPlayer.tsx`, `VehicleLanding.tsx`, VideoDB.
+
+2. **Part B (Podcast studio):**
+   - Script in `scripts/podcast/episodes/ep01-road-rage/script.json` —
+     structured turn-by-turn with speaker ids (kai/wen) + estimated
+     durations per line. 8 chapters, ~300 sec estimated.
+   - `generate_voices.py` — Gemini 2.5 TTS (`gemini-2.5-flash-preview-tts`)
+     with `Puck` (male) + `Kore` (female) voices. Per-line WAV output so
+     retries are surgical. Emits `timing.json` with ms-accurate durations.
+   - `generate_portraits.py` — Gemini image gen (`gemini-2.5-flash-image`)
+     for realistic 寫實人物 host portraits. Outputs to
+     `public/podcast/portraits/<speaker>.png`.
+   - `PodcastRoadRage.tsx` Remotion composition — despite name, renders
+     ANY episode matching the PodcastScript schema. Layout: top band
+     (logo + chapter chip + clock), host portraits with active-speaker
+     glow, subtitle panel, CTA bar, end card. Ambient car photo Ken Burns
+     underneath.
+   - `render-podcast.ts` — orchestrator: stitch WAVs with ffmpeg (inserts
+     180ms silence gaps), pick featured vehicle (most expensive available
+     OR `--vehicle-id`), bundle + render via `@remotion/bundler` +
+     `@remotion/renderer` (same pattern as existing
+     `render-vehicle-cards.ts`).
+   - New composition registered as `Podcast` in `Root.tsx` with
+     `calculateMetadata` hook so `durationInFrames` tracks real TTS
+     length.
+   - Updated `types.ts` with `PodcastVideoProps`, `PodcastScript`,
+     `PodcastTiming`, `PodcastHost`, `PodcastChapter`, etc.
+
+**Why this shape:**
+- **Nothing parallel to existing system.** Jerry was explicit: "希望我一
+  問,所有影片製作的設定什麼都串好了(不是分開的)". Podcast goes in
+  same Remotion folder as Vehicle showcase/card; shares `KUNJIA_BRAND`,
+  same bundler pattern, same `public/audio/bgm-upbeat.mp3`.
+- **Gemini for both voices AND portraits** — `GEMINI_API_KEY` already
+  configured in project, same key powers chatbot. No new API-key
+  dependencies. Total cost ~$2.60 per 5-min episode (flash tier).
+- **yt-dlp over Graph API for Phase 1** — Phase 2 (Graph API) requires
+  sister's OAuth; not blocker-worthy for a POC. Documented in
+  `scripts/ig-sync/README.md` as explicit upgrade path.
+- **Featured vehicle = `most expensive available`** — Jerry's explicit
+  ask ("請用最貴的車"). Pulled via tRPC at render time, not hardcoded.
+- **Hard gate on auto-matching IG → vehicle** — `--apply` is deliberately
+  not connected to DB writes. A bad match shows the wrong car's video on
+  the wrong car's page → misrepresentation. Must have human review.
+
+**Artifacts:**
+```
+scripts/ig-sync/
+├── download_ig_videos.py          # yt-dlp Phase 1 fetcher
+├── match_to_vehicle.ts            # caption → vehicle matcher
+├── README.md                       # full Phase 1→2 upgrade path
+├── requirements.txt
+└── .gitignore                     # ig-raw/ + match-plan.json
+
+scripts/podcast/
+├── episodes/ep01-road-rage/script.json    # ~3,800 chars Mandarin, 8 chapters
+├── generate_voices.py                      # Gemini 2.5 TTS
+├── generate_portraits.py                   # Gemini image gen
+├── render-podcast.ts                       # full orchestrator
+├── requirements.txt
+└── .gitignore                              # episodes/*/voices/
+
+client/src/remotion/
+├── compositions/PodcastRoadRage.tsx        # new composition
+├── Root.tsx                                 # registered "Podcast" with calculateMetadata
+└── types.ts                                 # extended with Podcast* types
+
+docs/PODCAST-STUDIO.md                       # full usage guide + cost + upgrade paths
+
+output/.gitignore                            # suppress generated mp4s
+```
+
+**Status / exact next step:**
+Nothing rendered yet. Jerry needs to run (on his machine):
+
+```bash
+pip install -r kun-auto-chatbot/scripts/podcast/requirements.txt
+brew install ffmpeg                                   # or apt
+cd kun-auto-chatbot && npm run dev                    # for vehicle data
+python scripts/podcast/generate_portraits.py ep01-road-rage
+# manual: paste portraitUrl into script.json hosts entries
+python scripts/podcast/generate_voices.py ep01-road-rage
+npx tsx scripts/podcast/render-podcast.ts ep01-road-rage
+```
+
+Total wall time: ~15-25 min on first run (TTS batch ~10 min,
+render ~10 min at 1080p).
+
+**Open questions / deferred:**
+- Whisper word-level timestamps for karaoke-style subtitles (currently
+  per-line only)
+- D-ID/HeyGen lipsync integration (currently static portraits)
+- AI b-roll generation (Veo/Kling) — deliberately deferred, cost-to-
+  quality unclear
+- YouTube auto-upload + thumbnail generation
+- Phase 2 IG Graph API migration (when Jerry gets sister's OAuth)
+- IG caption-matcher is English-centric; expand Chinese brand alias
+  table if match rate is low
+
+**Test coverage:** None yet — this is scaffolding + templates. First
+real test = render EP01 and watch it. `docs/PODCAST-STUDIO.md` lists
+pre-render quality checkpoints.
+
+**Branch:** `claude/ai-video-editing-guide-kUVo4` (not merged to main).
+
+---
+
 ## 2026-04-16 — Production deploy saga + 3 hotfixes + self-lock prevention
 
 **Context:**

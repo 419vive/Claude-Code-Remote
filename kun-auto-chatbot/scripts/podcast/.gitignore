@@ -1,0 +1,2 @@
+# Per-episode generated artifacts — regenerable, never commit
+episodes/*/voices/
