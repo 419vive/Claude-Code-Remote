@@ -34,3 +34,93 @@ export const KUNJIA_BRAND = {
   darkBg: "#0a0a0a",
   white: "#ffffff",
 };
+
+/**
+ * Podcast composition types (EP01+).
+ *
+ * Shape is driven by scripts/podcast/episodes/<ep>/script.json +
+ * scripts/podcast/episodes/<ep>/voices/timing.json. The PodcastRoadRage
+ * composition renders ANY episode matching this schema — the filename is
+ * historical, it is not road-rage-specific.
+ */
+
+export interface PodcastHost {
+  name: string;
+  gender: "male" | "female";
+  voiceName: string;
+  persona: string;
+  color: string;
+  /** Optional URL to a generated portrait image. Falls back to placeholder. */
+  portraitUrl?: string;
+}
+
+export interface PodcastChapter {
+  id: string;
+  title: string;
+  startSec: number;
+  lines: { speaker: "kai" | "wen"; text: string; estSec: number }[];
+}
+
+export interface PodcastMusicCue {
+  file: string;
+  volumeIntro: number;
+  volumeBody: number;
+  volumeOutro: number;
+  fadeInFrames: number;
+  fadeOutFrames: number;
+}
+
+export interface PodcastScript {
+  episodeId: string;
+  title: string;
+  subtitle: string;
+  language: string;
+  estimatedDurationSec: number;
+  hosts: Record<"kai" | "wen", PodcastHost>;
+  chapters: PodcastChapter[];
+  cta: {
+    title: string;
+    subtitle: string;
+    phone: string;
+    line: string;
+    address: string;
+  };
+  musicCue?: PodcastMusicCue;
+}
+
+export interface PodcastTimingLine {
+  index: number;
+  speaker: "kai" | "wen";
+  speakerName: string;
+  text: string;
+  wav: string;
+  startMs: number;
+  durationMs: number;
+  chapterId: string;
+}
+
+export interface PodcastTiming {
+  episodeId: string;
+  model: string;
+  sampleRate: number;
+  totalDurationMs: number;
+  totalDurationSec: number;
+  gapMsBetweenLines: number;
+  lines: PodcastTimingLine[];
+}
+
+export interface PodcastFeaturedVehicle {
+  brand: string;
+  model: string;
+  modelYear?: string;
+  priceDisplay?: string;
+  photoUrls: string[];
+}
+
+export interface PodcastVideoProps {
+  script: PodcastScript;
+  timing: PodcastTiming;
+  /** Absolute URL to the concatenated voice track (file:// or http). */
+  audioUrl?: string;
+  featuredVehicle?: PodcastFeaturedVehicle;
+}
