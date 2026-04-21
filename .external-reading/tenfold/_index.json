@@ -1,0 +1,37 @@
+[
+  {
+    "url": "https://guides.tenfoldmarketing.com/free-resources",
+    "status": 200,
+    "bytes": 106711,
+    "saved": "guides_tenfoldmarketing_com__free-resources.md",
+    "title": "Free Resources | Ten Fold"
+  },
+  {
+    "url": "https://guides.tenfoldmarketing.com/automate-dms-cron",
+    "status": 200,
+    "bytes": 43147,
+    "saved": "guides_tenfoldmarketing_com__automate-dms-cron.md",
+    "title": "Automate Your DMs While You Sleep (Zernio + Claude Code) | Ten Fold"
+  },
+  {
+    "url": "https://guides.tenfoldmarketing.com/google-stitch",
+    "status": 200,
+    "bytes": 59254,
+    "saved": "guides_tenfoldmarketing_com__google-stitch.md",
+    "title": "How to Build Your Own App For Free (Google Stitch + Claude Code) | Ten Fold"
+  },
+  {
+    "url": "https://guides.tenfoldmarketing.com/llm-council",
+    "status": 200,
+    "bytes": 51438,
+    "saved": "guides_tenfoldmarketing_com__llm-council.md",
+    "title": "Stop Trusting Claude's First Answer (The LLM Council Skill) | Ten Fold"
+  },
+  {
+    "url": "https://guides.tenfoldmarketing.com/top-5-claude-code-skills",
+    "status": 200,
+    "bytes": 84431,
+    "saved": "guides_tenfoldmarketing_com__top-5-claude-code-skills.md",
+    "title": "Top 10 Claude Code Skills That Actually Matter (Out of 91,000+) | Ten Fold"
+  }
+]
