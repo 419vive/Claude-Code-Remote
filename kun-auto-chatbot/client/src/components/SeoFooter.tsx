@@ -24,6 +24,9 @@ const BLOG_LINKS = [
   { label: "二手車行情價格查詢", href: "/blog/used-car-price-guide" },
   { label: "崑家汽車 vs HOT大聯盟", href: "/blog/kunjia-vs-hot" },
   { label: "崑家汽車 vs SUM", href: "/blog/kunjia-vs-sum" },
+  { label: "二手車保固範圍", href: "/blog/used-car-warranty-guide" },
+  { label: "驗車費用全解析", href: "/blog/used-car-inspection-cost" },
+  { label: "買賣合約注意事項", href: "/blog/used-car-contract-guide" },
 ];
 
 const LOCAL_AREA_LINKS = [

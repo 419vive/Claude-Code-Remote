@@ -185,6 +185,24 @@ function autoDealer(): object {
       "reviewCount": "89",
     },
     "knowsAbout": ["二手車買賣", "中古車買賣", "汽車貸款", "二手車過戶", "第三方認證", "高雄二手車", "二手車行推薦", "中古車認證比較", "高雄二手車行"],
+    "mentions": [
+      {
+        "@type": "GovernmentOrganization",
+        "name": "交通部公路監理總局",
+        "url": "https://www.mvdis.gov.tw/",
+        "sameAs": "https://zh.wikipedia.org/wiki/交通部公路總局"
+      },
+      {
+        "@type": "GovernmentOrganization",
+        "name": "行政院消費者保護會",
+        "url": "https://cpc.ey.gov.tw/"
+      },
+      {
+        "@type": "Organization",
+        "name": "中華民國汽車代理商同業公會",
+        "url": "https://www.taada.org.tw/"
+      }
+    ],
     "makesOffer": [
       {
         "@type": "Offer",
@@ -890,6 +908,21 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
         description: "詳細分析崑家汽車與SUM認證車聯盟的差異：認證標準、價格策略、保固條件、換車服務，以及各自適合的購車族群。",
         keywords: ["崑家汽車 vs SUM", "SUM認證車聯盟評價", "二手車行比較", "SUM二手車"],
       },
+      "used-car-warranty-guide": {
+        title: "二手車保固範圍完整解析｜2026年買中古車前必看",
+        description: "二手車保固一般保多久？涵蓋哪些項目？車商保固 vs 第三方保固比較，以及購買前必確認的5個保固細節。",
+        keywords: ["二手車保固", "中古車保固範圍", "二手車保固期", "二手車保固項目", "中古車保固"],
+      },
+      "used-car-inspection-cost": {
+        title: "二手車驗車費用怎麼算？2026年第三方認證價格全解析",
+        description: "二手車驗車費用 1500-3000 元起跳。詳細解析監理所定檢、第三方認證、SGS 檢驗的差異與價格。",
+        keywords: ["二手車驗車費用", "中古車驗車", "二手車第三方認證費用", "車輛檢驗費", "中古車檢測"],
+      },
+      "used-car-contract-guide": {
+        title: "二手車買賣合約注意事項｜2026年消費者完整指南",
+        description: "簽二手車合約前必看：必備條款、解約條件、瑕疵擔保、過戶責任、消保法保護完整解析。",
+        keywords: ["二手車買賣合約", "中古車契約", "二手車合約注意事項", "車輛買賣契約書", "二手車消保"],
+      },
     };
     const meta = blogMeta[slug];
     if (meta) {
@@ -929,6 +962,17 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
         "jobTitle": "創辦人 / 資深二手車鑑定師",
         "worksFor": { "@id": `${baseUrl}/#organization` },
         "knowsAbout": ["二手車買賣", "中古車鑑定", "汽車貸款", "車輛過戶", "第三方認證"],
+        "knowsLanguage": ["zh-TW", "zh-Hant", "ja"],
+        "hasOccupation": {
+          "@type": "Occupation",
+          "name": "二手車經紀人",
+          "occupationLocation": {
+            "@type": "City",
+            "name": "高雄市",
+          },
+          "skills": "車輛鑑定、貸款規劃、過戶代辦、車況評估",
+          "experienceRequirements": "40年以上實務經驗",
+        },
         "description": "高雄崑家汽車創辦人，40年以上二手車買賣經驗，專精車輛鑑定與貸款規劃。",
         "url": `${baseUrl}/`,
         "sameAs": [

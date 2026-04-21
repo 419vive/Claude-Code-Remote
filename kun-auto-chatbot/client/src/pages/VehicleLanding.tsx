@@ -368,6 +368,8 @@ export default function VehicleLanding() {
             <p className="text-white/25 text-xs">崑家汽車 · 高雄市三民區大順二路269號</p>
           </div>
         </div>
+        {/* P1 SEO fix: render SeoFooter so sold pages aren't navigation dead-ends */}
+        <SeoFooter />
       </div>
     );
   }
@@ -883,6 +885,10 @@ export default function VehicleLanding() {
           />
         </Suspense>
       )}
+
+      {/* P1 SEO fix: SeoFooter was imported but never rendered on live vehicle pages —
+          every car detail page was a navigation dead-end. Added 2026-04-21. */}
+      <SeoFooter />
     </div>
   );
 }
