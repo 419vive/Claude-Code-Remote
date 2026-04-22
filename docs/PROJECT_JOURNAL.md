@@ -14,6 +14,82 @@
 
 ---
 
+## 2026-04-22 — Cloud sandbox firewall discovery (Railway is unreachable)
+
+**Context:**
+Jerry asked me to install OpenCLI and also said he wants me to be able to check
+Railway deploy status directly instead of him screenshotting the dashboard every
+time. I pivoted to Railway CLI (safer + more appropriate than OpenCLI for the
+actual pain point), installed it globally, then asked Jerry to generate a Railway
+account token so I could run commands against his account.
+
+**What actually happened:**
+Token generated + pasted + tested. Every Railway API call returned "Failed to
+fetch: error decoding response body". Direct curl to `railway.com` and
+`backboard.railway.app` confirmed the real issue: **this Claude Code cloud
+sandbox has a network allowlist, and Railway domains are not on it**. Both
+hosts return `Host not in allowlist / HTTP 403`. The Railway CLI (v4.40.2) is
+physically installed but cannot reach home. The token Jerry pasted was fine —
+my sandbox is the wall.
+
+**Fallback attempt (also failed):**
+Promised Jerry I could read Railway deploy status via GitHub commit statuses
+(Railway → GitHub integration posts status checks). Turns out my available
+GitHub MCP tools (`get_commit`, `list_commits`, `get_file_contents`, etc.) do
+NOT include commit-status or deployment endpoints. So I can confirm a push
+reached GitHub (SHA + message + timestamp) but cannot see the green check /
+red X that Railway paints on the commit.
+
+**Decision:**
+Accept the limit. Document it loudly so future-me doesn't repeat the token
+request dance. For Railway operations, Jerry continues to screenshot the
+dashboard and paste output; I interpret and draft commands. For code changes,
+full local filesystem still works. Revised coverage estimate: ~20% of Railway
+questions answerable from here (push confirmation only), not the 60% I
+initially claimed.
+
+**Jerry's constraint:**
+Jerry explicitly does NOT want to switch to local Claude Code on his Mac
+("I'm working on this entire project on this GitHub repo"). So we live within
+the cloud-sandbox limits permanently, not as a temporary workaround.
+
+**Adjacent findings during this session:**
+- **Jerry's father is 70, not 50** (my earlier essay drafts had it wrong).
+  Saved to memory under `family-jerry-father-age`.
+- **Business impact milestone**: 6 cars sold in the first month after the LINE
+  operator-takeover + phantom-vehicle defense went live. Saved under
+  `business-impact-cars-sold`.
+- **Railway incident April 22**: "A Subset of Builds Are Degraded" on their
+  Build Machines (Metal), US-West + EU-West. Confirms our `inspiring-exploration`
+  project (us-west2) is affected. Explains the recent auto-deploy flakiness
+  noted as an open blocker — NOT our code's fault.
+- **OpenCLI analysis**: `jackwener/opencli` is legit (16.8k stars, Apache PMC
+  maintainer) but pointless to install in this sandbox — it's a CLI + Chrome
+  extension system, and the sandbox has no Chrome for the extension to talk
+  to. Jerry will install on his Mac separately if he wants it.
+
+**Memory keys stored in namespace `project-kunjia-autos`:**
+- `sandbox-network-firewall-limits` — this limitation
+- `railway-project-info` — project name = `inspiring-exploration`, service =
+  `Claude-Code-Remote`, region = us-west2, linked repo = `419vive/kunjia-autos-ai-chatbot`,
+  root = `/kun-auto-chatbot`
+- `family-jerry-father-age` — father is 70
+- `business-impact-cars-sold` — 6 cars in first month
+
+**Artifacts:**
+- `recall-stack/primer.md` — updated with "Cloud Sandbox Network Limits" section
+- No code changes. Pure infrastructure / process discovery.
+
+**Lesson for future-me:**
+Before asking Jerry to generate any credential for any external service,
+`curl` the service's base URL from the sandbox first. If it returns "Host not
+in allowlist", the credential is useless and shouldn't be requested. This
+failure mode applies to Railway today; it likely applies to every non-GitHub,
+non-Claude SaaS (Supabase, PlanetScale, LINE, Gemini API endpoints that aren't
+explicitly allowlisted, etc.).
+
+---
+
 ## 2026-04-16 — Production deploy saga + 3 hotfixes + self-lock prevention
 
 **Context:**

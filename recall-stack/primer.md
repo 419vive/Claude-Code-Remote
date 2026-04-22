@@ -51,3 +51,12 @@ Latest: 3-layer phantom-vehicle defense + new-customer takeover notification + s
 - **Production stack**: TypeScript/Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE webhook + 8891.tw sync.
 - **Memory layer priority**: MCP `memory_*` → `docs/PROJECT_JOURNAL.md` → `recall-stack/primer.md` → `CLAUDE.md`.
 - **Before UI work**: read `kun-auto-chatbot/docs/DESIGN.md` (shadcn/ui + Tailwind v4 + oklch tokens, deep navy single accent, 10px radius, `tabular-nums` on prices).
+
+## Cloud Sandbox Network Limits (discovered 2026-04-22)
+
+- **This sandbox's firewall BLOCKS Railway domains** (`railway.com`, `backboard.railway.app`). Symptom: every request returns "Host not in allowlist / HTTP 403". Railway CLI is installed (`/opt/node22`, v4.40.2) but completely unusable from here. DO NOT ask Jerry to generate Railway tokens — they cannot be used and pollute chat transcripts.
+- **What I CAN do via GitHub MCP**: confirm pushes reached GitHub via `mcp__github__list_commits` / `get_commit` (returns SHA + message + timestamp). Scope is restricted to `419vive/kunjia-autos-ai-chatbot`.
+- **What I CANNOT do via available MCP tools**: read Railway deploy statuses, deployment events, or GitHub commit check-run states (no matching endpoint in current tool set). Prior estimate of "60% of Railway questions covered via GitHub" was wrong — real number ~20% (push confirmation only).
+- **Workflow for Railway operations**: Jerry screenshots Railway dashboard / pastes terminal output, I interpret and draft next command. For code changes (everything in the repo), full local filesystem access works fine.
+- **Family context**: Jerry's father (shop owner) is **70**, not 50. Runs business entirely from phone. This shapes accessibility decisions (phone-first, no dashboard, text commands).
+- **Business impact baseline**: 6 cars sold in the first month after the LINE operator-takeover + phantom-vehicle system went live. Use this number when describing ROI/impact.
