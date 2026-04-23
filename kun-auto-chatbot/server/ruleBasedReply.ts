@@ -96,6 +96,15 @@ export function generateRuleBasedReply(ctx: RuleContext): string {
     return `${greeting}你問的是哪一台車呢？你可以點下方選單的「看車庫存」瀏覽我們目前在售的車款，或直接告訴我你想了解哪台車！`;
   }
 
+  // === Priority 3.6: New-car question (reviewer M2 — 2026-04-23 PM) ===
+  // Must come BEFORE intent-based replies so it wins over any generic path.
+  // The LLM primary reply for this intent can fall back here if the security
+  // guardrail trips — we must produce the clarification WITHOUT naming any
+  // specific vehicle (that was the bug this whole PR exists to fix).
+  if (intents.includes('new_car_question')) {
+    return `${greeting}不好意思我們是中古車商，只賣精選二手車喔！想看哪種車款或預算範圍可以告訴我～`;
+  }
+
   // === Priority 4: Intent-based replies (no specific vehicle) ===
 
   // Greeting

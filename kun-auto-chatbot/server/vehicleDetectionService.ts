@@ -318,7 +318,7 @@ function findVehicleFromNormalized(normalizedUpper: string, index: VehicleIndex,
  * Patterns that indicate the user is referring to a previously mentioned vehicle.
  * e.g., "那排氣量呢", "這台多少錢", "它的里程", "那個有什麼配備"
  */
-const CONTEXT_REFERENCE_PATTERNS = /^(那|這台|那台|這個|那個|它的?|上面那台|剛剛那台|前面那台|同一台)/;
+export const CONTEXT_REFERENCE_PATTERNS = /^(那|這台|那台|這個|那個|它的?|上面那台|剛剛那台|前面那台|同一台)/;
 const FOLLOW_UP_PATTERNS = /^(那|所以|然後|還有|另外|對了|請問|想問|想知道|好奇|順便問)/;
 const ACKNOWLEDGMENT_PATTERNS = /^(好|嗯|ok|OK|對|是|好的|好啊|好喔|沒問題|可以|行|嗯嗯|👍|🙏|了解|知道了|收到|okok)$/;
 
@@ -795,6 +795,25 @@ export type CustomerIntent =
   ;
 
 /**
+ * Intents that signal a GENERAL BUSINESS question unrelated to any specific
+ * vehicle. When any of these fire AND the current message has no vehicle
+ * detected, `dynamicPromptBuilder.buildLLMMessages` will clear conversation
+ * history before the LLM call — preventing stale vehicle mentions from prior
+ * sessions from leaking into the response.
+ *
+ * Co-located with CustomerIntent so adding a new intent forces a decision
+ * about whether it belongs in this set (reviewer m2, 2026-04-23 PM).
+ */
+export const GENERAL_BUSINESS_INTENTS: ReadonlySet<CustomerIntent> = new Set<CustomerIntent>([
+  'hours',
+  'address',
+  'phone',
+  'greeting',
+  'how_to_browse',
+  'new_car_question',
+]);
+
+/**
  * Detect ALL intents from a customer message (can have multiple).
  * This is separate from vehicle detection — it detects WHAT the customer wants to DO.
  */
@@ -871,9 +890,31 @@ export function detectCustomerIntents(message: string): CustomerIntent[] {
   // GR Sport" hallucination trigger).
   //
   // Guard: exclude "新車主" (new owner) / "新車款" (new model variant) /
-  // "新車型" (new type) / "全新車況" (brand-new condition) — those are
-  // used-car-context phrases and should NOT trigger this intent.
-  if (/(?:賣|有|有沒有|有賣|提供|出售|進口)\s*新車|新車(?:嗎|呢|\?|\？|可以|能|會|還是)|(?:要|想)\s*(?:買|買一台|買台|訂)\s*新車|新車\s*(?:的話|選擇)/.test(lower)) {
+  // "新車型" (new type) / "全新車況"/"跟新車一樣"/"新車況"/"新車險" — those are
+  // used-car-context phrases and must NOT trigger this intent.
+  //
+  // TESTER-FLAG 2026-04-23: expanded after QA pass.
+  // Tier 1 (direct 新車 mentions that were slipping through):
+  //   請問新車、我要新車、新車價格、新車呢、新車的部分、新車路線、新車價、新古車
+  // Tier 2 (paraphrases of "new vs used"):
+  //   你們是新的還是中古、全新的、有沒有全新、新的一台、不是要中古的我要新的、只賣二手嗎還是新的
+  //
+  // Strategy:
+  //   A. Keep original patterns.
+  //   B. Add: 新車 as a bare noun surrounded by particles (的|價|呢|部分|路線) — but
+  //      carefully excluding the false-positive stems (新車主|新車款|新車型|新車險|新車況).
+  //   C. Add: "全新" / "新的" in new-vs-used contrastive contexts (還是中古|還是二手|vs中古).
+  //   D. Add: "新古車" (Taiwanese slang for almost-new used car — customer likely
+  //      confused about our inventory type, still warrants the clarification response).
+  const newCarCore = /(?:賣|有|有沒有|有賣|提供|出售|進口|主打|走|做)\s*新車|新車(?:嗎|呢|\?|\？|可以|能|會|還是)|(?:要|想|買|訂)\s*新車|新車\s*(?:的話|選擇|的?部分)/;
+  // Bare-noun 新車: must NOT be preceded by 主|款|型|險|況 (false-positive stems)
+  // AND must NOT be immediately preceded by simile words (像|如|跟|好比|彷彿|猶如|一樣)
+  // which produce "像新車一樣" / "跟新車一樣" (used-car-in-great-condition phrasing).
+  const newCarBareNoun = /(?<![主款型險況])(?<!像)(?<!如)(?<!跟)(?<!好比)(?<!彷彿)(?<!猶如)新車(?![主款型險況])(?!一樣)/;
+  // new-vs-used contrastive + "有/賣 全新" standalone (customer asking "do you have brand-new ones")
+  const newVsUsed = /(?:全新|新的).*(?:還是|vs|對|還是要)?.{0,4}(?:中古|二手)|(?:中古|二手).{0,6}(?:還是|或|vs).{0,4}(?:新的|全新|新車)|不是要.{0,4}中古.{0,6}(?:新的|新車|全新)|只賣二手.{0,6}(?:新的|新車)|(?:有|有沒有|賣|出售|提供)\s*全新|全新(?:的車|一台|的一台|車款).*(?:有|嗎)|(?:有|有沒有|賣|出售|提供)\s*新的(?:車|一台|一部)|新的一台(?:多少|有嗎|嗎)/;
+  const newGuCar = /新古車/;  // Taiwanese "almost-new" — still needs clarification
+  if (newCarCore.test(lower) || newCarBareNoun.test(lower) || newVsUsed.test(lower) || newGuCar.test(lower)) {
     intents.push('new_car_question');
   }
 
