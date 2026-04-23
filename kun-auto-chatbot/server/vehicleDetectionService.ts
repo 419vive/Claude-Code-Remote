@@ -13,7 +13,7 @@
  * 4. 加入明確的 Q&A 映射（客人問 cc 數 → 回答排氣量）
  */
 
-import { SHOP_ADDRESS, SHOP_MAP_URL, SHOP_PHONE, SHOP_CONTACT_PERSON } from "../shared/shopConfig";
+import { SHOP_ADDRESS, SHOP_MAP_URL, SHOP_PHONE, SHOP_CONTACT_PERSON, SHOP_HOURS } from "../shared/shopConfig";
 
 // ============ BRAND ALIASES (Chinese → English) ============
 
@@ -1001,7 +1001,7 @@ Google 地圖：${SHOP_MAP_URL}
   if (intents.includes('hours')) {
     instructions.push(`🔴 營業時間指令（必須遵守！）：
 客人問營業時間！你必須回答：
-營業時間：週一至週六 9:00-20:00
+營業時間：${SHOP_HOURS}
 🚫 絕對禁止不回答營業時間！`);
   }
   

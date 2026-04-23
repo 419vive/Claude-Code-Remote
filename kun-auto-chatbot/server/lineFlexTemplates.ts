@@ -4,7 +4,7 @@
  */
 
 import type { Vehicle } from "../drizzle/schema";
-import { SHOP_PHONE, SHOP_ADDRESS, SHOP_ADDRESS_PLAIN, SHOP_CONTACT_PERSON } from "../shared/shopConfig";
+import { SHOP_PHONE, SHOP_ADDRESS, SHOP_ADDRESS_PLAIN, SHOP_CONTACT_PERSON, SHOP_HOURS } from "../shared/shopConfig";
 import { formatPriceForCard } from "../shared/priceFormat";
 
 // ============ HELPER: Parse photo URLs from vehicle ============
@@ -710,7 +710,7 @@ export function buildAppointmentCard(): any {
               },
               {
                 type: "text",
-                text: "週一至週六 09:00 - 20:00\n週日 預約制",
+                text: SHOP_HOURS,
                 size: "sm",
                 color: "#555555",
                 wrap: true,

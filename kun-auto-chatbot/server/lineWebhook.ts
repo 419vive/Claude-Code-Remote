@@ -14,7 +14,7 @@ import { sanitizeChatMessage, validateLLMOutput, getGuardrailMode } from "./secu
 import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting, isOperator, parseOperatorCommand, type OperatorCommand } from "./lineUtils";
 import { getAssistantContentForTrigger, buildOwnerNotificationFlex, getMilestoneLevel, checkAndNotifyOwner, buildHumanHandoffFlex, sendHumanHandoffNotification, sendNewCustomerNotification } from "./lineNotification";
 import { updateConversationTracker, sendFollowUpMessages } from "./lineRecovery";
-import { SHOP_ADDRESS, SHOP_PHONE, SHOP_CONTACT_PERSON } from "../shared/shopConfig";
+import { SHOP_ADDRESS, SHOP_PHONE, SHOP_CONTACT_PERSON, SHOP_HOURS } from "../shared/shopConfig";
 
 // ============ TYPING INDICATOR ============
 // Show "typing..." animation in LINE chat while bot is processing
@@ -1672,7 +1672,7 @@ async function processLineEvent(
             },
             {
               type: "text",
-              text: "營業時間 09:00-20:00（週一至週六）",
+              text: `營業時間 ${SHOP_HOURS}`,
               size: "sm",
               color: "#888888",
               wrap: true,

@@ -26,6 +26,7 @@ import {
   SHOP_PHONE,
   SHOP_CONTACT_PERSON,
   SHOP_LINE_ID,
+  SHOP_HOURS,
 } from "../shared/shopConfig";
 
 // ============ TYPES ============
@@ -377,7 +378,7 @@ export function buildUserMessagePrefill(ctx: PromptContext): string | null {
     reminders.push('客人問怎麼看車 → 必須引導「點下方選單的看車庫存」');
   }
   if (ctx.intents.includes('hours')) {
-    reminders.push('客人問營業時間 → 必須回答：週一至週六 9:00-20:00');
+    reminders.push(`客人問營業時間 → 必須回答：${SHOP_HOURS}`);
   }
   if (ctx.intents.includes('pricing')) {
     if (ctx.detection.type !== 'none' && ctx.detection.vehicle) {

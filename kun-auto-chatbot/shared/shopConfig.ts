@@ -40,8 +40,18 @@ export const SHOP_PHONE = "0936-812-818";
 /** Contact person for the phone number */
 export const SHOP_CONTACT_PERSON = "賴先生";
 
-/** Operating hours (human-readable) */
-export const SHOP_HOURS = "週一至週六 9:00-20:00";
+/** Operating hours (human-readable, customer-facing in LINE replies) */
+export const SHOP_HOURS = "週一至週日 9:30-20:00";
+
+/**
+ * Operating hours (schema.org format, for BusinessHours structured data
+ * in seo.ts). Must describe the same schedule as SHOP_HOURS, just in the
+ * machine-readable syntax Google expects.
+ *
+ * Format reference: https://schema.org/OpeningHoursSpecification
+ *   Mo / Tu / We / Th / Fr / Sa / Su (no commas for ranges)
+ */
+export const SHOP_HOURS_SCHEMA = "Mo-Su 09:30-20:00";
 
 /** LINE Official Account ID */
 export const SHOP_LINE_ID = "@825oftez";
