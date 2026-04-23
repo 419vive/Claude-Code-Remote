@@ -1,7 +1,7 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `main` (PR #88 merged 2026-04-23, Railway deploy successful)
-Latest: **Fact Lock System LIVE** (price/location/中古車 integrity + hours corrected to Mo-Su 9:30-20:00) — 276/276 tests green on main, deploy confirmed by Jerry, awaiting live LINE verification
+Branch: `main` (PRs #88 + #89 merged 2026-04-23)
+Latest: **Stale-history fix merged** (PR #89 commit `3c1f308`) — awaiting Railway deploy + Jerry's live retry of the 3 test questions. Fact Lock (#88) already live. 348/348 tests green on main.
 
 ## Deployed + Working (end of 2026-04-16 session)
 
