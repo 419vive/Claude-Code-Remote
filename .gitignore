@@ -21,6 +21,12 @@ venv/
 # canonical decision trail lives in docs/PROJECT_JOURNAL.md.
 .swarm/
 
+# claude-flow runtime side-effects: auto-memory-hook.mjs keeps appending
+# garbage (file:"unknown", sessionId:null) to pending-insights.jsonl every
+# session due to a broken stdin parser. We untracked the file (see parent
+# commit); this ignore keeps it from coming back.
+**/.claude-flow/data/
+
 # graphifyy tool side-effect: creates graphify-out/cache/ in CWD when
 # `graphify query` or `graphify benchmark` is run from the repo root.
 # Our sandbox output lives in scripts/graphify-sandbox/out/, NOT here.
