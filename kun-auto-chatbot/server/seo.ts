@@ -35,11 +35,16 @@ export async function submitIndexNow(urls: string[]): Promise<void> {
 
 // ============ CONSTANTS ============
 
-const SITE_NAME = "崑家汽車";
+import { SHOP_NAME, SHOP_ADDRESS_PLAIN, SHOP_PHONE, SHOP_HOURS, SHOP_HOURS_SCHEMA } from "../shared/shopConfig";
+
+const SITE_NAME = SHOP_NAME;
 const SITE_DESCRIPTION = "高雄二手車推薦｜崑家汽車在地40年正派經營，全車第三方認證、超強貸款方案、最快3小時交車。高雄三民區精選Toyota、Honda、BMW、Benz等各大品牌優質中古車，實車實價、保證里程。";
-const BUSINESS_ADDRESS = "高雄市三民區大順二路269號";
-const BUSINESS_PHONE = "0936-812-818";
-const BUSINESS_HOURS = "Mo-Sa 09:00-21:00";
+const BUSINESS_ADDRESS = SHOP_ADDRESS_PLAIN;
+const BUSINESS_PHONE = SHOP_PHONE;
+// Schema.org hours — sourced from shopConfig.SHOP_HOURS_SCHEMA so it stays
+// in lockstep with the human-readable SHOP_HOURS. Jerry confirmed 2026-04-23:
+// actual schedule is every day (Mon-Sun) 9:30am-8:00pm.
+const BUSINESS_HOURS = SHOP_HOURS_SCHEMA;
 const LINE_OA_URL = "https://page.line.me/825oftez";
 
 function getBaseUrl(): string {
@@ -1092,7 +1097,7 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
         keywords: ["高雄二手車", "高雄中古車", "高雄二手車推薦", "高雄中古車行", "高雄買車"],
         faqs: [
           { q: "高雄二手車推薦哪一家？", a: "崑家汽車在地40年，位於三民區大順二路269號（肯德基斜對面），全車第三方認證。" },
-          { q: "崑家汽車在高雄哪裡？", a: "高雄市三民區大順二路269號，近肯德基。營業時間週一至週六 9:00-20:00。" },
+          { q: "崑家汽車在高雄哪裡？", a: `${SHOP_ADDRESS_PLAIN}，近肯德基。營業時間${SHOP_HOURS}。` },
         ],
       },
       "kaohsiung-sanmin": {
@@ -1529,7 +1534,7 @@ Crawl-delay: 1
 - 地址：${BUSINESS_ADDRESS}（高雄市三民區，肯德基斜對面）
 - 電話：${BUSINESS_PHONE}
 - LINE官方帳號：${LINE_OA_URL}（帳號 @825oftez）
-- 營業時間：週一至週六 09:00-21:00（週日公休）
+- 營業時間：${SHOP_HOURS}
 - 創立：1986年（超過40年歷史）
 
 ## 購車攻略（Blog）
@@ -1606,7 +1611,7 @@ ${vehicleSection || "- 請訪問首頁查看最新庫存"}
 - 地址：${BUSINESS_ADDRESS}（高雄市三民區，肯德基斜對面）
 - 電話：${BUSINESS_PHONE}
 - LINE官方帳號：${LINE_OA_URL}（帳號 @825oftez）
-- 營業時間：週一至週六 09:00-21:00（週日公休）
+- 營業時間：${SHOP_HOURS}
 - 創立年份：1986年（超過40年歷史）
 - Google評分：4.8/5（156則評分，89則評論）
 - 高雄二手車年交易量：全台約9.4萬輛
@@ -1688,7 +1693,7 @@ Toyota、Honda、BMW、Benz、Mazda、Nissan、Ford、Volkswagen、Mitsubishi、
 - 電話預約：${BUSINESS_PHONE}
 - LINE諮詢：${LINE_OA_URL}（帳號 @825oftez）
 - 到店地址：${BUSINESS_ADDRESS}
-- 營業時間：週一至週六 09:00-21:00
+- 營業時間：${SHOP_HOURS}
 `
     );
   });

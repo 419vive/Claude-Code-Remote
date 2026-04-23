@@ -4,6 +4,8 @@
  */
 
 import type { Vehicle } from "../drizzle/schema";
+import { SHOP_PHONE, SHOP_ADDRESS, SHOP_ADDRESS_PLAIN, SHOP_CONTACT_PERSON, SHOP_HOURS } from "../shared/shopConfig";
+import { formatPriceForCard } from "../shared/priceFormat";
 
 // ============ HELPER: Parse photo URLs from vehicle ============
 
@@ -28,7 +30,7 @@ function parsePhotoUrls(v: Vehicle): string[] {
 function buildVehicleBubble(v: Vehicle): any {
   const photos = parsePhotoUrls(v);
   const photoUrl = photos[0] || "https://via.placeholder.com/800x600?text=No+Photo";
-  const priceText = v.priceDisplay || `${v.price}萬`;
+  const priceText = formatPriceForCard(v);
   const specs: string[] = [];
   if (v.modelYear) specs.push(`${v.modelYear}年`);
   if (v.mileage) specs.push(v.mileage);
@@ -198,7 +200,7 @@ export function buildVehicleCarouselMessages(
       buildSimpleCard(
         "😅 目前沒有符合的車輛",
         "不過我們隨時有新車進來！\n歡迎直接聯繫賴先生了解最新庫存。",
-        [{ type: "uri", label: "📞 撥打 0936-812-818", uri: "tel:0936812818" }]
+        [{ type: "uri", label: `📞 撥打 ${SHOP_PHONE}`, uri: `tel:${SHOP_PHONE.replace(/-/g, "")}` }]
       ),
     ];
   }
@@ -365,7 +367,7 @@ export function buildVideoShowcaseCard(vehicle: Vehicle): any {
   const photos = parsePhotoUrls(vehicle);
   const heroPhoto = photos[0] || "https://via.placeholder.com/800x600?text=崑家汽車";
   const secondPhoto = photos[1] || heroPhoto;
-  const priceText = vehicle.priceDisplay || `${vehicle.price}萬`;
+  const priceText = formatPriceForCard(vehicle);
   const specs: string[] = [];
   if (vehicle.modelYear) specs.push(`${vehicle.modelYear}年`);
   if (vehicle.mileage) specs.push(vehicle.mileage);
@@ -640,14 +642,14 @@ export function buildWelcomeCard(): any {
             contents: [
               {
                 type: "text",
-                text: "📍 三民區大順二路269號",
+                text: `📍 ${SHOP_ADDRESS_PLAIN.replace("高雄市", "")}`,
                 size: "xs",
                 color: "#AAAAAA",
                 flex: 2,
               },
               {
                 type: "text",
-                text: "📞 0936-812-818 賴先生",
+                text: `📞 ${SHOP_PHONE} ${SHOP_CONTACT_PERSON}`,
                 size: "xs",
                 color: "#AAAAAA",
                 flex: 2,
@@ -688,7 +690,7 @@ export function buildAppointmentCard(): any {
           },
           {
             type: "text",
-            text: "歡迎來崑家汽車看車！\n📍 地址：高雄市三民區大順二路269號（肯德基斜對面）\n賴先生親自為你服務。\n\n來之前先跟我們約個時間，\n阿家幫你把車準備好，讓你看得舒服！",
+            text: `歡迎來崑家汽車看車！\n📍 地址：${SHOP_ADDRESS}\n${SHOP_CONTACT_PERSON}親自為你服務。\n\n來之前先跟我們約個時間，\n阿家幫你把車準備好，讓你看得舒服！`,
             wrap: true,
             size: "sm",
             color: "#555555",
@@ -708,7 +710,7 @@ export function buildAppointmentCard(): any {
               },
               {
                 type: "text",
-                text: "週一至週六 09:00 - 20:00\n週日 預約制",
+                text: SHOP_HOURS,
                 size: "sm",
                 color: "#555555",
                 wrap: true,

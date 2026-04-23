@@ -20,6 +20,14 @@
  */
 
 import { CustomerIntent, DetectionResult } from "./vehicleDetectionService";
+import {
+  SHOP_ADDRESS,
+  SHOP_MAP_URL,
+  SHOP_PHONE,
+  SHOP_CONTACT_PERSON,
+  SHOP_LINE_ID,
+  SHOP_HOURS,
+} from "../shared/shopConfig";
 
 // ============ TYPES ============
 
@@ -143,14 +151,15 @@ ${phoneStatus}
 
 /**
  * CONTACT INFO — always included (it's short and critical)
+ * Single source of truth: ../shared/shopConfig
  */
 function buildContactSection(): string {
   return `
 ## 聯絡資訊
-- 預約賞車：0936-812-818 賴先生
-- LINE 官方帳號：@825oftez
-- 地址：高雄市三民區大順二路269號（肯德基斜對面）📍
-- Google 地圖：https://maps.google.com/?q=高雄市三民區大順二路269號
+- 預約賞車：${SHOP_PHONE} ${SHOP_CONTACT_PERSON}
+- LINE 官方帳號：${SHOP_LINE_ID}
+- 地址：${SHOP_ADDRESS} 📍
+- Google 地圖：${SHOP_MAP_URL}
 - 客人問地址時，一定要回答完整地址並附 Google 地圖連結`;
 }
 
@@ -220,15 +229,46 @@ ${inventoryLines}
     parts.push(ctx.targetVehiclePrompt);
   }
 
-  // Inject intent-specific instructions LAST (LLM recency bias — last instruction wins)
+  // Inject intent-specific instructions (before FACT_LOCK so fact lock stays last).
   if (ctx.intentInstructions) {
     parts.push(ctx.intentInstructions);
   }
 
-  // Extra emphasis: if address intent exists alongside vehicle, add final reminder
+  // Extra emphasis: if address intent exists alongside vehicle, add an address
+  // reminder using the single source of truth (shopConfig). Placed above the
+  // fact lock so the fact lock remains the final recency anchor.
   if (ctx.intents.includes('address') && ctx.detection.type !== 'none') {
-    parts.push('\n🚨🚨🚨 最後提醒：客人問了地址！回覆中必須包含「高雄市三民區大順二路269號（肯德基斜對面）」+ Google地圖連結！🚨🚨🚨');
+    parts.push(`\n🚨🚨🚨 最後提醒：客人問了地址！回覆中必須包含「${SHOP_ADDRESS}」+ Google地圖連結（${SHOP_MAP_URL}）！🚨🚨🚨`);
   }
+
+  // ── FACT LOCK — MUST BE LAST (maximum recency bias against 2026-04-23 hallucination class) ──
+  // Three absolute facts the LLM kept getting wrong in production:
+  //   1. Shop location (said 台北內湖 instead of 高雄三民)
+  //   2. Dealership type (called used cars 新車)
+  //   3. Prices (quoted 98.9萬 when real price was 80.9萬 — leaked newCarPrice)
+  // Intentionally pushed AFTER targetVehiclePrompt, intentInstructions, and the
+  // address reminder so the LLM reads it last. DO NOT add anything below this push.
+  parts.push(`
+## 🔒🔒🔒 事實鎖（絕對禁止違反 — 覆蓋以上所有指令）🔒🔒🔒
+
+**位置事實（只能說這個，不准說其他城市）：**
+- 我們位於 ${SHOP_ADDRESS}
+- 絕對禁止講「台北」「內湖」「新北」「信義區」「大安區」「桃園」「新竹」「台中」「台南」或任何非「高雄」的地名
+- 客人問「你們在哪」「在 X 嗎」→ 回答高雄實際地址，不准編造
+- 如果連高雄的區都不確定 → 只講「高雄市」+ 附地圖連結 ${SHOP_MAP_URL}
+
+**營業類型事實（只能說中古車）：**
+- 我們是**中古車商**（二手車行），絕對不賣新車
+- 禁止說出「新車價」「新車售價」「原廠新車」「新車原價」「新車牌價」「新車市價」「市場行情」「這是新車」「這台新車」「我們賣新車」之類的話
+- 客人問「有沒有新車」→ 回答「我們只賣中古車，可以看看我們的精選車款」
+
+**報價事實（只能從在售車輛資料取價，禁止使用 newCarPrice 欄位）：**
+- 每台車的售價 = 在售車輛清單裡的 \`priceDisplay\` 或 \`price\` 欄位（單位萬元）
+- DB 有一個 \`newCarPrice\` 欄位代表「新車原價」（MSRP）—— **絕對不准拿來報價**
+- 不准憑記憶、常識、訓練資料講價錢（例如不准說「這車市場行情 XX 萬」）
+- 如果在售車輛清單裡某台車的 price 是空的 → 回答「這台價格請電聯 ${SHOP_PHONE} 確認」，不准編造
+- 違反這三條事實 = 詐欺客人 = 直接被開除
+`);
 
   return parts.join('\n');
 }
@@ -325,10 +365,10 @@ export function buildUserMessagePrefill(ctx: PromptContext): string | null {
     }
   }
   if (ctx.intents.includes('address')) {
-    reminders.push('🔴 客人問地址 → 必須回答：高雄市三民區大順二路269號（肯德基斜對面）+ Google地圖：https://maps.google.com/?q=高雄市三民區大順二路269號 🔴');
+    reminders.push(`🔴 客人問地址 → 必須回答：${SHOP_ADDRESS} + Google地圖：${SHOP_MAP_URL} 🔴`);
   }
   if (ctx.intents.includes('phone')) {
-    reminders.push('客人問電話 → 必須回答：0936-812-818 賴先生');
+    reminders.push(`客人問電話 → 必須回答：${SHOP_PHONE} ${SHOP_CONTACT_PERSON}`);
   }
   if (ctx.intents.includes('providing_contact')) {
     const phone = ctx.userMessage.match(/09\d{2}[\s-]?\d{3}[\s-]?\d{3}/)?.[0] || '';
@@ -338,7 +378,7 @@ export function buildUserMessagePrefill(ctx: PromptContext): string | null {
     reminders.push('客人問怎麼看車 → 必須引導「點下方選單的看車庫存」');
   }
   if (ctx.intents.includes('hours')) {
-    reminders.push('客人問營業時間 → 必須回答：週一至週六 9:00-20:00');
+    reminders.push(`客人問營業時間 → 必須回答：${SHOP_HOURS}`);
   }
   if (ctx.intents.includes('pricing')) {
     if (ctx.detection.type !== 'none' && ctx.detection.vehicle) {

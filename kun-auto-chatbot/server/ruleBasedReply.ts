@@ -9,12 +9,34 @@
  */
 
 import type { QuestionType } from "./vehicleDetectionService";
+import {
+  SHOP_PHONE,
+  SHOP_ADDRESS,
+  SHOP_MAP_URL,
+  SHOP_HOURS,
+  SHOP_LINE_ID,
+} from "../shared/shopConfig";
+import { formatVehiclePriceSafe as sharedFormatVehiclePriceSafe } from "../shared/priceFormat";
 
-const STORE_PHONE = "0936-812-818";
-const STORE_ADDRESS = "高雄市三民區大順二路269號（肯德基斜對面）";
-const STORE_MAP = "https://maps.google.com/?q=高雄市三民區大順二路269號";
-const STORE_HOURS = "週一至週六 9:00-20:00";
-const LINE_ID = "@825oftez";
+// Legacy aliases — kept local so downstream code in this file reads naturally.
+// Single source of truth is ../shared/shopConfig.
+const STORE_PHONE = SHOP_PHONE;
+const STORE_ADDRESS = SHOP_ADDRESS;
+const STORE_MAP = SHOP_MAP_URL;
+const STORE_HOURS = SHOP_HOURS;
+const LINE_ID = SHOP_LINE_ID;
+
+/**
+ * Format a vehicle's price safely, never producing "undefined萬" / "null萬".
+ *
+ * Thin re-export of ../shared/priceFormat.formatVehiclePriceSafe. Kept
+ * named-exported from this module because factLock.test.ts and other
+ * consumers already import it from here. See shared/priceFormat.ts for
+ * the implementation + full rationale.
+ */
+export function formatVehiclePriceSafe(v: any): string {
+  return sharedFormatVehiclePriceSafe(v);
+}
 
 export function isRuleBasedMode(): boolean {
   return process.env.FORCE_RULE_BASED_REPLY === "1";
@@ -168,7 +190,7 @@ function buildVehicleInquiryReply(vehicle: any, greeting: string, customerContac
     v.modelYear ? `${v.modelYear}年` : '',
     v.displacement || '',
   ].filter(Boolean).join('');
-  const price = v.priceDisplay || `${v.price}萬`;
+  const price = formatVehiclePriceSafe(v);
   return `${greeting}你對這台${v.brand} ${v.model}有興趣眼光不錯喔！這台是${specs}售價${price}，想了解車況細節、預約看車試駕還是貸款方案呢`;
 }
 
@@ -194,7 +216,7 @@ function buildVehicleAnswerReply(detection: RuleContext["detection"], greeting: 
 
   switch (q) {
     case "price":
-      return `${greeting}${name} 售價是 ${v.priceDisplay || v.price + "萬"}！想了解更多或預約看車歡迎告訴我！`;
+      return `${greeting}${name} 售價是 ${formatVehiclePriceSafe(v)}！想了解更多或預約看車歡迎告訴我！`;
     case "displacement":
       return `${greeting}${name} 的排氣量是 ${v.displacement || "請來電詢問"}，還想知道什麼嗎？`;
     case "mileage":
@@ -221,7 +243,7 @@ function buildVehicleAnswerReply(detection: RuleContext["detection"], greeting: 
 function buildVehicleGeneralReply(vehicle: any, greeting: string, customerContact: string | null): string {
   const v = vehicle;
   const specs = [v.modelYear ? `${v.modelYear}年` : '', v.displacement || '', v.mileage ? `里程${v.mileage}` : ''].filter(Boolean).join('、');
-  const price = v.priceDisplay || `${v.price}萬`;
+  const price = formatVehiclePriceSafe(v);
   const phonePrompt = customerContact ? '要不要預約來看實車呢？' : '方便留個電話嗎？賴先生可以直接跟你詳細介紹！';
   return `${greeting}${v.brand} ${v.model}（${specs}）售價${price}是台好車！${phonePrompt}`;
 }
@@ -236,7 +258,7 @@ function buildAppointmentReply(greeting: string, customerContact: string | null)
 function buildSpecsText(v: any): string {
   const parts = [
     `${v.brand} ${v.model}`,
-    `售價${v.priceDisplay || v.price + "萬"}`,
+    `售價${formatVehiclePriceSafe(v)}`,
     `${v.modelYear}年`,
     v.color ? `${v.color}` : "",
     v.mileage ? `里程${v.mileage}` : "",

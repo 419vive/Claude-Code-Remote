@@ -1,7 +1,7 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `main` (all feature branches merged + deployed)
-Latest: 3-layer phantom-vehicle defense + new-customer takeover notification + self-lock prevention — **all live in production, verified by Jerry**
+Branch: `claude/add-free-api-keys-0SGxN` (pending commit — 5-layer fact-lock defense)
+Latest: **Fact Lock System** (shop address + 中古車 type + price integrity) — 97/97 tests green, reviewer + tester subagents both ran, pending Jerry's push decision
 
 ## Deployed + Working (end of 2026-04-16 session)
 
@@ -51,3 +51,23 @@ Latest: 3-layer phantom-vehicle defense + new-customer takeover notification + s
 - **Production stack**: TypeScript/Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE webhook + 8891.tw sync.
 - **Memory layer priority**: MCP `memory_*` → `docs/PROJECT_JOURNAL.md` → `recall-stack/primer.md` → `CLAUDE.md`.
 - **Before UI work**: read `kun-auto-chatbot/docs/DESIGN.md` (shadcn/ui + Tailwind v4 + oklch tokens, deep navy single accent, 10px radius, `tabular-nums` on prices).
+
+## Fact Lock Defense (2026-04-23 — pending commit on `claude/add-free-api-keys-0SGxN`)
+
+- **Root cause of Mufasa incident**: AI quoted `newCarPrice` MSRP (98.9萬) instead of used-car `priceDisplay` (80.9萬); no prompt rule against saying "新車"; hallucinated "台北內湖" location. All three ship together in one fix.
+- **`kun-auto-chatbot/shared/shopConfig.ts`** is the NEW single source of truth. Every hardcoded shop address/phone/type/map URL across the codebase is deleted. Add a new fact there, it propagates.
+- **`kun-auto-chatbot/shared/priceFormat.ts`** — `formatVehiclePriceSafe` (text) + `formatPriceForCard` (flex) — never emits "undefined萬".
+- **`FORBIDDEN_LOCATIONS` / `FORBIDDEN_DEALERSHIP_TERMS` / `LEAKY_FIELD_NAMES`** exported from shopConfig; `security.ts` detects all three classes and marks `safe=false` → caller falls back to `generateRuleBasedReply`.
+- **FACT_LOCK prompt section** is the LAST thing in the system prompt (after targetVehiclePrompt + intentInstructions + address reminder). DO NOT push anything below it.
+- **Image-path fallback contract is INTENTIONALLY different** from text paths (lineWebhook.ts:697 has a full comment explaining why generateRuleBasedReply isn't used there — image intent has no detection context).
+- **`seo.ts` still has ~15 prose hardcodes** of address for SEO Q&As — intentionally deferred, not customer-AI-facing.
+- **97/97 fact-lock tests green**, **+66 passing vs clean main**, `tsc` clean.
+
+## Cloud Sandbox Network Limits (discovered 2026-04-22)
+
+- **This sandbox's firewall BLOCKS Railway domains** (`railway.com`, `backboard.railway.app`). Symptom: every request returns "Host not in allowlist / HTTP 403". Railway CLI is installed (`/opt/node22`, v4.40.2) but completely unusable from here. DO NOT ask Jerry to generate Railway tokens — they cannot be used and pollute chat transcripts.
+- **What I CAN do via GitHub MCP**: confirm pushes reached GitHub via `mcp__github__list_commits` / `get_commit` (returns SHA + message + timestamp). Scope is restricted to `419vive/kunjia-autos-ai-chatbot`.
+- **What I CANNOT do via available MCP tools**: read Railway deploy statuses, deployment events, or GitHub commit check-run states (no matching endpoint in current tool set). Prior estimate of "60% of Railway questions covered via GitHub" was wrong — real number ~20% (push confirmation only).
+- **Workflow for Railway operations**: Jerry screenshots Railway dashboard / pastes terminal output, I interpret and draft next command. For code changes (everything in the repo), full local filesystem access works fine.
+- **Family context**: Jerry's father (shop owner) is **70**, not 50. Runs business entirely from phone. This shapes accessibility decisions (phone-first, no dashboard, text commands).
+- **Business impact baseline**: 6 cars sold in the first month after the LINE operator-takeover + phantom-vehicle system went live. Use this number when describing ROI/impact.

@@ -17,6 +17,14 @@ import { sanitizeChatMessage, sanitizeSearchQuery, maskPhone, maskName, maskPIII
 import { adminRouter } from "./routes/adminRoutes";
 import { detectVehicleFromMessage, buildSmartVehicleKB, buildTargetVehiclePrompt, detectCustomerIntents, buildIntentInstructions, buildVehicleIndex } from "./vehicleDetectionService";
 import { isRuleBasedMode, generateRuleBasedReply } from "./ruleBasedReply";
+import {
+  SHOP_ADDRESS,
+  SHOP_MAP_URL,
+  SHOP_PHONE,
+  SHOP_CONTACT_PERSON,
+  SHOP_HOURS,
+  SHOP_LINE_ID,
+} from "../shared/shopConfig";
 
 // ============ VEHICLE KNOWLEDGE BASE FOR LLM ============
 
@@ -802,12 +810,12 @@ ${(conversation!.leadScore || 0) >= 40 ? '- 客戶購買意願較高（Lead Scor
 - 如果客戶已經選了時段（回覆①或②或③），確認時要用客戶選的實際時段回覆
 
 ## 聯絡資訊
-- 預約賞車電話：0936-812-818 賴先生
-- LINE 官方帳號：@825oftez（搜尋此 ID 或掃 QR Code 加好友）
-- 地址：高雄市三民區大順二路269號（肯德基斜對面）
-- Google 地圖：https://maps.google.com/?q=高雄市三民區大順二路269號
-- 營業時間：週一至週六 9:00-20:00
-- 重要：客人問地址時，一定要回答「高雄市三民區大順二路269號（肯德基斜對面）」並附上 Google 地圖連結
+- 預約賞車電話：${SHOP_PHONE} ${SHOP_CONTACT_PERSON}
+- LINE 官方帳號：${SHOP_LINE_ID}（搜尋此 ID 或掃 QR Code 加好友）
+- 地址：${SHOP_ADDRESS}
+- Google 地圖：${SHOP_MAP_URL}
+- 營業時間：${SHOP_HOURS}
+- 重要：客人問地址時，一定要回答「${SHOP_ADDRESS}」並附上 Google 地圖連結
 
 ## 在售車輛資料庫
 
@@ -874,9 +882,14 @@ ${targetVehiclePromptWeb}${intentInstructionsWeb}`;
           // against 廣告法 / PDPA / 消保法 / prompt-injection rules.
           // Mode controlled by LLM_GUARDRAIL_MODE env var (default: enforce).
           {
+            // Push BOTH shapes per vehicle so the validator accepts "80.9" and "80.9萬"
+            // even when priceDisplay is null (reviewer M1, 2026-04-23).
             const allowedPrices: string[] = [];
             for (const v of allVehiclesForDetection) {
-              if ((v as any)?.price != null) allowedPrices.push(String((v as any).price));
+              if ((v as any)?.price != null) {
+                allowedPrices.push(String((v as any).price));
+                allowedPrices.push(`${(v as any).price}萬`);
+              }
               if ((v as any)?.priceDisplay) allowedPrices.push(String((v as any).priceDisplay));
             }
             // Pass inventory so guardrail BLOCKS hallucinated vehicle names.
