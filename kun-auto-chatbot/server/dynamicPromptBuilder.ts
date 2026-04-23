@@ -427,6 +427,54 @@ export function buildUserMessagePrefill(ctx: PromptContext): string | null {
  * 
  * This ensures the LLM sees the reminder in its highest-attention zone.
  */
+/**
+ * Intents that indicate the customer is asking a GENERAL business question
+ * unrelated to any specific vehicle. When any of these fire AND no vehicle
+ * is detected from the current message, we must clear conversation history
+ * before the LLM call — otherwise stale vehicle mentions from prior sessions
+ * leak into the response.
+ *
+ * Root cause (2026-04-23 PM incident): customer asked "營業時間" and "你們賣新車嗎"
+ * on a fresh session. The AI had mentioned Toyota Corolla Cross GR Sport in
+ * an earlier session (persisted in DB); the LLM read that history and
+ * continued the Toyota conversation instead of answering the actual question.
+ */
+const GENERAL_BUSINESS_INTENTS = new Set<string>([
+  'hours',
+  'address',
+  'phone',
+  'greeting',
+  'how_to_browse',
+  'new_car_question',
+]);
+
+/**
+ * Decide whether to clear conversation history to prevent stale vehicle
+ * context from polluting the LLM response.
+ *
+ * Clears when:
+ *   - User clicked an inquiry button → new-vehicle focus shift (original reason)
+ *   - User asked a general-business question AND no vehicle is in the current
+ *     message AND no explicit context-reference words — fresh topic, old
+ *     vehicle mentions must not leak.
+ */
+function shouldClearHistoryForFreshTopic(ctx: PromptContext): boolean {
+  if (ctx.detection.type === 'inquiry_button') return true;
+
+  if (ctx.detection.type !== 'none' && ctx.detection.vehicle != null) return false;
+
+  const hasGeneralIntent = ctx.intents.some(i => GENERAL_BUSINESS_INTENTS.has(i));
+  if (!hasGeneralIntent) return false;
+
+  // Don't clear if the user is explicitly referencing a previous message
+  // ("那台", "這個", "它的...", etc.) — those ARE follow-ups.
+  if (/^(那|這台|那台|這個|那個|它的?|上面那台|剛剛那台|前面那台|同一台)/.test(ctx.userMessage.trim())) {
+    return false;
+  }
+
+  return true;
+}
+
 export function buildLLMMessages(
   ctx: PromptContext,
   conversationHistory: Array<{ role: string; content: string }>
@@ -437,14 +485,16 @@ export function buildLLMMessages(
   let systemPrompt = buildDynamicSystemPrompt(ctx);
 
   // 2. Conversation history (all except the last message)
-  // When inquiry_button detected (user clicked a specific car), clear history
-  // to prevent previous vehicle discussions from contaminating the LLM response.
+  // History is cleared when:
+  //   - inquiry_button detected (customer clicked a specific car — original reason)
+  //   - general-business intent with no vehicle context (2026-04-23 PM fix —
+  //     prevents stale Toyota mentions from leaking into "營業時間" replies)
   const prefill = buildUserMessagePrefill(ctx);
   let historyCleared = false;
 
   if (conversationHistory.length > 1) {
     let historyWithoutLast = conversationHistory.slice(0, -1);
-    if (ctx.detection.type === 'inquiry_button') {
+    if (shouldClearHistoryForFreshTopic(ctx)) {
       historyWithoutLast = [];
       historyCleared = true;
     }

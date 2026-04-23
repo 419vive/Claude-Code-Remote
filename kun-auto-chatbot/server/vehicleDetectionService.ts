@@ -778,7 +778,7 @@ ${termExplanation ? `術語解釋（用白話告訴客人）：${termExplanation
 // at the END of the system prompt where LLM pays most attention (recency bias).
 //
 
-export type CustomerIntent = 
+export type CustomerIntent =
   | 'appointment'       // 預約看車、約時間
   | 'address'           // 問地址、怎麼去
   | 'phone'             // 問電話
@@ -791,6 +791,7 @@ export type CustomerIntent =
   | 'vehicle_spec'      // 車輛規格（由 vehicleDetection 處理）
   | 'general_browse'    // 一般瀏覽、推薦
   | 'pricing'           // 問價格、多少錢
+  | 'new_car_question'  // 客人問「你們賣新車嗎」— 需要澄清我們只賣中古車
   ;
 
 /**
@@ -807,7 +808,13 @@ export function detectCustomerIntents(message: string): CustomerIntent[] {
   }
   
   // Address intent
-  if (/地址|在哪|怎麼走|怎麼去|哪裡|位置|位在|店在|店面在|導航|路線/.test(lower)) {
+  // TESTER-FLAG 2026-04-23: expanded to catch common Taiwanese address phrasings
+  // that were leaking through as type='none' (→ no history clear → Toyota leak).
+  // Added: 住哪 (colloquial "where do you live/sit"), 地圖 (customer asking for map),
+  // GPS/座標 (navigation terms). "路線" stays but note it incidentally matches
+  // "新車路線" which is acceptable — misrouting to address still clears stale vehicle
+  // context, which is the safer outcome.
+  if (/地址|在哪|怎麼走|怎麼去|哪裡|位置|位在|店在|店面在|導航|路線|住哪|地圖|GPS|座標/i.test(lower)) {
     intents.push('address');
   }
   
@@ -827,7 +834,9 @@ export function detectCustomerIntents(message: string): CustomerIntent[] {
   }
   
   // Business hours intent
-  if (/營業時間|幾點開|幾點關|幾點到幾點|開到幾點|什麼時候開|什麼時候營業|休息|公休|有開嗎|有營業/.test(lower)) {
+  // TESTER-FLAG 2026-04-23: added 星期/禮拜 day-name probes. "禮拜X有開嗎" already
+  // matched via 有開嗎, but "星期日營業嗎" slipped past (營業時間 requires 時間).
+  if (/營業時間|幾點開|幾點關|幾點到幾點|開到幾點|什麼時候開|什麼時候營業|休息|公休|有開嗎|有營業|星期.{0,3}(?:開|營業)|禮拜.{0,3}(?:開|營業)|週.{0,3}(?:開|營業)/.test(lower)) {
     intents.push('hours');
   }
   
@@ -854,6 +863,18 @@ export function detectCustomerIntents(message: string): CustomerIntent[] {
   // Pricing intent — customer asking about price
   if (/多少錢|價格|價位|售價|報價|幾萬|多少萬|什麼價|賣多少/.test(lower)) {
     intents.push('pricing');
+  }
+
+  // New-car question intent — customer asking if we sell NEW cars.
+  // We only sell 中古車 (used). The bot must clarify WITHOUT talking about
+  // any specific vehicle (this was the 2026-04-23 PM "Toyota Corolla Cross
+  // GR Sport" hallucination trigger).
+  //
+  // Guard: exclude "新車主" (new owner) / "新車款" (new model variant) /
+  // "新車型" (new type) / "全新車況" (brand-new condition) — those are
+  // used-car-context phrases and should NOT trigger this intent.
+  if (/(?:賣|有|有沒有|有賣|提供|出售|進口)\s*新車|新車(?:嗎|呢|\?|\？|可以|能|會|還是)|(?:要|想)\s*(?:買|買一台|買台|訂)\s*新車|新車\s*(?:的話|選擇)/.test(lower)) {
+    intents.push('new_car_question');
   }
 
   return intents;
@@ -981,28 +1002,50 @@ ${phonePart}
   }
   
   // ============ ADDRESS INTENT ============
+  // IMPORTANT: include "ignore prior vehicle context" guard — 2026-04-23 PM
+  // bug showed the LLM would answer address questions with a stale vehicle
+  // name from earlier history. The guard below disables that behavior.
   if (intents.includes('address')) {
     instructions.push(`🔴 地址指令（必須遵守！）：
 客人問地址！你必須回答：
 地址：${SHOP_ADDRESS} 📍
 Google 地圖：${SHOP_MAP_URL}
-🚫 絕對禁止不回答地址！`);
+🚫 絕對禁止不回答地址！
+🚫🚫 絕對禁止提任何車款名稱！這是一般店家問題，跟任何之前聊過的車完全無關！
+🚫🚫 絕對禁止問「你對這台 X 有興趣」或「你傳的是 X」之類的話！`);
   }
-  
+
   // ============ PHONE INTENT ============
   if (intents.includes('phone')) {
     instructions.push(`🔴 電話指令（必須遵守！）：
 客人問電話！你必須回答：
 預約賞車電話：${SHOP_PHONE} ${SHOP_CONTACT_PERSON} 📞
-🚫 絕對禁止不回答電話！`);
+🚫 絕對禁止不回答電話！
+🚫🚫 絕對禁止提任何車款名稱！這是一般店家問題，跟任何之前聊過的車完全無關！`);
   }
-  
+
   // ============ HOURS INTENT ============
   if (intents.includes('hours')) {
     instructions.push(`🔴 營業時間指令（必須遵守！）：
 客人問營業時間！你必須回答：
 營業時間：${SHOP_HOURS}
-🚫 絕對禁止不回答營業時間！`);
+🚫 絕對禁止不回答營業時間！
+🚫🚫 絕對禁止提任何車款名稱！這是一般店家問題，跟任何之前聊過的車完全無關！
+🚫🚫 絕對禁止回覆「你對這台 X 有興趣」或「你傳的是 X」之類的話！`);
+  }
+
+  // ============ NEW-CAR QUESTION INTENT (2026-04-23 PM fix) ============
+  // Customer asked if we sell NEW cars. We only sell 中古車 (used). The
+  // common live bug: LLM inherits a stale vehicle from prior history and
+  // answers "你對這台 X 有興趣嗎" instead of "we only sell used cars".
+  if (intents.includes('new_car_question')) {
+    instructions.push(`🔴 新車詢問指令（必須遵守！）：
+客人問我們是不是賣新車！
+你必須回答（一句話就好）：「不好意思我們是中古車商，只賣精選二手車喔！想看哪種車款可以告訴我～」
+🚫 絕對禁止回覆任何特定車款名稱（不管對話歷史提過什麼車）！
+🚫 絕對禁止回覆「你對這台 X 有興趣嗎」「你傳的是 X」之類的話！
+🚫 絕對禁止說「是新車」「新車價」「新車原價」任何「新車」組合字！
+🚫 絕對禁止繼續之前任何車款的討論！這是一個新話題：澄清身份。`);
   }
   
   // ============ PROVIDING CONTACT INTENT ============
