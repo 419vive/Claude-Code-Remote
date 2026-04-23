@@ -19,7 +19,12 @@
  * - Using strong formatting (⚠️🔴❗) for emphasis
  */
 
-import { CustomerIntent, DetectionResult } from "./vehicleDetectionService";
+import {
+  CustomerIntent,
+  DetectionResult,
+  GENERAL_BUSINESS_INTENTS,
+  CONTEXT_REFERENCE_PATTERNS,
+} from "./vehicleDetectionService";
 import {
   SHOP_ADDRESS,
   SHOP_MAP_URL,
@@ -427,6 +432,52 @@ export function buildUserMessagePrefill(ctx: PromptContext): string | null {
  * 
  * This ensures the LLM sees the reminder in its highest-attention zone.
  */
+/**
+ * Decide whether to clear conversation history to prevent stale vehicle
+ * context from polluting the LLM response.
+ *
+ * Root cause (2026-04-23 PM incident): customer asked "營業時間" / "你們賣新車嗎"
+ * on a fresh session. The AI had mentioned Toyota Corolla Cross GR Sport in
+ * an earlier session (persisted in DB); the LLM read that history and
+ * continued the Toyota conversation instead of answering the actual question.
+ *
+ * Clears when:
+ *   - User clicked an inquiry button → new-vehicle focus shift (original reason)
+ *   - User asked a general-business question AND no vehicle is in the current
+ *     message AND no explicit context-reference words — fresh topic, old
+ *     vehicle mentions must not leak.
+ *
+ * Preserves history when:
+ *   - A vehicle was detected in the current message
+ *   - The detection type is `context_missing` (reviewer M1, 2026-04-23 PM):
+ *     by definition a follow-up to an earlier vehicle discussion. Clearing
+ *     would strip the context needed to even ASK "你問的是哪一台呢？".
+ *   - The user's message starts with a context-reference prefix like 那/這台
+ */
+function shouldClearHistoryForFreshTopic(ctx: PromptContext): boolean {
+  if (ctx.detection.type === 'inquiry_button') return true;
+
+  // A context_missing detection IS a follow-up (just without a resolvable
+  // vehicle). Keep history — the LLM needs prior turns to disambiguate.
+  if (ctx.detection.type === 'context_missing') return false;
+
+  if (ctx.detection.type !== 'none' && ctx.detection.vehicle != null) return false;
+
+  const hasGeneralIntent = ctx.intents.some(i =>
+    GENERAL_BUSINESS_INTENTS.has(i as CustomerIntent),
+  );
+  if (!hasGeneralIntent) return false;
+
+  // Don't clear if the user is explicitly referencing a previous message
+  // ("那台", "這個", "它的...", etc.). Uses the single source of truth from
+  // vehicleDetectionService (reviewer m1 — deduplicated 2026-04-23 PM).
+  if (CONTEXT_REFERENCE_PATTERNS.test(ctx.userMessage.trim())) {
+    return false;
+  }
+
+  return true;
+}
+
 export function buildLLMMessages(
   ctx: PromptContext,
   conversationHistory: Array<{ role: string; content: string }>
@@ -437,14 +488,16 @@ export function buildLLMMessages(
   let systemPrompt = buildDynamicSystemPrompt(ctx);
 
   // 2. Conversation history (all except the last message)
-  // When inquiry_button detected (user clicked a specific car), clear history
-  // to prevent previous vehicle discussions from contaminating the LLM response.
+  // History is cleared when:
+  //   - inquiry_button detected (customer clicked a specific car — original reason)
+  //   - general-business intent with no vehicle context (2026-04-23 PM fix —
+  //     prevents stale Toyota mentions from leaking into "營業時間" replies)
   const prefill = buildUserMessagePrefill(ctx);
   let historyCleared = false;
 
   if (conversationHistory.length > 1) {
     let historyWithoutLast = conversationHistory.slice(0, -1);
-    if (ctx.detection.type === 'inquiry_button') {
+    if (shouldClearHistoryForFreshTopic(ctx)) {
       historyWithoutLast = [];
       historyCleared = true;
     }

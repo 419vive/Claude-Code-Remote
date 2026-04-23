@@ -318,7 +318,7 @@ function findVehicleFromNormalized(normalizedUpper: string, index: VehicleIndex,
  * Patterns that indicate the user is referring to a previously mentioned vehicle.
  * e.g., "那排氣量呢", "這台多少錢", "它的里程", "那個有什麼配備"
  */
-const CONTEXT_REFERENCE_PATTERNS = /^(那|這台|那台|這個|那個|它的?|上面那台|剛剛那台|前面那台|同一台)/;
+export const CONTEXT_REFERENCE_PATTERNS = /^(那|這台|那台|這個|那個|它的?|上面那台|剛剛那台|前面那台|同一台)/;
 const FOLLOW_UP_PATTERNS = /^(那|所以|然後|還有|另外|對了|請問|想問|想知道|好奇|順便問)/;
 const ACKNOWLEDGMENT_PATTERNS = /^(好|嗯|ok|OK|對|是|好的|好啊|好喔|沒問題|可以|行|嗯嗯|👍|🙏|了解|知道了|收到|okok)$/;
 
@@ -778,7 +778,7 @@ ${termExplanation ? `術語解釋（用白話告訴客人）：${termExplanation
 // at the END of the system prompt where LLM pays most attention (recency bias).
 //
 
-export type CustomerIntent = 
+export type CustomerIntent =
   | 'appointment'       // 預約看車、約時間
   | 'address'           // 問地址、怎麼去
   | 'phone'             // 問電話
@@ -791,7 +791,27 @@ export type CustomerIntent =
   | 'vehicle_spec'      // 車輛規格（由 vehicleDetection 處理）
   | 'general_browse'    // 一般瀏覽、推薦
   | 'pricing'           // 問價格、多少錢
+  | 'new_car_question'  // 客人問「你們賣新車嗎」— 需要澄清我們只賣中古車
   ;
+
+/**
+ * Intents that signal a GENERAL BUSINESS question unrelated to any specific
+ * vehicle. When any of these fire AND the current message has no vehicle
+ * detected, `dynamicPromptBuilder.buildLLMMessages` will clear conversation
+ * history before the LLM call — preventing stale vehicle mentions from prior
+ * sessions from leaking into the response.
+ *
+ * Co-located with CustomerIntent so adding a new intent forces a decision
+ * about whether it belongs in this set (reviewer m2, 2026-04-23 PM).
+ */
+export const GENERAL_BUSINESS_INTENTS: ReadonlySet<CustomerIntent> = new Set<CustomerIntent>([
+  'hours',
+  'address',
+  'phone',
+  'greeting',
+  'how_to_browse',
+  'new_car_question',
+]);
 
 /**
  * Detect ALL intents from a customer message (can have multiple).
@@ -807,7 +827,13 @@ export function detectCustomerIntents(message: string): CustomerIntent[] {
   }
   
   // Address intent
-  if (/地址|在哪|怎麼走|怎麼去|哪裡|位置|位在|店在|店面在|導航|路線/.test(lower)) {
+  // TESTER-FLAG 2026-04-23: expanded to catch common Taiwanese address phrasings
+  // that were leaking through as type='none' (→ no history clear → Toyota leak).
+  // Added: 住哪 (colloquial "where do you live/sit"), 地圖 (customer asking for map),
+  // GPS/座標 (navigation terms). "路線" stays but note it incidentally matches
+  // "新車路線" which is acceptable — misrouting to address still clears stale vehicle
+  // context, which is the safer outcome.
+  if (/地址|在哪|怎麼走|怎麼去|哪裡|位置|位在|店在|店面在|導航|路線|住哪|地圖|GPS|座標/i.test(lower)) {
     intents.push('address');
   }
   
@@ -827,7 +853,9 @@ export function detectCustomerIntents(message: string): CustomerIntent[] {
   }
   
   // Business hours intent
-  if (/營業時間|幾點開|幾點關|幾點到幾點|開到幾點|什麼時候開|什麼時候營業|休息|公休|有開嗎|有營業/.test(lower)) {
+  // TESTER-FLAG 2026-04-23: added 星期/禮拜 day-name probes. "禮拜X有開嗎" already
+  // matched via 有開嗎, but "星期日營業嗎" slipped past (營業時間 requires 時間).
+  if (/營業時間|幾點開|幾點關|幾點到幾點|開到幾點|什麼時候開|什麼時候營業|休息|公休|有開嗎|有營業|星期.{0,3}(?:開|營業)|禮拜.{0,3}(?:開|營業)|週.{0,3}(?:開|營業)/.test(lower)) {
     intents.push('hours');
   }
   
@@ -854,6 +882,40 @@ export function detectCustomerIntents(message: string): CustomerIntent[] {
   // Pricing intent — customer asking about price
   if (/多少錢|價格|價位|售價|報價|幾萬|多少萬|什麼價|賣多少/.test(lower)) {
     intents.push('pricing');
+  }
+
+  // New-car question intent — customer asking if we sell NEW cars.
+  // We only sell 中古車 (used). The bot must clarify WITHOUT talking about
+  // any specific vehicle (this was the 2026-04-23 PM "Toyota Corolla Cross
+  // GR Sport" hallucination trigger).
+  //
+  // Guard: exclude "新車主" (new owner) / "新車款" (new model variant) /
+  // "新車型" (new type) / "全新車況"/"跟新車一樣"/"新車況"/"新車險" — those are
+  // used-car-context phrases and must NOT trigger this intent.
+  //
+  // TESTER-FLAG 2026-04-23: expanded after QA pass.
+  // Tier 1 (direct 新車 mentions that were slipping through):
+  //   請問新車、我要新車、新車價格、新車呢、新車的部分、新車路線、新車價、新古車
+  // Tier 2 (paraphrases of "new vs used"):
+  //   你們是新的還是中古、全新的、有沒有全新、新的一台、不是要中古的我要新的、只賣二手嗎還是新的
+  //
+  // Strategy:
+  //   A. Keep original patterns.
+  //   B. Add: 新車 as a bare noun surrounded by particles (的|價|呢|部分|路線) — but
+  //      carefully excluding the false-positive stems (新車主|新車款|新車型|新車險|新車況).
+  //   C. Add: "全新" / "新的" in new-vs-used contrastive contexts (還是中古|還是二手|vs中古).
+  //   D. Add: "新古車" (Taiwanese slang for almost-new used car — customer likely
+  //      confused about our inventory type, still warrants the clarification response).
+  const newCarCore = /(?:賣|有|有沒有|有賣|提供|出售|進口|主打|走|做)\s*新車|新車(?:嗎|呢|\?|\？|可以|能|會|還是)|(?:要|想|買|訂)\s*新車|新車\s*(?:的話|選擇|的?部分)/;
+  // Bare-noun 新車: must NOT be preceded by 主|款|型|險|況 (false-positive stems)
+  // AND must NOT be immediately preceded by simile words (像|如|跟|好比|彷彿|猶如|一樣)
+  // which produce "像新車一樣" / "跟新車一樣" (used-car-in-great-condition phrasing).
+  const newCarBareNoun = /(?<![主款型險況])(?<!像)(?<!如)(?<!跟)(?<!好比)(?<!彷彿)(?<!猶如)新車(?![主款型險況])(?!一樣)/;
+  // new-vs-used contrastive + "有/賣 全新" standalone (customer asking "do you have brand-new ones")
+  const newVsUsed = /(?:全新|新的).*(?:還是|vs|對|還是要)?.{0,4}(?:中古|二手)|(?:中古|二手).{0,6}(?:還是|或|vs).{0,4}(?:新的|全新|新車)|不是要.{0,4}中古.{0,6}(?:新的|新車|全新)|只賣二手.{0,6}(?:新的|新車)|(?:有|有沒有|賣|出售|提供)\s*全新|全新(?:的車|一台|的一台|車款).*(?:有|嗎)|(?:有|有沒有|賣|出售|提供)\s*新的(?:車|一台|一部)|新的一台(?:多少|有嗎|嗎)/;
+  const newGuCar = /新古車/;  // Taiwanese "almost-new" — still needs clarification
+  if (newCarCore.test(lower) || newCarBareNoun.test(lower) || newVsUsed.test(lower) || newGuCar.test(lower)) {
+    intents.push('new_car_question');
   }
 
   return intents;
@@ -981,28 +1043,50 @@ ${phonePart}
   }
   
   // ============ ADDRESS INTENT ============
+  // IMPORTANT: include "ignore prior vehicle context" guard — 2026-04-23 PM
+  // bug showed the LLM would answer address questions with a stale vehicle
+  // name from earlier history. The guard below disables that behavior.
   if (intents.includes('address')) {
     instructions.push(`🔴 地址指令（必須遵守！）：
 客人問地址！你必須回答：
 地址：${SHOP_ADDRESS} 📍
 Google 地圖：${SHOP_MAP_URL}
-🚫 絕對禁止不回答地址！`);
+🚫 絕對禁止不回答地址！
+🚫🚫 絕對禁止提任何車款名稱！這是一般店家問題，跟任何之前聊過的車完全無關！
+🚫🚫 絕對禁止問「你對這台 X 有興趣」或「你傳的是 X」之類的話！`);
   }
-  
+
   // ============ PHONE INTENT ============
   if (intents.includes('phone')) {
     instructions.push(`🔴 電話指令（必須遵守！）：
 客人問電話！你必須回答：
 預約賞車電話：${SHOP_PHONE} ${SHOP_CONTACT_PERSON} 📞
-🚫 絕對禁止不回答電話！`);
+🚫 絕對禁止不回答電話！
+🚫🚫 絕對禁止提任何車款名稱！這是一般店家問題，跟任何之前聊過的車完全無關！`);
   }
-  
+
   // ============ HOURS INTENT ============
   if (intents.includes('hours')) {
     instructions.push(`🔴 營業時間指令（必須遵守！）：
 客人問營業時間！你必須回答：
 營業時間：${SHOP_HOURS}
-🚫 絕對禁止不回答營業時間！`);
+🚫 絕對禁止不回答營業時間！
+🚫🚫 絕對禁止提任何車款名稱！這是一般店家問題，跟任何之前聊過的車完全無關！
+🚫🚫 絕對禁止回覆「你對這台 X 有興趣」或「你傳的是 X」之類的話！`);
+  }
+
+  // ============ NEW-CAR QUESTION INTENT (2026-04-23 PM fix) ============
+  // Customer asked if we sell NEW cars. We only sell 中古車 (used). The
+  // common live bug: LLM inherits a stale vehicle from prior history and
+  // answers "你對這台 X 有興趣嗎" instead of "we only sell used cars".
+  if (intents.includes('new_car_question')) {
+    instructions.push(`🔴 新車詢問指令（必須遵守！）：
+客人問我們是不是賣新車！
+你必須回答（一句話就好）：「不好意思我們是中古車商，只賣精選二手車喔！想看哪種車款可以告訴我～」
+🚫 絕對禁止回覆任何特定車款名稱（不管對話歷史提過什麼車）！
+🚫 絕對禁止回覆「你對這台 X 有興趣嗎」「你傳的是 X」之類的話！
+🚫 絕對禁止說「是新車」「新車價」「新車原價」任何「新車」組合字！
+🚫 絕對禁止繼續之前任何車款的討論！這是一個新話題：澄清身份。`);
   }
   
   // ============ PROVIDING CONTACT INTENT ============
