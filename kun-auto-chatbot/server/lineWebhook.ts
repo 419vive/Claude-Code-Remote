@@ -14,6 +14,7 @@ import { sanitizeChatMessage, validateLLMOutput, getGuardrailMode } from "./secu
 import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting, isOperator, parseOperatorCommand, type OperatorCommand } from "./lineUtils";
 import { getAssistantContentForTrigger, buildOwnerNotificationFlex, getMilestoneLevel, checkAndNotifyOwner, buildHumanHandoffFlex, sendHumanHandoffNotification, sendNewCustomerNotification } from "./lineNotification";
 import { updateConversationTracker, sendFollowUpMessages } from "./lineRecovery";
+import { SHOP_ADDRESS, SHOP_PHONE, SHOP_CONTACT_PERSON } from "../shared/shopConfig";
 
 // ============ TYPING INDICATOR ============
 // Show "typing..." animation in LINE chat while bot is processing
@@ -676,9 +677,14 @@ async function processLineEvent(
         // (e.g. uploaded image containing "保證最低價 100%過件").
         let imageReplyText = `我看到你傳了一張 ${identified.brand} ${identified.model}${extraStr} 的照片！🚗\n我們剛好有 ${matches.length} 台${identified.brand} ${identified.model} 可以看，幫你列出來 👇${priceNote}`;
         {
+          // Push BOTH shapes per vehicle so the validator accepts "80.9" and "80.9萬"
+          // even when priceDisplay is null (reviewer M1, 2026-04-23).
           const allowedPricesImg: string[] = [];
           for (const v of allVehicles) {
-            if ((v as any)?.price != null) allowedPricesImg.push(String((v as any).price));
+            if ((v as any)?.price != null) {
+              allowedPricesImg.push(String((v as any).price));
+              allowedPricesImg.push(`${(v as any).price}萬`);
+            }
             if ((v as any)?.priceDisplay) allowedPricesImg.push(String((v as any).priceDisplay));
           }
           const imgGuardrail = validateLLMOutput(imageReplyText, { allowedPrices: allowedPricesImg });
@@ -690,8 +696,24 @@ async function processLineEvent(
           }
           if (imgMode === "enforce") {
             if (!imgGuardrail.safe) {
-              // Critical violation in image-extracted text — drop the suspicious
-              // content and use a safe templated reply.
+              // FALLBACK CONTRACT (image path) — DIFFERENT FROM TEXT PATHS.
+              //
+              // Text-path fallback (lineWebhook.ts:~1776, routers.ts:~895) calls
+              // generateRuleBasedReply because those paths have a full detection
+              // context (intent, vehicle, greeting). The image path does NOT —
+              // the customer sent a photo, not a question. generateRuleBasedReply
+              // would route to a generic greeting that ignores the image context.
+              //
+              // Instead we use a static safe template that (a) never quotes a
+              // price / location / dealership claim (so it can't re-trigger any
+              // of the new critical violations) and (b) preserves the "you sent
+              // a photo, here are matching cars" framing. The Flex carousel
+              // attached after this text shows the real DB-sourced matches via
+              // formatPriceForCard (see lineFlexTemplates.ts), so the customer
+              // still gets accurate pricing — just not in this header line.
+              //
+              // Reviewer B2 (2026-04-23): this divergence is intentional; do not
+              // "unify" with generateRuleBasedReply without redesigning image intent.
               imageReplyText = `我看到你傳了 ${identified.brand} ${identified.model} 的照片！🚗\n我們剛好有 ${matches.length} 台可以看，幫你列出來 👇`;
             } else {
               imageReplyText = imgGuardrail.sanitized;
@@ -927,7 +949,7 @@ async function processLineEvent(
             footer: {
               type: "box",
               layout: "vertical",
-              contents: [{ type: "text", text: "📍 高雄市三民區大順二路269號（肯德基斜對面）", size: "xs", color: "#AAAAAA", wrap: true }],
+              contents: [{ type: "text", text: `📍 ${SHOP_ADDRESS}`, size: "xs", color: "#AAAAAA", wrap: true }],
               paddingAll: "10px",
             },
           },
@@ -971,7 +993,7 @@ async function processLineEvent(
       const replyToken = event.replyToken;
       const typeResponses: Record<string, string> = {
         sticker: "收到你的貼圖了！有什麼車的問題想問的嗎？阿家隨時在 😊",
-        location: "收到你的位置了！我們崑家汽車在高雄市，地址是高雄市鳳山區建國路三段47號，歡迎來店賞車！",
+        location: `收到你的位置了！我們崑家汽車在高雄市，地址是${SHOP_ADDRESS}，歡迎來店賞車！`,
         video: "收到你的影片了！如果是想問某台車的資訊，可以直接告訴阿家車款名稱喔！",
         audio: "收到你的語音了！目前阿家還沒辦法聽語音，麻煩用文字告訴我你想了解什麼車 🙏",
         file: "收到你的檔案了！如果有什麼車的問題，歡迎直接用文字問阿家喔！",
@@ -1215,7 +1237,7 @@ async function processLineEvent(
     const notificationSent = await sendHumanHandoffNotification(conversation!, handoffUserMessage, "", channelAccessToken, ownerUserId);
     const handoffReply = notificationSent
       ? "好的沒問題！我已經通知業務了，賴先生會盡快跟你聯繫！"
-      : "目前業務不在線上，你可以直接撥打 0936-812-818 找賴先生";
+      : `目前業務不在線上，你可以直接撥打 ${SHOP_PHONE} 找${SHOP_CONTACT_PERSON}`;
     await db.addMessage({ conversationId: convId, role: "assistant", content: handoffReply });
     try {
       await fetch("https://api.line.me/v2/bot/message/reply", {
@@ -1663,7 +1685,7 @@ async function processLineEvent(
           contents: [
             {
               type: "text",
-              text: "地址：高雄市三民區大順二路269號（肯德基斜對面）",
+              text: `地址：${SHOP_ADDRESS}`,
               size: "xs",
               color: "#888888",
               wrap: true,
@@ -1756,9 +1778,14 @@ async function processLineEvent(
       //   enforce (default)  — rewrite unsafe text; fall back on critical violations
       //   log_only           — record violations only (debug/canary mode)
       // Fail-secure: unknown values are treated as "enforce".
+      // Push BOTH shapes per vehicle so the validator accepts "80.9" and "80.9萬"
+      // even when priceDisplay is null (reviewer M1, 2026-04-23).
       const allowedPrices: string[] = [];
       for (const v of allVehicles) {
-        if (v?.price != null) allowedPrices.push(String(v.price));
+        if (v?.price != null) {
+          allowedPrices.push(String(v.price));
+          allowedPrices.push(`${v.price}萬`);
+        }
         if (v?.priceDisplay) allowedPrices.push(String(v.priceDisplay));
       }
       // Pass inventory so guardrail can BLOCK hallucinated vehicle names
@@ -1956,7 +1983,7 @@ async function processLineEvent(
     );
     // C7: If no recipients were configured, send fallback message with phone number
     if (!notificationSent) {
-      const fallbackText = "目前業務不在線上，你可以直接撥打 0936-812-818 找賴先生";
+      const fallbackText = `目前業務不在線上，你可以直接撥打 ${SHOP_PHONE} 找${SHOP_CONTACT_PERSON}`;
       await db.addMessage({ conversationId: convId, role: "assistant", content: fallbackText });
       try {
         await fetch("https://api.line.me/v2/bot/message/push", {

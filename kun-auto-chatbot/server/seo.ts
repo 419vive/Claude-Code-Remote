@@ -35,10 +35,14 @@ export async function submitIndexNow(urls: string[]): Promise<void> {
 
 // ============ CONSTANTS ============
 
-const SITE_NAME = "崑家汽車";
+import { SHOP_NAME, SHOP_ADDRESS_PLAIN, SHOP_PHONE } from "../shared/shopConfig";
+
+const SITE_NAME = SHOP_NAME;
 const SITE_DESCRIPTION = "高雄二手車推薦｜崑家汽車在地40年正派經營，全車第三方認證、超強貸款方案、最快3小時交車。高雄三民區精選Toyota、Honda、BMW、Benz等各大品牌優質中古車，實車實價、保證里程。";
-const BUSINESS_ADDRESS = "高雄市三民區大順二路269號";
-const BUSINESS_PHONE = "0936-812-818";
+const BUSINESS_ADDRESS = SHOP_ADDRESS_PLAIN;
+const BUSINESS_PHONE = SHOP_PHONE;
+// NOTE: Schema.org hours (21:00) diverge from human-readable shopConfig.SHOP_HOURS (20:00).
+// Not resolving this divergence here — flagged for Jerry to confirm source of truth.
 const BUSINESS_HOURS = "Mo-Sa 09:00-21:00";
 const LINE_OA_URL = "https://page.line.me/825oftez";
 

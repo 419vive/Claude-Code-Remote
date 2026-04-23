@@ -13,6 +13,8 @@
  * 4. 加入明確的 Q&A 映射（客人問 cc 數 → 回答排氣量）
  */
 
+import { SHOP_ADDRESS, SHOP_MAP_URL, SHOP_PHONE, SHOP_CONTACT_PERSON } from "../shared/shopConfig";
+
 // ============ BRAND ALIASES (Chinese → English) ============
 
 export const BRAND_ALIASES: Record<string, string> = {
@@ -950,7 +952,7 @@ ${phonePart}
 電話：
 看車以上3個時段選一：
 
-地址高雄市三民區大順二路269號（肯德基斜對面）
+地址${SHOP_ADDRESS}
 
 🚫 不要推薦車款！客人要的是預約，不是推薦！`);
     } else {
@@ -971,7 +973,7 @@ ${phonePart}
 電話：
 看車以上3個時段選一：
 
-地址高雄市三民區大順二路269號（肯德基斜對面）
+地址${SHOP_ADDRESS}
 
 🚫🚫🚫 絕對禁止推薦車款！客人要的是預約，不是推薦！🚫🚫🚫
 🚫🚫🚫 絕對禁止自己編造不同的格式！必須照上面格式回覆！🚫🚫🚫`);
@@ -982,8 +984,8 @@ ${phonePart}
   if (intents.includes('address')) {
     instructions.push(`🔴 地址指令（必須遵守！）：
 客人問地址！你必須回答：
-地址：高雄市三民區大順二路269號（肯德基斜對面）📍
-Google 地圖：https://maps.google.com/?q=高雄市三民區大順二路269號
+地址：${SHOP_ADDRESS} 📍
+Google 地圖：${SHOP_MAP_URL}
 🚫 絕對禁止不回答地址！`);
   }
   
@@ -991,7 +993,7 @@ Google 地圖：https://maps.google.com/?q=高雄市三民區大順二路269號
   if (intents.includes('phone')) {
     instructions.push(`🔴 電話指令（必須遵守！）：
 客人問電話！你必須回答：
-預約賞車電話：0936-812-818 賴先生 📞
+預約賞車電話：${SHOP_PHONE} ${SHOP_CONTACT_PERSON} 📞
 🚫 絕對禁止不回答電話！`);
   }
   

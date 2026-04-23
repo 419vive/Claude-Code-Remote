@@ -20,6 +20,12 @@
 
 import crypto from "crypto";
 import { logger } from "./logger";
+import {
+  FORBIDDEN_LOCATIONS,
+  FORBIDDEN_DEALERSHIP_TERMS,
+  LEAKY_FIELD_NAMES,
+  SHOP_CITY,
+} from "../shared/shopConfig";
 
 // ============================================================
 // 1. PII ENCRYPTION (AES-256-GCM) — NIST SP 800-38D
@@ -534,6 +540,145 @@ function detectHallucinatedVehicles(text: string, inventory: string[]): string[]
   return hits;
 }
 
+/**
+ * Phrases where the LLM is CLAIMING where our shop is located.
+ * We capture 2–8 Chinese chars immediately after each phrase as the
+ * candidate location, then check against FORBIDDEN_LOCATIONS.
+ *
+ * Split into separate patterns (not one mega-alternation) so each can
+ * be tuned independently and so logs pinpoint which claim triggered.
+ *
+ * 2026-04-23 hardening (adversarial audit):
+ * - Added verbs: 身處, 坐落(在|於), 座落於, 位於, 地址位於, 地址設在
+ * - Added subjects: 本店, 門市, 我司, 分店, 總店, 展間, 據點
+ * - Allow up to 3 punctuation/space chars between verb and location
+ *   to catch `我們在，台北內湖` / `我們位於 台北 內湖` style evasions.
+ *
+ * GAP_BRIDGE_SEP (`[\s，,、。的]{0,3}`) is the small optional bridge between
+ * the matched verb and the captured location. Keep it narrow — widening to
+ * `.{0,3}` would let unrelated sentences collide.
+ */
+const GAP_BRIDGE_SEP = "[\\s，,、。的]{0,3}";
+const LOC_CAPTURE = "([一-龥]{2,10})";
+// Verbs that signal "we/the shop is AT <location>".
+// Using a broad alternation keeps the regex readable; new verbs go here.
+const LOC_VERBS = "(?:在|位於|地址位於|地址設在|地址設於|身處|落腳(?:在|於)?|開(?:在|於)?|座落(?:在|於)?|坐落(?:在|於)?|設(?:在|於)?|來自|駐(?:在|於))";
+const OUR_LOCATION_CLAIM_PATTERNS: RegExp[] = [
+  // Subject = 我們 / 我司 / 本店 / 本公司 (+ optional qualifier)
+  new RegExp(`(?:我們|我司|本店|本公司|本社|敝店|敝公司)(?:的店|公司|店面|門市)?${LOC_VERBS}${GAP_BRIDGE_SEP}${LOC_CAPTURE}`, "g"),
+  // Subject = 崑家 / 崑家汽車
+  new RegExp(`崑家(?:汽車)?${LOC_VERBS}${GAP_BRIDGE_SEP}${LOC_CAPTURE}`, "g"),
+  // Subject = 店 / 店址 / 店面 / 店裡 / 門市 / 分店 / 總店 / 展間 / 據點
+  new RegExp(`(?:店址|店面|店裡|店|門市|分店|總店|展間|展示(?:中心|間)|據點)${LOC_VERBS}${GAP_BRIDGE_SEP}${LOC_CAPTURE}`, "g"),
+  // Address phrasing
+  /(?:我們的)?地址(?:是|在|位於|設(?:在|於))\s*([一-龥]{2,12})/g,
+];
+
+/**
+ * Detects LLM output claiming our shop is in a location we forbid.
+ *
+ * Example trigger (2026-04-23 real incident):
+ *   "老闆我們在台北內湖喔" → ["台北 in \"我們在台北\"", "內湖 in \"我們在台北內湖\""]
+ *
+ * Example non-trigger (customer-origin phrases):
+ *   "從台北來歡迎" → [] (no claim pattern matched — customer's origin, not ours)
+ *
+ * @param text LLM output to check
+ * @returns Array of violation descriptions (empty if clean)
+ */
+function detectForbiddenLocationClaims(text: string): string[] {
+  const hits: string[] = [];
+  const seen = new Set<string>();
+
+  for (const pattern of OUR_LOCATION_CLAIM_PATTERNS) {
+    // Create a fresh regex per call to reset lastIndex (global flag side effect)
+    const re = new RegExp(pattern.source, pattern.flags);
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      const claimed = m[1] || "";
+      for (const forbidden of FORBIDDEN_LOCATIONS) {
+        if (claimed.includes(forbidden) && !seen.has(forbidden)) {
+          // Suppress if SHOP_CITY is also in the claimed string — means the
+          // LLM said both (e.g., "我們在高雄不是台北") which is a correction,
+          // not a false claim. Very rare but worth guarding.
+          if (!claimed.includes(SHOP_CITY)) {
+            hits.push(`${forbidden} in "${m[0]}"`);
+            seen.add(forbidden);
+          }
+        }
+      }
+    }
+  }
+  return hits;
+}
+
+/**
+ * Detects LLM output using phrases that imply we sell new cars.
+ *
+ * Example trigger (2026-04-23 real incident):
+ *   "Mufasa 2.0 GLC旗艦版是新車價格很硬" → ["是新車", "新車價"]
+ *
+ * Substring match is the default because every phrase in
+ * FORBIDDEN_DEALERSHIP_TERMS is already a confident signal. BUT some
+ * terms end in "...新車" and the next Chinese char drastically changes
+ * meaning:
+ *   - 這台新車款  → "this new model" — legitimate (NOT new-car claim)
+ *   - 這款新車主  → "owner of a new vehicle" — legitimate
+ *   - 這台新車型  → "this new model/type" — legitimate
+ * We whitelist those suffixes per-term so we don't false-positive on them.
+ *
+ * @param text LLM output to check
+ * @returns Array of matched phrases (empty if clean)
+ */
+const DEALERSHIP_TERM_SUFFIX_WHITELIST: Record<string, string[]> = {
+  "這台新車": ["款", "型", "主"],
+  "這款新車": ["款", "型", "主"],
+  "是新車": ["款", "型", "主"],
+};
+
+function detectForbiddenDealershipTerms(text: string): string[] {
+  const hits: string[] = [];
+  for (const term of FORBIDDEN_DEALERSHIP_TERMS) {
+    let searchFrom = 0;
+    while (true) {
+      const idx = text.indexOf(term, searchFrom);
+      if (idx === -1) break;
+      const whitelist = DEALERSHIP_TERM_SUFFIX_WHITELIST[term];
+      const nextChar = text[idx + term.length] || "";
+      if (whitelist && whitelist.includes(nextChar)) {
+        // Legitimate suffix ("款" / "型" / "主") — not a new-car claim.
+        searchFrom = idx + term.length;
+        continue;
+      }
+      hits.push(term);
+      break; // one hit per term is enough
+    }
+  }
+  return hits;
+}
+
+/**
+ * Detects leaked backend DB field names (e.g., "newCarPrice") that should
+ * never appear in customer-facing text. Also catches common label leaks
+ * like "新車原價" when used as a labeled value.
+ *
+ * These leaks typically happen when a prompt-building function accidentally
+ * serializes a raw DB row with field names intact.
+ *
+ * @param text LLM output to check
+ * @returns Array of leaked field names (empty if clean)
+ */
+function detectLeakedFieldNames(text: string): string[] {
+  const hits: string[] = [];
+  const lower = text.toLowerCase();
+  for (const field of LEAKY_FIELD_NAMES) {
+    if (lower.includes(field.toLowerCase())) {
+      hits.push(field);
+    }
+  }
+  return hits;
+}
+
 export function validateLLMOutput(
   llmOutput: string,
   options: { allowedPrices?: string[]; inventory?: string[] } = {}
@@ -569,8 +714,10 @@ export function validateLLMOutput(
     violations.push("pii_echo");
   }
 
-  // 4. Hallucinated price detection (advisory).
-  //    Only flag — caller decides whether to fall back to ruleBasedReply.
+  // 4. Hallucinated price detection (CRITICAL as of 2026-04-23).
+  //    Was advisory — upgraded to hard-fail after the "98.9萬 vs 80.9萬"
+  //    incident on the Mufasa 2.0 GLC旗艦版 conversation. Wrong prices are
+  //    direct customer fraud and cannot be sent.
   if (options.allowedPrices && options.allowedPrices.length > 0) {
     const normalize = (s: string) => s.replace(/[\s,NT$新台幣元]/g, "").toLowerCase();
     const allowedSet = new Set(options.allowedPrices.map(normalize));
@@ -591,11 +738,38 @@ export function validateLLMOutput(
     }
   }
 
-  // Classify: system-leak, unsafe-promise, and hallucinated_vehicle are hard fails.
+  // 6. Forbidden location claims (CRITICAL — 2026-04-23 "台北內湖" incident).
+  //    The LLM claimed the shop is in a city/district we are NOT in.
+  const wrongLocations = detectForbiddenLocationClaims(sanitized);
+  for (const loc of wrongLocations) {
+    violations.push(`forbidden_location:${loc}`);
+  }
+
+  // 7. Forbidden dealership-type terms (CRITICAL — 2026-04-23 "新車" incident).
+  //    We are a used-car dealer; phrases like "新車價" / "這是新車" are misrepresentation.
+  const wrongTerms = detectForbiddenDealershipTerms(sanitized);
+  for (const term of wrongTerms) {
+    violations.push(`forbidden_dealership_term:${term}`);
+  }
+
+  // 8. Leaked backend field names (CRITICAL — prompt hygiene).
+  //    "newCarPrice" was the source field for the 98.9萬 hallucination; if it
+  //    or similar labels appear in user-facing text, the prompt/KB is broken.
+  const leaked = detectLeakedFieldNames(sanitized);
+  for (const field of leaked) {
+    violations.push(`leaked_field_name:${field}`);
+  }
+
+  // Classify: all fact-violation types are hard fails. Caller MUST fall back
+  // to generateRuleBasedReply (or equivalent safe path) when safe=false.
   const critical = violations.some(
     v => v.startsWith("system_leak:") ||
          v.startsWith("unsafe_promise:") ||
-         v.startsWith("hallucinated_vehicle:")
+         v.startsWith("hallucinated_vehicle:") ||
+         v.startsWith("price_not_in_inventory:") ||
+         v.startsWith("forbidden_location:") ||
+         v.startsWith("forbidden_dealership_term:") ||
+         v.startsWith("leaked_field_name:")
   );
 
   if (violations.length > 0) {

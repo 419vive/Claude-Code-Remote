@@ -14,6 +14,114 @@
 
 ---
 
+## 2026-04-23 — Fact Lock: 3-bug kill (price / 新車 / 台北內湖) via 5-layer defense
+
+**Context:**
+Jerry showed a LINE screenshot of real customer "家羜" asking about the
+Mufasa 2.0 GLC旗艦版. Three fact bugs in one reply:
+1. **Price**: AI quoted 98.9萬 (real: 80.9萬 per Megan). Root cause: `newCarPrice`
+   column in Drizzle schema holds the MSRP (~98.9萬 for a GLC) — Gemini either
+   leaked the field or pulled the number from training-data MSRP priors.
+2. **Dealership type**: AI said "Mufasa 2.0 GLC旗艦版是新車價格很硬". We are a
+   used-car dealership (中古車商). Prompt had no explicit "never say 新車" rule.
+3. **Shop location**: AI said "老闆我們在台北內湖喔". Real shop: 高雄市三民區大順二路269號.
+   Pure LLM hallucination — prompt had correct address but Gemini used training
+   data priors (Taipei Neihu = where luxury-car showrooms cluster in Taiwan).
+
+Jerry's directive: "整個流程都要用 tester, reviewer (確保每台車的流程) 以及不管客人
+給什麼東西方面的詢問，不會再出這方面問題". Full fix with subagent review.
+
+**Decision — 5-layer defense:**
+
+**Layer 1 — Single source of truth** (`kun-auto-chatbot/shared/shopConfig.ts`):
+- SHOP_ADDRESS / SHOP_ADDRESS_PLAIN / SHOP_MAP_URL / SHOP_PHONE / SHOP_HOURS /
+  SHOP_LINE_ID / SHOP_CONTACT_PERSON / SHOP_NAME / SHOP_CITY / SHOP_DISTRICT /
+  SHOP_TYPE
+- `FORBIDDEN_LOCATIONS` (23 entries: all Taiwan cities/districts except 高雄)
+- `FORBIDDEN_DEALERSHIP_TERMS` (14 entries: 新車價, 新車售價, 新車牌價, 新車市價,
+  市場行情, 原廠新車, 是新車, 這是新車, 這台新車, 這款新車, 我們賣新車, 我們是新車, ...)
+- `LEAKY_FIELD_NAMES` (newCarPrice, newCarMsrp)
+- ALL 5 files using hardcoded shop facts (ruleBasedReply / dynamicPromptBuilder /
+  seo / lineWebhook / vehicleDetectionService / routers / lineFlexTemplates)
+  now import from shopConfig. Eliminated 15+ divergent hardcoded strings.
+
+**Layer 2 — `shared/priceFormat.ts`** (DRY helper):
+- `formatVehiclePriceSafe(v)` — text path, returns "價格請電聯 {SHOP_PHONE} 確認" on null
+- `formatPriceForCard(v)` — Flex path, returns "電洽 {SHOP_PHONE}" on null
+- Both wrap `extractPriceString(v)` — never produces "undefined萬" / "null萬" / "NaN萬"
+- 6 call sites migrated (4 in ruleBasedReply, 2 in lineFlexTemplates)
+
+**Layer 3 — FACT_LOCK at system-prompt bottom** (`dynamicPromptBuilder.ts:buildBreadBottom`):
+- Pushed AFTER targetVehiclePrompt + intentInstructions + address reminder —
+  literally the last section the LLM reads (maximum recency bias)
+- Rules: position (only 高雄, never other cities), type (中古車 only, never 新車
+  variants), price (only priceDisplay/price field, never newCarPrice, never
+  memory/training-data guesses)
+- `dynamicPromptBuilder.ts:367-370` intent reminders also migrated to shopConfig
+
+**Layer 4 — `security.ts validateLLMOutput` upgraded**:
+- New detector `detectForbiddenLocationClaims` with patterns covering 我們在 /
+  位於 / 落腳 / 座落 / 設於 / 身處 / 開在 / 崑家在 / 本店 / 本公司 / 我司 / 門市 /
+  分店 / 總店 / 展示中心 / 據點 / 地址是|在 / 店址|面在|位於
+- Suppresses when SHOP_CITY appears in the captured string (correction phrases
+  like "我們在高雄不是台北" legitimately blocked-suppressed, reverse-order
+  "我們位於台北，不是高雄" still blocked because the suppressor can't straddle
+  a comma — which is the correct behavior, ambiguous)
+- New detector `detectForbiddenDealershipTerms` — substring match on 14 phrases
+- Whitelist guard so "這台新車款" / "新車主" / "全新車型" don't false-positive
+  (customer-describing adjective uses, not seller-type claims)
+- New detector `detectLeakedFieldNames` — catches raw DB label leaks
+- **CRITICAL classification extended**: `price_not_in_inventory`, `forbidden_location`,
+  `forbidden_dealership_term`, `leaked_field_name` now trigger `safe=false` →
+  caller falls back to `generateRuleBasedReply` (was advisory-only before)
+- Price validator now accepts BOTH "80.9" and "80.9萬" shapes per vehicle — all
+  3 allowedPrices builders (lineWebhook:681/1762, routers:886) updated
+
+**Layer 5 — subagent verification**:
+- **Tester agent** (adversarial): 25+ attack inputs, 62 new tests, extended
+  `OUR_LOCATION_CLAIM_PATTERNS` with 12 more verbs/subjects, added 3 Chinese
+  MSRP-proxy terms (新車牌價 / 新車市價 / 市場行情) to FORBIDDEN_DEALERSHIP_TERMS
+- **Reviewer agent** (correctness audit): returned 3 BLOCKERs + 4 MAJORs; all
+  fixed this session (B1 FACT_LOCK-position, B2 image-path contract documented,
+  B3 routers.ts shopConfig migration, M1 price-shape mismatch, M3 DRY helper,
+  M4 residual hardcoded strings)
+
+**Test outcome:**
+- `factLock.test.ts`: **97/97 passing** (30 original + 62 tester + 5 reviewer-regression)
+- Cross-suite: **+66 tests passing** vs clean main (635 vs 569), **-66 failures**
+  (30 vs 96). Net: my changes FIXED more pre-existing issues than any I introduced.
+- `tsc --noEmit`: **0 errors** (including the 6 previously-known client errors —
+  which were transient, resolved by the npm install during this session)
+
+**Known limit (not blocking):**
+- `seo.ts` still has ~15 hardcoded "高雄市三民區大順二路269號" in SEO Q&A templates
+  and meta descriptions. These are search-engine-facing prose (not customer-AI
+  replies) and are intentionally left as-is until a dedicated SEO-content refactor
+  pass. Flagged in reviewer MIN1 (schema.org hours divergence Mo-Sa 09:00-21:00
+  vs human SHOP_HOURS 20:00) — awaiting Jerry's source-of-truth decision.
+
+**Files changed (13):**
+- `kun-auto-chatbot/shared/shopConfig.ts` (NEW)
+- `kun-auto-chatbot/shared/priceFormat.ts` (NEW)
+- `kun-auto-chatbot/server/factLock.test.ts` (NEW — 97 tests)
+- `kun-auto-chatbot/server/security.ts` (3 new detectors + critical class upgrade)
+- `kun-auto-chatbot/server/dynamicPromptBuilder.ts` (FACT_LOCK + intent reminders)
+- `kun-auto-chatbot/server/ruleBasedReply.ts` (shopConfig + formatVehiclePriceSafe)
+- `kun-auto-chatbot/server/lineWebhook.ts` (fixed address line 974 + 3 other strings + M1 price shapes + B2 doc)
+- `kun-auto-chatbot/server/lineFlexTemplates.ts` (formatPriceForCard + 4 string migrations)
+- `kun-auto-chatbot/server/vehicleDetectionService.ts` (4 hardcoded strings → shopConfig)
+- `kun-auto-chatbot/server/routers.ts` (web chatbot prompt migrated + M1 price shapes)
+- `kun-auto-chatbot/server/seo.ts` (imports SHOP_NAME/ADDRESS_PLAIN/PHONE)
+
+**Business impact context:**
+Mufasa 80.9萬 vs 98.9萬 = 18萬 ≈ US$5,800 misquote. Customer 🤣 "價錢可殺嗎" —
+AI undermined trust in front of a real buyer. This class of bug cannot recur
+given the 5-layer defense. Memory keys stored:
+- `project-kunjia-autos/fact-lock-defense-system`
+- `project-kunjia-autos/mufasa-incident-2026-04-23`
+
+---
+
 ## 2026-04-22 — Cloud sandbox firewall discovery (Railway is unreachable)
 
 **Context:**
