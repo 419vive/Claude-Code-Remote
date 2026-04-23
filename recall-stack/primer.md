@@ -1,7 +1,7 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/add-free-api-keys-0SGxN` (pending commit — 5-layer fact-lock defense)
-Latest: **Fact Lock System** (shop address + 中古車 type + price integrity) — 97/97 tests green, reviewer + tester subagents both ran, pending Jerry's push decision
+Branch: `main` (PR #88 merged 2026-04-23, Railway deploy successful)
+Latest: **Fact Lock System LIVE** (price/location/中古車 integrity + hours corrected to Mo-Su 9:30-20:00) — 276/276 tests green on main, deploy confirmed by Jerry, awaiting live LINE verification
 
 ## Deployed + Working (end of 2026-04-16 session)
 
