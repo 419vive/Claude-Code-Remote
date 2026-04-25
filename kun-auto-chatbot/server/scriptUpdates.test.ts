@@ -70,7 +70,7 @@ describe("trade_in_inquiry — rule-based fallback uses Jerry's exact template",
   it("produces all 3 numbered questions", () => {
     const reply = generateRuleBasedReply(ruleCtx("我想估車", ["trade_in_inquiry"]));
     expect(reply).toContain("1. 請問有請別間車行估過了嗎？");
-    expect(reply).toContain("2. 請提供車品牌、型號、顏色、公里數");
+    expect(reply).toContain("2. 請提供車品牌、型號、顏色、公里數、年份");
     expect(reply).toContain("3. 是否有任何鈑件零件更換？");
   });
 
@@ -98,7 +98,7 @@ describe("trade_in_inquiry — LLM intent instruction is verbatim", () => {
   it("buildIntentInstructions includes Jerry's exact 3-question template", () => {
     const out = buildIntentInstructions(["trade_in_inquiry"], "我想估車", "人客", null, null);
     expect(out).toContain("1. 請問有請別間車行估過了嗎？");
-    expect(out).toContain("2. 請提供車品牌、型號、顏色、公里數");
+    expect(out).toContain("2. 請提供車品牌、型號、顏色、公里數、年份");
     expect(out).toContain("3. 是否有任何鈑件零件更換？");
     expect(out).toContain("以「誠信」為原則");
     expect(out).toContain("（收車還是會以看到實車為主）");

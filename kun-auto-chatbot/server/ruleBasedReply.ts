@@ -124,7 +124,7 @@ export function generateRuleBasedReply(ctx: RuleContext): string {
 1. 請問有請別間車行估過了嗎？
    無 / 價格 _____
 
-2. 請提供車品牌、型號、顏色、公里數
+2. 請提供車品牌、型號、顏色、公里數、年份
 
 3. 是否有任何鈑件零件更換？
 

@@ -68,7 +68,7 @@ const scenarios: Scenario[] = [
     id: 2,
     label: "Trade-in 換車 variant",
     message: "車換車可以嗎",
-    mustContainAny: ["請問有請別間車行估過了嗎", "車品牌、型號、顏色、公里數"],
+    mustContainAny: ["請問有請別間車行估過了嗎", "車品牌、型號、顏色、公里數、年份"],
     mustNotContain: ["98.9", "新車價", "台北", "內湖"],
   },
   {
