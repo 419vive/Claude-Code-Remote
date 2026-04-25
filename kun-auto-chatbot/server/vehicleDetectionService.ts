@@ -865,9 +865,18 @@ export function detectCustomerIntents(message: string): CustomerIntent[] {
     intents.push('greeting');
   }
   
-  // Price negotiation intent — extended 2026-04-24 to catch Jerry's specific
-  // example phrasings ("可以殺多少", "可以再便宜嗎", "有議價空間嗎").
-  if (/殺價|議價|議價空間|便宜一點|算便宜|打折|折扣|優惠|最低|底價|能不能.*便宜|可以.*便宜|可以.*再便宜|再少|降價|殺多少|可以.*殺|有.*空間|有沒有.*空間/.test(lower)) {
+  // Price negotiation intent — extended 2026-04-24 (twice).
+  // First pass added Jerry's example phrasings ("可以殺多少", "可以再便宜嗎",
+  // "有議價空間嗎"). Second pass added "X萬可以嗎" / "我出 X" patterns —
+  // these are the customer's response to step 1 ("有理想的出價嗎？"). Without
+  // catching them, the bot would fail to pivot to step 2.
+  if (
+    /殺價|議價|議價空間|便宜一點|算便宜|打折|折扣|優惠|最低|底價|能不能.*便宜|可以.*便宜|可以.*再便宜|再少|降價|殺多少|可以.*殺|有.*空間|有沒有.*空間/.test(lower) ||
+    // "X萬可以嗎" / "X萬OK嗎" / "X萬如何" — customer naming a target price
+    /\d+\s*萬\s*(可以|ok|如何|嗎|算|可不可以|行不行|這樣|這價|怎樣)/i.test(lower) ||
+    // "我出 X" / "我出到 X" / "出價 X" — explicit offer
+    /(我出|我願意.*出|出價|出到|頂多.{0,2}\d|最多.{0,2}\d)\s*\d/i.test(lower)
+  ) {
     intents.push('price_negotiation');
   }
   

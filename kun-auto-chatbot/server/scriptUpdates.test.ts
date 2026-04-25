@@ -115,7 +115,7 @@ describe("trade_in_inquiry — LLM intent instruction is verbatim", () => {
 // PART 2 — Price negotiation 2-step script
 // ============================================================
 
-describe("price_negotiation intent — detection (already existed, sanity check)", () => {
+describe("price_negotiation intent — detection", () => {
   it.each([
     ["可以再便宜嗎"],
     ["可以殺多少"],
@@ -126,9 +126,36 @@ describe("price_negotiation intent — detection (already existed, sanity check)
     ["底價多少"],
     ["再少一點"],
     ["可以降價嗎"],
-  ])("DETECTS '%s' as price_negotiation", (msg) => {
+  ])("DETECTS '%s' as price_negotiation (haggling phrasings)", (msg) => {
     const intents = detectCustomerIntents(msg);
     expect(intents).toContain("price_negotiation");
+  });
+
+  // 2026-04-24 second-pass extension — these were missing before the e2e
+  // simulation caught them. "60萬可以嗎" was falling through to greeting
+  // template because no intent matched.
+  it.each([
+    ["60萬可以嗎"],
+    ["50萬可不可以"],
+    ["80萬OK嗎"],
+    ["45萬如何"],
+    ["我出50萬"],
+    ["我願意出50"],
+    ["出價50萬"],
+    ["頂多50萬"],
+    ["最多40萬"],
+  ])("DETECTS '%s' as price_negotiation (customer-naming-target-price phrasings)", (msg) => {
+    const intents = detectCustomerIntents(msg);
+    expect(intents).toContain("price_negotiation");
+  });
+
+  it.each([
+    ["這台60萬"], // DB-sourced price quote, not a negotiation
+    ["售價60萬"], // pricing intent, not negotiation
+    ["有沒有60萬以下的"], // budget filter, not negotiation
+  ])("does NOT trigger price_negotiation on '%s' (false-positive guard)", (msg) => {
+    const intents = detectCustomerIntents(msg);
+    expect(intents).not.toContain("price_negotiation");
   });
 });
 
