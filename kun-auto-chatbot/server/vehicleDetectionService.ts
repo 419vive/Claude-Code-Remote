@@ -792,6 +792,7 @@ export type CustomerIntent =
   | 'general_browse'    // 一般瀏覽、推薦
   | 'pricing'           // 問價格、多少錢
   | 'new_car_question'  // 客人問「你們賣新車嗎」— 需要澄清我們只賣中古車
+  | 'trade_in_inquiry'  // 客人有舊車要估價/換車 — 觸發 3 題收車腳本
   ;
 
 /**
@@ -864,8 +865,9 @@ export function detectCustomerIntents(message: string): CustomerIntent[] {
     intents.push('greeting');
   }
   
-  // Price negotiation intent
-  if (/殺價|議價|便宜一點|算便宜|打折|折扣|優惠|最低|底價|能不能.*便宜|可以.*便宜|再少|降價/.test(lower)) {
+  // Price negotiation intent — extended 2026-04-24 to catch Jerry's specific
+  // example phrasings ("可以殺多少", "可以再便宜嗎", "有議價空間嗎").
+  if (/殺價|議價|議價空間|便宜一點|算便宜|打折|折扣|優惠|最低|底價|能不能.*便宜|可以.*便宜|可以.*再便宜|再少|降價|殺多少|可以.*殺|有.*空間|有沒有.*空間/.test(lower)) {
     intents.push('price_negotiation');
   }
   
@@ -916,6 +918,13 @@ export function detectCustomerIntents(message: string): CustomerIntent[] {
   const newGuCar = /新古車/;  // Taiwanese "almost-new" — still needs clarification
   if (newCarCore.test(lower) || newCarBareNoun.test(lower) || newVsUsed.test(lower) || newGuCar.test(lower)) {
     intents.push('new_car_question');
+  }
+
+  // Trade-in / sell-old-car inquiry — customer wants us to estimate / buy their current car.
+  // Triggers Jerry's standard 3-question intake script (see buildIntentInstructions).
+  // Mirrors the regex used in ruleBasedReply.ts so both LLM and fallback paths agree.
+  if (/我有一台舊車|舊車想換|舊車.*換新|換車.*估|估價.*舊車|舊車.*估價|折讓|我的車.*換|目前開.*換|現在開.*換|以舊換新|車換車|想換車|要換車|想估車|要估車|收車|估個價|估一下|估價|想賣車|要賣車|我這台.*賣|我的車.*賣/.test(message)) {
+    intents.push('trade_in_inquiry');
   }
 
   return intents;
@@ -1138,7 +1147,55 @@ ${loanFormUrl}
 直接點就可以囉！很方便的👍」
 🚫 絕對禁止不引導客人用選單！`);
   }
-  
+
+  // ============ TRADE-IN / 換車估車 INTENT (2026-04-24 — Jerry's exact script) ============
+  if (intents.includes('trade_in_inquiry')) {
+    instructions.push(`🔴 換車估車指令（必須遵守 — Jerry 指定腳本，不准改字）：
+客人想要估車或車換車！你必須回覆以下完整模板（一字不改）：
+
+「🤍 ${greeting} 您好，謝謝您的訊息！
+
+要評估收車或車換車，我們需要先了解一下車況。麻煩請提供以下資訊：
+
+1. 請問有請別間車行估過了嗎？
+   無 / 價格 _____
+
+2. 請提供車品牌、型號、顏色、公里數
+
+3. 是否有任何鈑件零件更換？
+
+不好意思需要了解比較全面，確保雙方權益。我們一直都以「誠信」為原則在做每一筆生意。
+我們會盡快回覆可以收購的價錢！
+（收車還是會以看到實車為主）」
+
+🚫 絕對禁止：
+- 自己編造收購價格（必須等真人業務看到實車後才能報價）
+- 跳過任何一題
+- 改寫模板成「自己的話」
+- 在這條路徑上推薦在售的中古車（先處理估車流程，等客人提供完車況再導向）`);
+  }
+
+  // ============ PRICE NEGOTIATION INTENT (2026-04-24 — Jerry's exact 2-step script) ============
+  // Was missing previously — that's why the LLM was ad-libbing on 議價 questions.
+  if (intents.includes('price_negotiation')) {
+    instructions.push(`🔴 議價指令（必須遵守 — Jerry 指定 2 步驟腳本）：
+客人在問殺價/折扣/便宜一點/有沒有議價空間！這是最關鍵的銷售時刻 — 絕對不要在 LINE 上承諾任何具體價格。
+
+【步驟一】如果這是客人「第一次」問議價（看不到對話歷史中你有提過議價）：
+回覆（一字不改）：「這裡可以盡量幫您爭取，或您有理想的出價嗎？」
+（讓客人先說出心目中的數字，把球丟回去）
+
+【步驟二】如果客人「持續追問」、「給了出價」、或「第二次以上」問議價：
+回覆（一字不改）：「比較希望您先來店一趟看完車再來詳談價錢的事，買車就是多看多比沒關係的☺️」
+（不管客人說什麼，最後都要把對話導向實際看車）
+
+🚫 絕對禁止：
+- 在 LINE 上同意任何具體折扣/折價金額/最低價/底價
+- 講「保證最低」「絕對便宜」「100%」之類觸法字眼（廣告法）
+- 跳過步驟一直接拒絕客人
+- 主動報價（價格只能來自在售車輛資料的 priceDisplay）`);
+  }
+
   if (instructions.length === 0) return '';
   
   // Multi-intent reminder

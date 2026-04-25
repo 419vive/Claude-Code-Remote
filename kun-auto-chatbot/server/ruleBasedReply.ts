@@ -112,20 +112,25 @@ export function generateRuleBasedReply(ctx: RuleContext): string {
     return `${greeting}你好！歡迎來到崑家汽車！我是高雄阿家，在高雄車界40年了，請問${greeting}今天想看什麼車款呢？還是有什麼我可以幫忙的？`;
   }
 
-  // Trade-in / old-car estimation — standard template requested by Jerry 2026-04-16.
+  // Trade-in / old-car estimation — standard template requested by Jerry.
+  // Updated 2026-04-24 with new 3-question intake script.
   // Must come BEFORE the appointment branch so "舊車想換" doesn't accidentally
   // match /換/ and get treated as a visit.
-  if (/我有一台舊車|舊車想換|舊車.*換新|換車.*估|估價.*舊車|舊車.*估價|折讓|我的車.*換|目前開.*換|現在開.*換|以舊換新/.test(userMessage)) {
+  if (/我有一台舊車|舊車想換|舊車.*換新|換車.*估|估價.*舊車|舊車.*估價|折讓|我的車.*換|目前開.*換|現在開.*換|以舊換新|車換車|想換車|要換車|想估車|要估車|收車|估個價|估一下|估價|想賣車|要賣車/.test(userMessage)) {
     return `🤍 ${greeting} 您好，謝謝您的訊息！
 
-我們這邊估車仍會以實際看到車況為主喔！如果您目前不方便前來，也可以先提供以下資訊給我：
+要評估收車或車換車，我們需要先了解一下車況。麻煩請提供以下資訊：
 
-品牌／年份／里程數
-車身外觀與內裝的詳細照片
-保養紀錄
-以及最重要的，請告知是否曾發生事故，或是否有更換過鈑件、零件的情況
+1. 請問有請別間車行估過了嗎？
+   無 / 價格 _____
 
-不好意思需要先了解得比較仔細，這也是為了保障雙方權益。我們一直都是以「誠信」為原則在做每一筆生意，也希望讓您更安心。`;
+2. 請提供車品牌、型號、顏色、公里數
+
+3. 是否有任何鈑件零件更換？
+
+不好意思需要了解比較全面，確保雙方權益。我們一直都以「誠信」為原則在做每一筆生意。
+我們會盡快回覆可以收購的價錢！
+（收車還是會以看到實車為主）`;
   }
 
   // Viewing/appointment intent
@@ -146,6 +151,24 @@ export function generateRuleBasedReply(ctx: RuleContext): string {
   // Contact request
   if (/電話|手機|聯絡|怎麼聯繫/.test(lower)) {
     return `${greeting}崑家汽車賴先生電話 ${STORE_PHONE}，LINE ${LINE_ID}，地址${STORE_ADDRESS}，直接打電話或加LINE都可以！`;
+  }
+
+  // Price negotiation intent — Jerry's 2-step script (2026-04-24).
+  // Step 2 trigger: customer already gave a target price (NT$ amount) OR
+  // explicitly said something like "出價 X" / "X 萬" / "我出 X". In rule-based
+  // we approximate "second-time-ish" by detecting an explicit number in the
+  // negotiation message — those are responses to step 1's "有理想的出價嗎".
+  if (
+    intents.includes("price_negotiation") ||
+    /殺價|議價|便宜一點|算便宜|打折|折扣|優惠|最低|底價|能不能.*便宜|可以.*便宜|再少|降價/.test(lower)
+  ) {
+    const customerProposedPrice = /\d+\s*萬|nt\$|出價|我出|出到|可以.{0,2}\d+/.test(lower);
+    if (customerProposedPrice) {
+      // Step 2: customer named a number — pivot to in-store visit, never agree on LINE.
+      return `${greeting}比較希望您先來店一趟看完車再來詳談價錢的事，買車就是多看多比沒關係的☺️`;
+    }
+    // Step 1: solicit target price, throw the ball back to the customer.
+    return `${greeting}這裡可以盡量幫您爭取，或您有理想的出價嗎？`;
   }
 
   // Loan intent — always redirect to loan form, never answer directly
