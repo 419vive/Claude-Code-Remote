@@ -14,6 +14,42 @@
 
 ---
 
+## 2026-04-25 — Trade-in script: add 年份 to Q2 intake field
+
+**Context:**
+Jerry pasted his trade-in customer-service script with the note
+"之前的更新我少打年份 要加上去" — the 3-question intake template
+shipped on 2026-04-24 was missing 年份 (model year) in Q2's required-info
+list. Customers were giving brand/model/colour/mileage but not year, which
+is needed to estimate a fair buy-in price.
+
+**Decision:**
+Add 、年份 to the end of Q2's comma-separated list, in all 4 places
+the template lives. Branch: `claude/add-vehicle-year-field-5TWW6`.
+
+**Why:**
+Year is the single biggest price-band determinant on used cars after
+make/model — without it Jerry's first reply still has to ask a 4th
+question, defeating the purpose of the structured intake.
+
+**Outcome:**
+- 4 sites updated to `公里數、年份`:
+  - `kun-auto-chatbot/server/ruleBasedReply.ts:127` (rule-based fallback)
+  - `kun-auto-chatbot/server/vehicleDetectionService.ts:1172` (LLM intent prompt)
+  - `kun-auto-chatbot/server/scriptUpdates.test.ts:73,101` (test assertions, both layers)
+  - `kun-auto-chatbot/scripts/verifyLiveLLM.ts:71` (live-LLM smoke test contract)
+- 49/49 trade-in tests green; remaining 46 failures pre-existing
+  (PII-encryption env, mocked time slots, DB-dependent vehicles.test.ts)
+- tsc clean on touched files; 6 pre-existing client tsc errors unchanged
+- Both rule-based fallback path AND LLM-prompted path stay byte-identical
+  (Jerry's "一字不改" rule still satisfied)
+
+**Artifacts:**
+- Branch: `claude/add-vehicle-year-field-5TWW6`
+- Single commit, 4 files, 4 lines changed (+ test assertions + journal/primer)
+
+---
+
 ## 2026-04-23 — Fact Lock: 3-bug kill (price / 新車 / 台北內湖) via 5-layer defense
 
 **Context:**

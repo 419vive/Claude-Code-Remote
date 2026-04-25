@@ -1,7 +1,7 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `main` (PRs #88 + #89 merged 2026-04-23)
-Latest: **Stale-history fix merged** (PR #89 commit `3c1f308`) — awaiting Railway deploy + Jerry's live retry of the 3 test questions. Fact Lock (#88) already live. 348/348 tests green on main.
+Branch: `claude/add-vehicle-year-field-5TWW6` (small follow-up; main is at PRs #88 + #89 merged 2026-04-23)
+Latest: **Trade-in script: add 年份 to Q2** (2026-04-25). Jerry: "之前的更新我少打年份 要加上去". 4 sites updated (`公里數` → `公里數、年份`): `ruleBasedReply.ts:127`, `vehicleDetectionService.ts:1172`, `scriptUpdates.test.ts:73,101`, `scripts/verifyLiveLLM.ts:71`. 49/49 trade-in tests green. Branch awaiting commit/push/draft PR.
 
 ## Deployed + Working (end of 2026-04-16 session)
 
