@@ -1,0 +1,60 @@
+name: Verify Live LLM Compliance
+
+# Manual-trigger workflow that runs scripts/verifyLiveLLM.ts against the
+# real Gemini API. Confirms that the system prompt + intent instructions
+# produce the customer-facing wording Jerry actually wants.
+#
+# Why this exists: the cloud Claude Code sandbox can't reach Railway/LINE
+# but GitHub Actions runs on GitHub's network with full internet. This is
+# the only place we can verify "does Gemini ACTUALLY obey our prompts"
+# without Jerry needing to pull out his phone and test on real LINE.
+#
+# Trigger: Actions tab → "Verify Live LLM Compliance" → Run workflow.
+# Or via GitHub MCP: workflow_dispatch with this filename.
+#
+# Required secret:
+#   GOOGLE_AI_API_KEY  — same key Railway uses; add at Settings → Secrets and
+#                        variables → Actions → New repository secret.
+#                        (Falls back to GEMINI_API_KEY for compatibility.)
+#
+# Cost per run: ~$0.001 in Gemini 2.5 Flash tokens (8 scenarios × ~600 tokens).
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to verify (default: main)"
+        required: false
+        default: "main"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: kun-auto-chatbot
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || 'main' }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: kun-auto-chatbot/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run live Gemini verification
+        env:
+          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npx tsx scripts/verifyLiveLLM.ts
