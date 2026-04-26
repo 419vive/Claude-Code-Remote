@@ -153,6 +153,40 @@ jobs:
           SITEMAP_ICON="✅"; if [ "$SITEMAP_CODE" != "200" ]; then SITEMAP_ICON="❌"; fi
           REPORT="${REPORT}"$'\n'"**Sitemap:** ${SITEMAP_ICON} HTTP ${SITEMAP_CODE}"$'\n'
 
+          # llms.txt + llms-full.txt reachability (added 2026-04-26)
+          # The llms.txt convention (https://llmstxt.org) is the new "robots.txt
+          # for AI" — Perplexity / Claude / ChatGPT consult this URL when
+          # building per-site briefs. If it 404s, we lose AI citations.
+          LLMS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${SITE_URL}/llms.txt" 2>/dev/null || echo "000")
+          LLMS_ICON="✅"; if [ "$LLMS_CODE" != "200" ]; then LLMS_ICON="❌"; fi
+          LLMS_FULL_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${SITE_URL}/llms-full.txt" 2>/dev/null || echo "000")
+          LLMS_FULL_ICON="✅"; if [ "$LLMS_FULL_CODE" != "200" ]; then LLMS_FULL_ICON="❌"; fi
+          REPORT="${REPORT}**llms.txt:** ${LLMS_ICON} HTTP ${LLMS_CODE}  •  **llms-full.txt:** ${LLMS_FULL_ICON} HTTP ${LLMS_FULL_CODE}"$'\n'
+
+          # Homepage-specific deep checks (added 2026-04-26 GEO push)
+          # These directly determine whether the SERP rich-snippet stars,
+          # PAA captures, and AI brief eligibility actually fire.
+          HOMEPAGE=$(curl -s --max-time 15 "${SITE_URL}/" 2>/dev/null || echo "")
+          HAS_AGG=$(echo "$HOMEPAGE" | grep -c '"AggregateRating"' 2>/dev/null || echo "0")
+          # FAQ count: each Question entity in JSON-LD shows up as `"@type":"Question"`
+          FAQ_QS=$(echo "$HOMEPAGE" | grep -o '"@type":"Question"' | wc -l)
+          AGG_ICON="✅"; if [ "$HAS_AGG" -eq 0 ]; then AGG_ICON="❌"; fi
+          # Threshold: we ship 20 homepage FAQs as of 2026-04-26. Warn if <15.
+          FAQ_ICON="✅"; if [ "$FAQ_QS" -lt 15 ]; then FAQ_ICON="⚠️"; fi
+          REPORT="${REPORT}**Homepage AggregateRating:** ${AGG_ICON} (count=${HAS_AGG})  •  **Homepage FAQ Questions:** ${FAQ_ICON} ${FAQ_QS} (target ≥15)"$'\n'
+
+          # New trust-page FAQ injections (2026-04-26): /about /car-valuation /media
+          # were breadcrumb-only before, missing the FAQPage capture for their
+          # respective PAA queries (誰開的、舊車估價、媒體報導). Verify they
+          # now ship FAQPage schema.
+          REPORT="${REPORT}"$'\n'"**Trust-page FAQ injection (added 2026-04-26):**"$'\n'
+          for tp in "/about" "/car-valuation" "/media"; do
+            TP_HTML=$(curl -s --max-time 12 "${SITE_URL}${tp}" 2>/dev/null || echo "")
+            TP_FAQ=$(echo "$TP_HTML" | grep -c 'FAQPage' 2>/dev/null || echo "0")
+            TP_ICON="✅"; if [ "$TP_FAQ" -eq 0 ]; then TP_ICON="❌"; fi
+            REPORT="${REPORT}- ${TP_ICON} \`${tp}\`: FAQPage present=${TP_FAQ}"$'\n'
+          done
+
           echo "report<<EOF" >> $GITHUB_OUTPUT
           echo "$REPORT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT

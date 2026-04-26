@@ -14,6 +14,167 @@
 
 ---
 
+## 2026-04-26 — GEO Push toward #1 Google for "高雄二手車" (overnight session)
+
+**Context:**
+Jerry asked for an overnight push to "do everything that pushes our GEO toward
+#1 on Google for 高雄二手車." He then went to sleep with explicit consent to
+ship code-only, defer human/account/voice work, and leave a morning summary.
+
+**Honest framing:** Ranking #1 for "高雄二手車" is a 60-90 day game on
+Google's clock. Tonight's push is gap-filling and CTR-tightening — every
+high-leverage code-only move that accelerates the timeline, with off-platform
+work clearly delegated to Jerry's morning checklist.
+
+**Discovery (most important context for future-me):**
+The repo already had production-grade SEO/GEO infrastructure before tonight.
+DO NOT rebuild this — extend it:
+- `kun-auto-chatbot/server/seo.ts` is **1,800+ lines** of working SEO machinery
+- AggregateRating (4.8/5, 156 reviews) on AutoDealer schema (line 184)
+- 8 path-specific FAQ schema injection points (homepage, vehicle, brand, price,
+  loan, book-visit, faq, area, blog)
+- `Article` schema with E-E-A-T `@author` markup on all blog posts
+- `llms.txt` + `llms-full.txt` routes (full llmstxt.org spec compliance)
+- `robots.txt` with explicit `User-agent: GPTBot/ClaudeBot/PerplexityBot/etc Allow`
+- IndexNow integration (instant Bing/Yandex notify)
+- Sitemap.xml with vehicle pages + image schema + brand/area/price pages
+- `<link rel="alternate" hreflang>` zh-TW + x-default on every path
+- Speakable schema (voice search ready)
+- AutoDealer.knowsAbout already includes "高雄二手車", "高雄二手車行"
+- 5 cornerstone blog posts already published:
+  `/blog/{buy-used-car-guide,used-car-loan-guide,kaohsiung-used-car-guide,
+  third-party-inspection-guide,used-car-transfer-guide,
+  kaohsiung-used-car-dealers-comparison}`
+- AutoDealer.mentions includes Government orgs (公路監理總局, 消保會) — strong
+  trust signal
+
+**Decision — 7 high-leverage gap fills:**
+
+**1. HOMEPAGE_FAQS expanded 9 → 20** (`kun-auto-chatbot/server/seo.ts:486`).
+Added 11 new keyword-rich Qs targeting Google's "People Also Ask" SERP feature:
+- 「高雄二手車推薦哪裡買？」
+- 「高雄二手車哪間最可靠？」
+- 「高雄二手車市場行情怎麼看？」
+- 「高雄哪幾家二手車行比較推薦？」
+- 「高雄二手車比台北便宜嗎？」
+- 「高雄三民區有哪些二手車行？」
+- 「台南、屏東、嘉義的人可以來高雄看車嗎？」
+- 「高雄買二手車要注意什麼？」
+- 「崑家汽車跟Toyota原廠認證中古車比？」
+- 「崑家汽車有保固嗎？」
+- + reformatted core shop facts (location/hours/phone) for clarity
+Each Q maps to a SERP shelf we can capture. Existing comparison Qs (HOT,
+SUM) preserved.
+
+**2. FAQPage schema added to /about, /car-valuation, /media**
+(`seo.ts:684`, `:702`, `:721`). These were breadcrumb-only before, missing
+PAA capture for credibility/estimation/media queries. Each gets 3-6 new
+FAQ entries — `/about` covers founder/credibility, `/car-valuation` covers
+trade-in/estimation queries (high commercial intent), `/media` covers brand
+trust signals.
+
+**3. Homepage <title> tightened** from ~32 CJK chars to ~24
+(`seo.ts:567`). Original truncated in SERP after "中古車行" losing the
+"實車實價第三方認證" trust suffix. New: `高雄二手車推薦｜崑家汽車40年正派經營｜實車實價第三方認證`
+preserves all signals AND fits under Google's ~60-width-unit cap.
+
+**4. SITE_DESCRIPTION tightened** from ~80 CJK to ~58 (`seo.ts:42`).
+Original hit ~177 width units → truncated last quarter. New version
+(~133 width units) front-loads brand + 40-year + certification + loan
+speed + landmark cue ("肯德基斜對面"). Address landmark is one of the
+highest-CTR snippets in local-business SERPs.
+
+**5. Vehicle-page description tightened** (`seo.ts:601`). Removed redundant
+trailing "在地40年正派經營。" — for long brand+model strings (e.g.
+"Mercedes-Benz GLA-Class 200d") the full template hit ~159 width units
+and risked tail truncation.
+
+**6. llms.txt copy updated** (`seo.ts:1563`). Removed stale "28個" FAQ
+count claim (we now ship 20 homepage FAQs + ~25 across path-specific
+injections).
+
+**7. geo-seo-audit.yml extended** (`.github/workflows/geo-seo-audit.yml:155`).
+Added 6 new validation checks that run every 3 days:
+- llms.txt + llms-full.txt reachability (HTTP 200)
+- Homepage AggregateRating presence (regression guard)
+- Homepage Question count ≥ 15 (warns if ever drops)
+- FAQPage on /about (regression guard for change #2)
+- FAQPage on /car-valuation (regression guard for change #2)
+- FAQPage on /media (regression guard for change #2)
+
+**Test outcome:**
+- New file: `server/seo.geoPhase1.test.ts` — **15 tests, 15 passing**
+  - 4 tests on homepage FAQ count + content
+  - 3 tests on /about, /car-valuation, /media FAQ injection
+  - 4 tests on title/description CJK width thresholds
+  - 4 tests on schema regression guards (AutoDealer/AggregateRating/WebSite/
+    BreadcrumbList/knowsAbout)
+- Cross-suite vitest: 768 passing (vs 753 on year-field branch baseline) =
+  **+15 from this session, 0 new failures**. Same 46 pre-existing failures
+  (PII encryption env, mocked time, DB-dependent vehicles.test.ts) unchanged.
+- `tsc --noEmit`: **0 errors on touched files**. Same 6 pre-existing
+  client-side `Root.tsx` / `RuFloChatbot.tsx` errors unchanged (documented
+  in primer.md).
+
+**Files changed (5):**
+- `kun-auto-chatbot/server/seo.ts` — 7 edits (FAQs, title, descriptions, llms.txt)
+- `kun-auto-chatbot/server/seo.geoPhase1.test.ts` (NEW — 15 tests)
+- `.github/workflows/geo-seo-audit.yml` — 6 new validation checks
+- `docs/geo-2026-04-26-overnight-summary.md` (NEW — Jerry's morning briefing)
+- `docs/geo-content-drafts/cornerstone-outlines.md` (NEW — 6 new content
+  angles for Jerry's review, NOT yet written)
+
+**Key architectural decision:**
+Did NOT add new client-side React routes (e.g. `/en` English page or
+`/kaohsiung-used-car` exact-match hub). Reasoning:
+- Adding new SPA routes overnight without Jerry's UX review = risk of bad
+  customer-facing UI in production
+- Server-only meta injection without a matching React page would 404
+- Existing homepage already targets "高雄二手車" as lead keyword
+- Adding a second exact-match URL would dilute homepage authority via
+  internal cannibalization
+
+These remain Phase 2 work for when Jerry can review the React pages.
+
+**Realistic timeline forecast (per docs/geo-2026-04-26-overnight-summary.md):**
+- Days 1-14: Google re-crawls, new schema indexed, PAA captures begin
+- Days 14-45: With GBP work + 1-2 PTT/Mobile01 posts, page 3-4 → page 2 movement
+- Days 45-90: With cornerstone #1 ship + sustained off-platform, page 1 entry realistic
+- Day 90+: Top 3 maintenance via weekly GBP + reviews + earned media
+
+**Off-platform morning checklist for Jerry** (saved in
+`docs/geo-2026-04-26-overnight-summary.md`):
+- Tier 1: GBP audit (already have `docs/gbp-optimization-guide.md`), NAP
+  consistency check across 6 surfaces
+- Tier 2: PTT car forum + Mobile01 + Dcard story posts (3-4 over a month, NOT
+  in one week — Google detects inorganic patterns)
+- Tier 3: Long-form content cadence (1 cornerstone/month from the 6 new outlines)
+
+**Cornerstone outlines drafted (6, in
+`docs/geo-content-drafts/cornerstone-outlines.md`):**
+1. Quarterly market data report (高雄二手車行情)
+2. Long-form pillar (full buying guide — links all 5 existing cornerstones)
+3. Bilingual Foreigner's Guide (zero-competition expat segment)
+4. 新車 vs 二手 comparison (5 scenarios — objection-handling pillar)
+5. Toyota Altis vs Honda Civic vs Nissan Tiida 比較 (long-tail capture)
+6. 70歲老闆的新手買車清單 (personal-brand + earned-media bait)
+
+**Business impact context:**
+The 5-layer Fact Lock (2026-04-23) prevents AI from misrepresenting facts.
+This GEO push amplifies the SAME facts to maximum-reach via SERP capture.
+6 cars/month current baseline — even capturing 1-2 additional sales/month
+from #1 ranking = ~NT$200-400k incremental gross margin/month.
+
+**Memory keys (MCP):**
+- `project-kunjia-autos/geo-phase-1-2026-04-26`
+
+**Next session context:**
+Branch awaits Jerry's review on draft PR. Then merge → Railway deploy →
+3 days for next geo-seo-audit run → 14 days for first SERP signal of new
+schema. Cornerstone #2 (pillar page) is the suggested next-month ship.
+
+---
+
 ## 2026-04-23 — Fact Lock: 3-bug kill (price / 新車 / 台北內湖) via 5-layer defense
 
 **Context:**

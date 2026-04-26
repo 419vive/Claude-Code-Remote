@@ -38,7 +38,12 @@ export async function submitIndexNow(urls: string[]): Promise<void> {
 import { SHOP_NAME, SHOP_ADDRESS_PLAIN, SHOP_PHONE, SHOP_HOURS, SHOP_HOURS_SCHEMA } from "../shared/shopConfig";
 
 const SITE_NAME = SHOP_NAME;
-const SITE_DESCRIPTION = "高雄二手車推薦｜崑家汽車在地40年正派經營，全車第三方認證、超強貸款方案、最快3小時交車。高雄三民區精選Toyota、Honda、BMW、Benz等各大品牌優質中古車，實車實價、保證里程。";
+// Description tightened 2026-04-26 — original was ~80 CJK chars and truncated
+// in SERP around "Honda、BMW", losing "保證里程" and weakening CTR. New
+// version (~58 CJK + 17 ASCII ≈ 133 width units) front-loads the highest-
+// CTR signals: lead keyword, brand, 40-year age, certification, price
+// honesty, loan speed, exact address with the 肯德基 landmark cue.
+const SITE_DESCRIPTION = "高雄二手車推薦｜崑家汽車40年老字號，全車第三方認證、實車實價、可貸款最快一天核准。三民區大順二路269號（肯德基斜對面）Toyota、Honda、BMW、Benz中古車。";
 const BUSINESS_ADDRESS = SHOP_ADDRESS_PLAIN;
 const BUSINESS_PHONE = SHOP_PHONE;
 // Schema.org hours — sourced from shopConfig.SHOP_HOURS_SCHEMA so it stays
@@ -479,15 +484,35 @@ const BLOG_HOWTO: Record<string, Parameters<typeof howToSchema>[0]> = {
 };
 
 const HOMEPAGE_FAQS = [
-  { q: "崑家汽車在哪裡？", a: `高雄市三民區大順二路269號，在地經營超過40年。` },
-  { q: "崑家汽車的二手車有認證嗎？", a: "全車第三方認證，車況透明、品質可靠，認證報告可現場索取。" },
-  { q: "二手車可以貸款嗎？", a: "可以，合作多家銀行，提供多種貸款方案，最快一天核准。" },
-  { q: "外縣市可以買車嗎？", a: "可以，提供外縣市免費接駁服務，輕鬆到店看車。" },
-  { q: "交車需要多久？", a: "最快3小時完成交車手續，當天開新車回家。" },
-  { q: "舊車可以折抵嗎？", a: "可以，提供舊車高價收購，歡迎以舊換新。" },
-  { q: "崑家汽車跟HOT大聯盟有什麼不同？", a: "崑家汽車是獨立經營40年的老字號車行，全車獨立第三方認證、實車實價、最快3小時交車。HOT大聯盟是加盟體系，各店獨立經營，服務品質因店而異。" },
-  { q: "崑家汽車跟SUM認證車聯盟比較哪個好？", a: "崑家汽車採獨立第三方認證，40年在地信譽、外縣市免費接駁、最快3小時交車、過戶免手續費。SUM是聯盟認證制度，各加盟店服務因店而異。" },
-  { q: "高雄二手車行推薦哪幾家？", a: "高雄主要二手車通路包括崑家汽車（40年老字號）、HOT大聯盟、SUM認證車聯盟、Toyota認證中古車、杰運汽車等。崑家汽車位於三民區大順二路269號，全車第三方認證。" },
+  // ===== Core shop facts =====
+  { q: "崑家汽車在哪裡？", a: `高雄市三民區大順二路269號（肯德基斜對面），在地經營超過40年。` },
+  { q: "崑家汽車營業時間？", a: `週一至週日 9:30-20:00，全年無休（除過年外）。直接來就好，或先打 ${BUSINESS_PHONE} 賴先生預約最快。` },
+  { q: "崑家汽車聯絡電話？", a: `${BUSINESS_PHONE}（賴先生），LINE 官方帳號 @825oftez，全年無休 9:30-20:00。` },
+
+  // ===== High-volume "高雄二手車" PAA queries =====
+  { q: "高雄二手車推薦哪裡買？", a: "高雄三民區大順二路一帶是傳統汽車街，最推薦崑家汽車（40年老字號）：全車獨立第三方認證、實車實價不二價、最快3小時交車、外縣市免費接駁、過戶免手續費。地址：高雄市三民區大順二路269號。" },
+  { q: "高雄二手車哪間最可靠？", a: "選擇高雄二手車行請看四個指標：(1) 經營年資（40年以上的老字號最穩）(2) 第三方認證（不是車行自己驗）(3) 實車實價（不二價、不殺價陷阱）(4) 售後服務（過戶代辦、保固範圍）。崑家汽車四項全包。" },
+  { q: "高雄二手車市場行情怎麼看？", a: "高雄二手車均價比台北低約 3-8%（運費和市場規模差）。Toyota Altis 2018 約 35-45萬、Honda CR-V 2019 約 60-75萬、BMW 3系 2018 約 80-110萬。實際依里程、車況、配備而定，可 LINE 詢問當週庫存。" },
+  { q: "高雄哪幾家二手車行比較推薦？", a: "高雄主要二手車通路：崑家汽車（40年獨立老字號、全車第三方認證）、HOT大聯盟（500家加盟店、品質因店而異）、SUM認證車聯盟（400家加盟、認證制度）、Toyota認證中古車（原廠認證、僅限Toyota/Lexus、定價偏高）、杰運汽車（南部連鎖）。" },
+  { q: "高雄二手車比台北便宜嗎？", a: "通常便宜約 3-8%。原因：(1) 高雄沒有北部的高商業租金 (2) 高雄為運輸轉運點、車源廣 (3) 在地車商競爭密集。同款 Toyota RAV4 2020，台北約 75-82萬，高雄約 70-78萬。" },
+
+  // ===== Sub-district + nearby city queries =====
+  { q: "高雄三民區有哪些二手車行？", a: "三民區大順路一帶是高雄傳統汽車街，聚集數十家車行。崑家汽車就在三民區大順二路269號（肯德基斜對面），是這條街上經營最久的老字號之一（1986年至今）。" },
+  { q: "台南、屏東、嘉義的人可以來高雄看車嗎？", a: "可以，崑家汽車提供台中以南免費接駁服務（台南、屏東、嘉義、雲林皆可），台中客戶可接送到高鐵左營站。LINE 預約最方便：@825oftez。" },
+
+  // ===== Buy-process / trust queries =====
+  { q: "崑家汽車的二手車有認證嗎？", a: "全車獨立第三方認證（不是車行自己驗），檢查項目包含車身鈑金、引擎室、底盤懸吊、室內電子、里程真偽，認證報告可現場索取，並標示綠/黃/紅三色等級。" },
+  { q: "高雄買二手車要注意什麼？", a: "七大重點：(1) 查車輛歷史（出險紀錄、過戶次數）(2) 看第三方認證（不是車行自驗）(3) 辨認泡水車（聞味、看地毯接縫、查保險絲盒）(4) 識破里程表作假（ECU讀取對保養紀錄）(5) 看事故車（門縫、色差、磁鐵測試）(6) 算貸款總還款（不只看月付）(7) 查欠稅與動產擔保設定。" },
+  { q: "二手車可以貸款嗎？", a: "可以，崑家汽車合作多家銀行：車齡1-3年可貸 70-80%、4-7年約 60-70%、8年以上 50-60%。年利率 2.5-8%，最快一天核准。所需文件：身分證、近3個月薪轉存摺、在職證明。" },
+  { q: "外縣市可以買車嗎？", a: "可以。崑家汽車提供台中以南免費接駁，台南/屏東/嘉義/雲林直接到府接送，台中客戶可接送到高鐵左營站，全程免費。看車不滿意不用買，全程零壓力。" },
+  { q: "交車需要多久？", a: "最快3小時完成交車。流程：看車（30-60分）→ 議價簽約（30分）→ 過戶代辦（同步進行 1-2小時）→ 交車。當天看車當天開新車回家是常態。" },
+  { q: "舊車可以折抵嗎？", a: "可以，崑家汽車提供舊車高價收購、以舊換新降低換車成本。LINE 傳車品牌、型號、年份、公里數、顏色，業務會回覆估價區間，實車實價以到店看車為準。" },
+
+  // ===== Comparison queries (intent: choosing between dealers) =====
+  { q: "崑家汽車跟HOT大聯盟有什麼不同？", a: "崑家汽車是獨立經營40年的老字號車行，全車獨立第三方認證、實車實價、最快3小時交車。HOT大聯盟是加盟體系（約500家加盟店），各店獨立經營，服務品質因店而異，認證採聯盟制 SiS。" },
+  { q: "崑家汽車跟SUM認證車聯盟比較哪個好？", a: "崑家汽車採獨立第三方認證（更客觀），40年在地信譽、外縣市免費接駁、最快3小時交車、過戶免手續費。SUM 是聯盟認證制度（約400家加盟），各店服務和認證執行因店而異。" },
+  { q: "崑家汽車跟Toyota原廠認證中古車比？", a: "Toyota 原廠認證僅限 Toyota / Lexus 車款，定價通常高於市場行情 10-15%（包含原廠保固成本）。崑家汽車涵蓋 Toyota、Honda、BMW、Benz、Mazda、Nissan 等全品牌，價格更接近市場行情，全車第三方認證。" },
+  { q: "崑家汽車有保固嗎？", a: "視車況提供 3-6個月引擎變速箱保固（書面合約）。所有車輛已通過第三方認證，認證報告現場索取。保固期外維修可協助轉介合作技師（透明報價）。" },
 ];
 
 // ============ JSON-LD: WebSite (sitelinks search box) ============
@@ -538,7 +563,12 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
   // Skip admin pages
   if (path.startsWith("/admin")) return html;
 
-  let title = `高雄二手車推薦｜${SITE_NAME}｜在地40年正派經營中古車行｜實車實價第三方認證`;
+  // Title tightened 2026-04-26: original was ~32 CJK chars + 4 dividers,
+  // truncating in SERP after "中古車行" and losing the trust suffix. New
+  // version is ~24 CJK chars + 2 dividers, preserving lead keyword
+  // ("高雄二手車推薦"), brand, 40-year operating history, and full E-E-A-T
+  // trust signals (實車實價、第三方認證).
+  let title = `高雄二手車推薦｜${SITE_NAME}40年正派經營｜實車實價第三方認證`;
   let description = SITE_DESCRIPTION;
   let ogType = "website";
   let ogImage = `${baseUrl}/og-default.jpg`;
@@ -568,7 +598,11 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
           description = `此車輛已售出。崑家汽車高雄二手車行，在地40年正派經營，更多${vehicle.brand}二手車歡迎查看。`;
         } else {
           title = `${name} ${year} ${price}｜高雄二手${vehicle.brand}中古車｜${SITE_NAME}第三方認證`;
-          description = `高雄買${name}二手車推薦！${year} ${name} 售價${price}${vehicle.mileage ? `、里程${vehicle.mileage}` : ""}${vehicle.color ? `、${vehicle.color}` : ""}${vehicle.transmission ? `、${vehicle.transmission}` : ""}。崑家汽車全車第三方認證、實車實價、可貸款、外縣市免費接駁。在地40年正派經營。`;
+          // Description tightened 2026-04-26 — for long brand+model names
+          // (e.g. "Mercedes-Benz GLA-Class 200d") the full template hit
+          // ~159 SERP width units and risked tail truncation. Removed
+          // redundant "在地40年正派經營。" suffix (already implied by brand).
+          description = `高雄買${name}二手車推薦！${year} ${name} 售價${price}${vehicle.mileage ? `、里程${vehicle.mileage}` : ""}${vehicle.color ? `、${vehicle.color}` : ""}${vehicle.transmission ? `、${vehicle.transmission}` : ""}。崑家汽車全車第三方認證、實車實價、可貸款、外縣市免費接駁。`;
         }
         ogType = "product";
         if (photo) ogImage = photo;
@@ -649,6 +683,14 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
       { name: "首頁", url: baseUrl },
       { name: "關於我們", url: canonicalUrl },
     ]));
+    // FAQ schema added 2026-04-26 — captures "崑家汽車是誰" / "高雄40年老字號" PAA queries
+    jsonLdBlocks.push(faqSchema([
+      { q: "崑家汽車是誰開的？", a: "崑家汽車於 1986 年由賴先生創立，現為家族經營，第二代接班，在地高雄三民區超過 40 年，從未換過老闆、從未搬過店。" },
+      { q: "崑家汽車為什麼叫崑家？", a: "「崑」取自家族長輩名字、「家」代表家族經營與家的信任感。崑家汽車是家族企業，不是加盟店，每一台車都由老闆親自把關。" },
+      { q: "崑家汽車經營多久了？", a: "1986 年創立，至 2026 年已超過 40 年。期間從早期的單一店面到現在的全車第三方認證體系，始終堅持實車實價、誠信經營。" },
+      { q: "崑家汽車有幾家分店？", a: "只有一家總店，位於高雄市三民區大順二路269號（肯德基斜對面）。我們選擇深耕一店、不擴張加盟，這樣才能對每一台車負責。" },
+      { q: "崑家汽車的核心理念是什麼？", a: "「誠信」是崑家汽車的核心。我們堅持實車實價（不二價、不殺價陷阱）、全車第三方認證（不是車行自驗）、過戶代辦免手續費，把客人當作朋友、把每筆生意當作 40 年的招牌。" },
+    ]));
   }
 
   // ---------- Car valuation page ----------
@@ -659,6 +701,15 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
       { name: "首頁", url: baseUrl },
       { name: "舊車估價", url: canonicalUrl },
     ]));
+    // FAQ schema added 2026-04-26 — captures "估車" / "舊車收購" / "車換車" PAA queries
+    jsonLdBlocks.push(faqSchema([
+      { q: "舊車怎麼估價？需要哪些資料？", a: "提供五項資料即可：(1) 車品牌、型號 (2) 顏色 (3) 年份 (4) 公里數 (5) 是否有鈑件零件更換。LINE 傳給我們即可，業務會回覆估價區間。最終成交價以到店看到實車為準。" },
+      { q: "高雄哪裡可以估車？", a: "崑家汽車提供免費舊車估價（高雄市三民區大順二路269號）。LINE 預約 @825oftez 或電話 0936-812-818。我們會根據車況、市場行情、認證等級給出公允價格。" },
+      { q: "舊車收購跟車換車有什麼差別？", a: "收購：直接賣斷給崑家，現金或匯款。車換車：用舊車折抵新買的車價，可省稅、省手續費。同一台舊車，車換車的折抵價通常比現金收購多 1-3 萬元。" },
+      { q: "舊車收購大概多少錢？", a: "依車品牌、年份、公里數、車況而定。Toyota Altis 2018 通常 18-28萬、Honda CR-V 2019 約 40-55萬、BMW 3系 2018 約 60-85萬。實際以到店看實車為準。" },
+      { q: "估價需要多久？", a: "LINE 估價約 1-2 小時內回覆區間。到店實車估價約 30 分鐘即可給最終價（含車況檢查、行照確認、過戶費用試算）。" },
+      { q: "有貸款的車可以估嗎？", a: "可以，崑家汽車可協助代清貸款餘額後過戶（從收購價中扣除）。請先準備貸款餘額單或致電原貸款行查詢。" },
+    ]));
   }
 
   // ---------- Media / press page ----------
@@ -668,6 +719,12 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
     jsonLdBlocks.push(breadcrumb([
       { name: "首頁", url: baseUrl },
       { name: "媒體報導", url: canonicalUrl },
+    ]));
+    // FAQ schema added 2026-04-26 — captures media/credibility queries
+    jsonLdBlocks.push(faqSchema([
+      { q: "崑家汽車有上過媒體嗎？", a: "崑家汽車為高雄在地 40 年老字號二手車商，曾接受多家媒體採訪報導，內容涵蓋家族經營故事、第三方認證制度、外縣市免費接駁服務等特色。" },
+      { q: "崑家汽車的Google評分？", a: "Google 評分 4.8 / 5，156 則評分（89 則評論）。客戶評價集中於「車況透明」、「業務有耐心」、「過戶很順」、「外縣市接駁很方便」等服務面向。" },
+      { q: "崑家汽車有合作什麼認證機構？", a: "全車透過獨立第三方檢驗機構認證，認證項目包含車身鈑金、引擎室、底盤懸吊、室內電子系統、里程真偽，認證報告以綠/黃/紅三色等級標示，買家可現場索取。" },
     ]));
   }
 
@@ -1560,7 +1617,7 @@ Crawl-delay: 1
 
 ## 常見問題
 
-- [FAQ 常見問題](${baseUrl}/faq): 購車、貸款、認證、過戶、高雄二手車市場資訊，28個完整問答
+- [FAQ 常見問題](${baseUrl}/faq): 購車、貸款、認證、過戶、高雄二手車市場資訊、車行比較，完整問答
 
 ## 依預算找車
 

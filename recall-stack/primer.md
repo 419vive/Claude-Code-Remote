@@ -1,7 +1,7 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `main` (PRs #88 + #89 merged 2026-04-23)
-Latest: **Stale-history fix merged** (PR #89 commit `3c1f308`) — awaiting Railway deploy + Jerry's live retry of the 3 test questions. Fact Lock (#88) already live. 348/348 tests green on main.
+Branch: `claude/geo-phase-1-foundation` (overnight 2026-04-26 GEO push, awaiting commit/push/draft PR). Sister branch `claude/add-vehicle-year-field-5TWW6` PR #90 still open (year-field trade-in fix, independent).
+Latest: **GEO Phase 1 — push toward #1 Google for "高雄二手車"** (2026-04-26 overnight). Goal: rank #1 (60-90 day timeline). Tonight: gap-fill the existing 1,800-line `seo.ts` machinery. Shipped: HOMEPAGE_FAQS 9→20 (PAA capture), FAQ schema added to /about+/car-valuation+/media (was breadcrumb-only), homepage title tightened (~32→24 CJK), SITE_DESCRIPTION tightened (~80→58 CJK), vehicle-page description tightened, llms.txt copy refreshed, geo-seo-audit.yml extended with 6 new validation checks, NEW seo.geoPhase1.test.ts (15/15 passing). 0 new test failures, 0 new tsc errors. Morning summary at `docs/geo-2026-04-26-overnight-summary.md`. 6 cornerstone outlines at `docs/geo-content-drafts/cornerstone-outlines.md`.
 
 ## Deployed + Working (end of 2026-04-16 session)
 
