@@ -14,6 +14,57 @@
 
 ---
 
+## 2026-05-02 — Web lead notification: actionability fixes (deep link + vehicle names + no-contact suppression)
+
+**Context:**
+Megan-Jerry-screenshot — operator received a "💬 網站潛在客戶有興趣！Score: 50" LINE
+notification for an anonymous web visitor asking about Hyundai Tucson 2016 +
+Kia Stonic 2024 trade-in. Operator response: "這個客人在後台找不到 / 無法回覆".
+Three actionability gaps in `kun-auto-chatbot/server/routers.ts:134-234` (the
+live web-channel `checkAndNotifyOwner` — note: `routes/leadScoring.ts` is dead
+code, nothing imports it):
+
+1. **No conversationId / no deep link** — body shows 客戶名稱「未知」, 電話「未提供」,
+   感興趣車輛「17, 9」 (raw IDs). Operator has nothing to search the dashboard
+   with; web-channel anonymous visitors all show as 未知 in the list.
+2. **Vehicle IDs not resolved** — "17, 9" instead of "Hyundai Tucson 2016 / Kia Stonic 2024".
+3. **No-contact noise** — score=50 milestone fires for anonymous visitors with
+   no phone, where the operator structurally cannot reply (web has no push
+   channel; user has to come back to the widget).
+
+**Decision:**
+Phase 1 (this PR) — make the notification actionable:
+- Add `對話編號：#<id>` line + `🔗 點此查看對話：<BASE_URL>/admin/conversations?id=<id>`
+  trailer. Wire `Conversations.tsx` to read `?id=` on mount and auto-open.
+- Add `resolveInterestedVehicles(idsCsv)` helper: parse CSV, look up via
+  `db.getVehicleById`, format as `Brand Model ModelYear`. Cap at 5 lookups,
+  fall back to raw IDs if all lookups fail.
+- Suppress score-50 notifications when `!customerContact && !phoneJustDetected
+  && score < 80`. Score ≥ 80 still notifies regardless (signal worth knowing).
+- Add `⚠️ 無聯絡方式（網站匿名訪客）` badge replacing the CTA when phone is missing.
+
+Phase 2 (deferred to next session) — chat widget asks for phone at score ≥ 50.
+This converts the suppressed leads into actionable ones rather than just hiding them.
+
+**Why:**
+Web channel was added 2026-04-06 (PR #71) with Meta Pixel/Google Ads. Ads
+started driving real traffic ~3 weeks later → first anonymous web lead today.
+The 4 月新通路第一個業績訊號 surfaced an actionability gap in the notification
+template, not a bug in the scoring pipeline. Doing the minimum to make existing
+notifications useful before tackling the harder "convert anonymous to
+identified" problem. 750 prior tests still green; tsc clean on touched files
+(6 pre-existing client errors unchanged).
+
+**Artifacts:**
+- `kun-auto-chatbot/server/routers.ts:134-244` (notification body + suppression)
+- `kun-auto-chatbot/client/src/pages/Conversations.tsx:204-222` (deep link)
+- Branch: `claude/evaluate-openai-agents-FYaAh` (per session instructions —
+  branch name is misleading, work is unrelated to OpenAI Agents SDK eval)
+- Note: `kun-auto-chatbot/server/routes/leadScoring.ts` confirmed dead code
+  (no imports). Left in place; cleanup deferred.
+
+---
+
 ## 2026-04-23 — Fact Lock: 3-bug kill (price / 新車 / 台北內湖) via 5-layer defense
 
 **Context:**

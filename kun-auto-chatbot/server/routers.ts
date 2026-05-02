@@ -131,6 +131,23 @@ function getWebMilestoneLevel(score: number): number {
 const notifyCooldownMap = new Map<string, number>();
 const NOTIFY_COOLDOWN_MS = 10 * 60 * 1000;
 
+async function resolveInterestedVehicles(idsCsv: string | null | undefined): Promise<string> {
+  if (!idsCsv) return '未指定';
+  const ids = idsCsv
+    .split(/[,\s]+/)
+    .map(s => parseInt(s.trim(), 10))
+    .filter(n => Number.isFinite(n) && n > 0);
+  if (!ids.length) return '未指定';
+  const lookups = await Promise.all(ids.slice(0, 5).map(id => db.getVehicleById(id).catch(() => undefined)));
+  const labels = lookups
+    .filter((v): v is NonNullable<typeof v> => !!v)
+    .map(v => [v.brand, v.model, v.modelYear].filter(Boolean).join(' ').trim())
+    .filter(s => s.length > 0);
+  if (!labels.length) return idsCsv; // fall back to raw IDs if lookup yielded nothing
+  const extra = ids.length > labels.length ? `（共${ids.length}台）` : '';
+  return labels.join(' / ') + extra;
+}
+
 async function checkAndNotifyOwner(conversationId: number, conversation: any, phoneJustDetected?: boolean) {
   const score = conversation.leadScore || 0;
   const currentNotifiedLevel = conversation.notifiedOwner || 0;
@@ -144,6 +161,12 @@ async function checkAndNotifyOwner(conversationId: number, conversation: any, ph
 
   if (!shouldNotifyMilestone && !shouldNotifyPhone) return;
 
+  // Suppress noisy first-tier (score 50) notifications for anonymous web visitors
+  // with no contact info — operator can't action them, only adds notification fatigue.
+  // Score >= 80 still notifies regardless (signal worth knowing about).
+  const phone = conversation.customerContact;
+  if (!phone && !phoneJustDetected && score < 80) return;
+
   // Dedup: skip if same conversation+level was notified recently
   const dedupKey = `web:${conversationId}:${newMilestoneLevel}:${phoneJustDetected ? "phone" : "score"}`;
   const lastNotified = notifyCooldownMap.get(dedupKey);
@@ -156,13 +179,15 @@ async function checkAndNotifyOwner(conversationId: number, conversation: any, ph
       if (now - t > NOTIFY_COOLDOWN_MS) notifyCooldownMap.delete(k);
     });
   }
-  
+
   const msgs = await db.getMessagesByConversation(conversationId, 20);
   const summary = msgs
     .filter(m => m.role === 'user')
     .map(m => m.content)
     .join('\n');
-  
+
+  const vehicleLabel = await resolveInterestedVehicles(conversation.interestedVehicleIds);
+
   let emoji = "🔥";
   let urgency = "高品質潛客";
   if (score >= 180) { emoji = "🚨"; urgency = "超級熱客！立刻聯繫"; }
@@ -171,20 +196,26 @@ async function checkAndNotifyOwner(conversationId: number, conversation: any, ph
   else if (phoneJustDetected) { emoji = "📞"; urgency = "客戶留電話了！趕快聯繫"; }
   else if (score >= 50) { emoji = "💬"; urgency = "潛在客戶有興趣"; }
 
-  const phone = conversation.customerContact;
+  const baseUrl = process.env.BASE_URL || "https://claude-code-remote-production.up.railway.app";
+  const deepLink = `${baseUrl}/admin/conversations?id=${conversationId}`;
+  const noContactBadge = !phone ? "⚠️ 無聯絡方式（網站匿名訪客）" : "";
+
   const title = `${emoji} 網站${urgency}！Score: ${score}${phone ? ' 📞' + phone : ''}`;
   const content = [
     `客戶名稱：${conversation.customerName || '未知'}`,
     `來源渠道：${conversation.channel}`,
     `電話：${phone || '未提供'}`,
     `Lead分數：${score}`,
-    `感興趣車輛：${conversation.interestedVehicleIds || '未指定'}`,
+    `感興趣車輛：${vehicleLabel}`,
+    `對話編號：#${conversationId}`,
     `---`,
     `對話摘要：`,
     summary.substring(0, 500),
     `---`,
-    score >= 120 ? `⚠️ 此客戶購買意願極高，請立刻聯繫！` : (phone ? `請盡快撥打 ${phone} 聯繫此客戶！` : `請盡快聯繫此客戶！`),
-  ].join('\n');
+    noContactBadge ||
+      (score >= 120 ? `⚠️ 此客戶購買意願極高，請立刻聯繫！` : (phone ? `請盡快撥打 ${phone} 聯繫此客戶！` : `請盡快聯繫此客戶！`)),
+    `🔗 點此查看對話：${deepLink}`,
+  ].filter(Boolean).join('\n');
   
   try {
     await notifyOwner({ title, content });
