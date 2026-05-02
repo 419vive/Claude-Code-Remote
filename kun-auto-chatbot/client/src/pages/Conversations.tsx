@@ -201,10 +201,18 @@ function ConversationDetail({ id, onBack }: { id: number; onBack: () => void }) 
   );
 }
 
+function readIdFromQuery(): number | null {
+  if (typeof window === "undefined") return null;
+  const raw = new URLSearchParams(window.location.search).get("id");
+  if (!raw) return null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export default function Conversations() {
   const [channel, setChannel] = useState("all");
   const [leadStatus, setLeadStatus] = useState("all");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(() => readIdFromQuery());
 
   const { data, isLoading } = trpc.admin.conversations.useQuery({
     channel: channel !== "all" ? channel : undefined,
