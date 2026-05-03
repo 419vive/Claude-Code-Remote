@@ -31,3 +31,10 @@ venv/
 # `graphify query` or `graphify benchmark` is run from the repo root.
 # Our sandbox output lives in scripts/graphify-sandbox/out/, NOT here.
 graphify-out/
+
+# Background-agent transient git worktrees. Created by `Agent` tool with
+# isolation: "worktree" — each spawned subagent gets its own checkout under
+# .claude/worktrees/agent-<id>/. These are ephemeral; the agent commits to
+# its own branch and the worktree is reaped automatically afterward. Should
+# never appear in the parent worktree as untracked.
+.claude/worktrees/
