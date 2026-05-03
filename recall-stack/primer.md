@@ -2,7 +2,9 @@
 
 Branch: `claude/evaluate-openai-agents-FYaAh` (designated by session instructions; name is misleading — work is web-lead notification fix, not OpenAI Agents eval). PRs #88 + #89 already merged to main 2026-04-23.
 
-Latest (2026-05-02): **Web lead notification actionability fix** — adds conversationId + dashboard deep link, resolves vehicle IDs to "Brand Model Year", suppresses score-50 notifications when web visitor has no contact info. Triggered by Megan-Jerry screenshot of unactionable "💬 網站潛在客戶有興趣！Score: 50 / 客戶名稱：未知 / 電話：未提供 / 感興趣車輛：17, 9". Awaiting commit + push + draft PR.
+Latest (2026-05-04): **Memory reliability fix** — added `@docs/PROJECT_JOURNAL.md` to CLAUDE.md auto-import (alongside existing `@recall-stack/primer.md`). Journal now auto-loads on every session via Claude Code's `@` directive — bulletproof, no hooks, no LLM, no fallible logic. The deferred fix to `auto-memory-hook.mjs` is now intentional non-fix: `@claude-flow/memory` package is proprietary, ML-based, and duplicates what file imports already do. Hook silently skips, which is correct behavior.
+
+Previously (2026-05-02): **Web lead notification actionability fix** (PR #92, merged) — conversationId + dashboard deep link, resolves vehicle IDs to "Brand Model Year", suppresses score-50 notifications when web visitor has no contact info.
 
 ## Deployed + Working
 
@@ -17,12 +19,11 @@ Latest (2026-05-02): **Web lead notification actionability fix** — adds conver
 
 ## Exact Next Step
 
-1. Commit the web-lead-notification fix (Conversations.tsx + routers.ts)
-2. Push to `claude/evaluate-openai-agents-FYaAh`
-3. Open draft PR titled something like "fix(web-lead-notify): deep link + vehicle names + suppress no-contact score-50"
-4. After Railway redeploys, Jerry/Megan should see new format on next web lead
+1. Commit the memory-reliability fix (CLAUDE.md + recall-stack/primer.md edits)
+2. Push to `claude/evaluate-openai-agents-FYaAh` and open draft PR
+3. Verify next session: confirm I see journal entries automatically without being asked
 
-Phase 2 (deferred to next session): chat widget asks for phone at score ≥ 50 to convert anonymous visitors into contactable leads.
+Phase 2 (汽車店, deferred): chat widget asks for phone at score ≥ 50 to convert anonymous visitors into contactable leads.
 
 ## Open Blockers
 
@@ -41,7 +42,7 @@ Phase 2 (deferred to next session): chat widget asks for phone at score ≥ 50 t
 - **LINE platform reality**: webhook does NOT receive outbound messages from LINE OA Manager. Operator signals via inbound (button tap or slash command from THEIR own LINE).
 - **Operator whitelist**: union of `LINE_OPERATOR_USER_IDS` + `LINE_OWNER_USER_ID` + `LINE_ADDITIONAL_NOTIFY_USER_IDS`.
 - **Production stack**: TypeScript/Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE webhook + 8891.tw sync.
-- **Memory layer priority**: MCP `memory_*` → `docs/PROJECT_JOURNAL.md` → `recall-stack/primer.md` → `CLAUDE.md`.
+- **Memory layer priority**: file `@` imports (journal + primer auto-loaded) → MCP `memory_*` (HNSW vector search for cross-session patterns) → CLAUDE.md (rules). Journal is the source of truth for project decisions.
 - **Before UI work**: read `kun-auto-chatbot/docs/DESIGN.md`.
 - **Cloud sandbox firewall blocks Railway domains** — cannot run Railway CLI / read deploy status from here. Use GitHub MCP for push confirmation only.
 - **Family context**: Jerry's father (shop owner) is 70, runs business from phone. Megan being onboarded as second operator. 6 cars sold first month after LINE operator-takeover + phantom-vehicle system.

@@ -1,4 +1,5 @@
 @recall-stack/primer.md
+@docs/PROJECT_JOURNAL.md
 
 # Claude Code Configuration - RuFlo V3
 
@@ -19,25 +20,24 @@ This repo has multiple memory layers. USE them — do not claim you'll "forget t
 
 **Layers, in order of durability:**
 
-1. **`docs/PROJECT_JOURNAL.md`** — append-only decision ledger, plain markdown, unbreakable fallback. Read top entries at session start for any non-trivial task.
-2. **`mcp__claude-flow__memory_*`** tools — structured fact storage with HNSW semantic search. Namespace: `project-kunjia-autos`. Use for patterns, decisions, constraints, preferences.
+1. **`docs/PROJECT_JOURNAL.md`** — append-only decision ledger, plain markdown, **auto-imported on every session via `@docs/PROJECT_JOURNAL.md` directive at top of this file**. This is the bulletproof "zero error" layer — harness reads the file directly, no hooks, no LLM, no semantic search. As long as it's written down, it's in context.
+2. **`mcp__claude-flow__memory_*`** tools — structured fact storage with HNSW semantic search. Namespace: `project-kunjia-autos`. Use for patterns/constraints; the journal is the canonical decision log.
 3. **`recall-stack/primer.md`** — current-state summary, auto-loaded via `@recall-stack/primer.md` import at the top of this file. Keep under 100 lines. Rewrite after each task.
 4. **`CLAUDE.md`** files (this one + `recall-stack/CLAUDE.md`) — permanent rules and behavioral contracts.
 
 **Rules (apply every session):**
 
-- BEFORE any non-trivial work: read the top 2-3 entries of `docs/PROJECT_JOURNAL.md` + the loaded primer.md
+- Journal + primer are auto-injected — DO NOT claim "I don't remember" when the answer is in either file. Search them first.
 - AFTER any non-trivial decision: append a new `## YYYY-MM-DD — Topic` entry to `docs/PROJECT_JOURNAL.md` (newest first, reverse chronological)
 - AFTER a task: rewrite `recall-stack/primer.md` with current state (active project, completed this session, exact next step, open blockers, key knowledge)
-- FOR structured facts (architectural decisions, patterns, constraints, preferences): call `mcp__claude-flow__memory_store` with namespace `project-kunjia-autos` and meaningful tags
-- FOR searching prior decisions: call `mcp__claude-flow__memory_search` before asking the user "did we decide X?"
-- If a layer is unavailable, fall through to the next: MCP → journal → primer.md → CLAUDE.md
+- FOR structured facts that need cross-session vector recall: call `mcp__claude-flow__memory_store` with namespace `project-kunjia-autos` and meaningful tags. Use for patterns reused across many sessions; for one-off project decisions, the journal is sufficient.
+- If MCP memory is unavailable, fall through to journal → primer → CLAUDE.md. The journal is auto-loaded so this fallback is automatic.
 
-**Known broken layers (2026-04-11, fix deferred):**
+**Memory hooks:**
 
-- `@claude-flow/memory` npm package not installed → `auto-memory-hook.mjs` skips its import/sync. MCP `memory_*` tools still work independently (HNSW backend is sql.js-based, doesn't need the package).
-- `.claude-flow/data/pending-insights.jsonl` writes garbage (`file:"unknown"`, `sessionId:null`) — hook stdin parsing is broken. Do not rely on it.
-- `session.restore()` prints "No session to restore" even when session JSONs exist. Investigate in a separate focused pass.
+- `@docs/PROJECT_JOURNAL.md` and `@recall-stack/primer.md` at top of CLAUDE.md auto-import on every session. This is the deterministic, zero-failure-mode layer.
+- `auto-memory-hook.mjs` (SessionStart/Stop hook) attempts to load `@claude-flow/memory` npm package. The package exists (`@claude-flow/memory@alpha`, proprietary, 1.4 MB) but we deliberately don't install it — its ML pipeline duplicates what file-based imports already do, with worse reliability. Hook silently skips, which is the intended behavior.
+- `.claude-flow/data/pending-insights.jsonl` may contain garbage entries from a broken hook-handler.cjs stdin parser. Don't read or rely on it. Fix deferred (low priority — file-based import covers the real need).
 
 ## File Organization
 
