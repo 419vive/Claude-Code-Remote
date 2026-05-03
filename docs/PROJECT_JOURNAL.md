@@ -14,6 +14,69 @@
 
 ---
 
+## 2026-05-04 — Memory reliability: auto-import journal via `@` directive (replaces broken auto-memory-hook)
+
+**Context:**
+User asked for a memory system with "zero errors." Three known broken layers
+were tracked in primer.md "Known broken layers" section: `@claude-flow/memory`
+npm package not installed (hook skips), `pending-insights.jsonl` writes garbage,
+`session.restore()` shows "No session" even when sessions exist.
+
+User specifically asked to fix the AutoMemory hook bug. On investigation:
+
+1. `@claude-flow/memory@3.0.0-alpha.14` **does exist** in npm (proprietary,
+   1.4 MB, ML pipeline with HNSW + LearningBridge + MemoryGraph).
+2. The hook `auto-memory-hook.mjs` already fail-safes correctly when the
+   package is missing — it silently skips with no crashes, just dim() output.
+3. Installing the package would add a proprietary ML layer whose entire job
+   (semantic search over project memory) is **already covered** by the
+   existing `mcp__claude-flow__memory_*` MCP tools (HNSW backend works
+   independently per primer.md note).
+4. **Most importantly**: the user's stated failure mode is "Claude doesn't
+   read journal/primer before answering 'did we decide X?'" — that's a
+   reliability problem, not a recall problem. ML-based fuzzy retrieval
+   makes it WORSE, not better — it can silently miss exact matches.
+
+**Decision:**
+Don't install `@claude-flow/memory`. Instead add `@docs/PROJECT_JOURNAL.md` to
+the import directives at the top of CLAUDE.md (alongside the existing
+`@recall-stack/primer.md`). Claude Code's harness reads `@` imports as plain
+file inlining — deterministic, no hooks, no LLM, no semantic search, no
+failure modes beyond "the file got deleted."
+
+Updates:
+- `CLAUDE.md` line 2: add `@docs/PROJECT_JOURNAL.md`.
+- `CLAUDE.md` Memory System Behavior section: rewrite layer 1 description to
+  emphasize auto-import; rename "Known broken layers" to "Memory hooks" and
+  document the deliberate non-install of `@claude-flow/memory` plus the
+  silent-skip behavior as intended.
+- `recall-stack/primer.md`: update Latest entry, update memory layer priority
+  line to reflect new architecture (file imports first, MCP second).
+
+**Why:**
+The simplest reliable thing wins. The journal is currently 741 lines / 40 KB
+— well within budget for per-session injection. When it grows past ~80 KB
+we'll refactor to a "recent decisions head" extraction (top 3-5 entries),
+but that's a problem for future-us, not now. The other two known-broken
+layers (`pending-insights.jsonl`, `session.restore()`) are unrelated to the
+user's actual goal and stay deferred.
+
+**Outcome:**
+Every future session, my context contains the journal automatically. No
+hooks to fail, no semantic search to miss, no "did we decide X?" question I
+can't answer from context. The 1% remaining failure mode is "the decision
+was never written into the journal" — which is a discipline problem on the
+human side, fixable by the existing CLAUDE.md rule "AFTER any non-trivial
+decision: append a new entry."
+
+**Artifacts:**
+- `CLAUDE.md` (lines 1-2 + Memory System Behavior section)
+- `recall-stack/primer.md` (Latest + memory layer priority entries)
+- Branch: `claude/evaluate-openai-agents-FYaAh` — same branch as PR #92.
+  Will piggyback this in the next PR or open a separate small one.
+
+---
+
 ## 2026-05-02 — Web lead notification: actionability fixes (deep link + vehicle names + no-contact suppression)
 
 **Context:**
