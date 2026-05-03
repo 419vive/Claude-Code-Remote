@@ -17,6 +17,7 @@ import { sanitizeChatMessage, sanitizeSearchQuery, maskPhone, maskName, maskPIII
 import { adminRouter } from "./routes/adminRoutes";
 import { detectVehicleFromMessage, buildSmartVehicleKB, buildTargetVehiclePrompt, detectCustomerIntents, buildIntentInstructions, buildVehicleIndex } from "./vehicleDetectionService";
 import { isRuleBasedMode, generateRuleBasedReply } from "./ruleBasedReply";
+import { buildPhoneAskInstruction } from "./phoneAsk";
 import {
   SHOP_ADDRESS,
   SHOP_MAP_URL,
@@ -609,6 +610,21 @@ export const appRouter = router({
         const intentInstructionsWeb = buildIntentInstructions(customerIntentsWeb, input.message, '人客', conversation!.customerContact, detectionWeb.vehicle);
         logger.info("WebChat IntentDetection", `intents=${customerIntentsWeb.join(', ') || 'none'}`);
 
+        // ============ PHASE-2 PHONE ASK (web channel only) ============
+        // Anonymous web visitors have no push channel — if they leave without
+        // sharing a phone, we can't follow up. When score >= 50 and no phone yet,
+        // softly ask in this turn. Self-suppresses if we asked in the last ~5
+        // assistant turns. See server/phoneAsk.ts for the decision logic.
+        const phoneAskInstructionWeb = buildPhoneAskInstruction({
+          channel: input.channel,
+          leadScore: conversation!.leadScore,
+          customerContact: conversation!.customerContact,
+          recentMessages: history.map(m => ({ role: m.role, content: m.content })),
+        });
+        if (phoneAskInstructionWeb) {
+          logger.info("WebChat PhoneAsk", `injected (score=${conversation!.leadScore || 0}, channel=${input.channel})`);
+        }
+
         // ============ RULE-BASED MODE (skip LLM if enabled) ============
         if (isRuleBasedMode()) {
           logger.info("WebChat", "Rule-based mode active (FORCE_RULE_BASED_REPLY=1)");
@@ -892,7 +908,7 @@ ${allVehiclesForDetection.map((v, i) => `  ${i + 1}. ${v.brand} ${v.model}`).joi
   2. 客人明確要求要跟真人說話
   3. 客人對你的回答不滿意，連續追問同一個問題
   4. 涉及複雜的議價、貸款、保固、法律等專業問題
-${targetVehiclePromptWeb}${intentInstructionsWeb}`;
+${targetVehiclePromptWeb}${intentInstructionsWeb}${phoneAskInstructionWeb}`;
 
         const llmMessages = [
           { role: "system" as const, content: systemPrompt },

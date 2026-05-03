@@ -77,6 +77,82 @@ decision: append a new entry."
 
 ---
 
+## 2026-05-03 — Phase 2: chat-widget AI proactively asks for phone at score ≥ 50
+
+**Context:**
+PR #92 (2026-05-02) suppressed noisy "Score: 50, 客戶名稱：未知, 電話：未提供"
+notifications for anonymous web visitors with no contact. That fixed the symptom
+(operator notification fatigue) but not the root cause: those visitors were
+still leaving without a phone, structurally unactionable. The web channel
+(`Chat.tsx` — `nanoid()` localStorage sessionId, no LINE userId, no push channel)
+has no way to follow up after the visitor closes the tab.
+
+This task was carved out as "Phase 2 (deferred)" in PR #92's primer entry.
+
+**Decision:**
+Prompt-only injection, no DB migration. New file `server/phoneAsk.ts` exports:
+- `shouldAskForPhone(ctx)` — pure function, AND of four gates:
+  1. `channel === "web"` (LINE has identity, never asks)
+  2. `leadScore >= 50` (matches QUALITY_LEAD_THRESHOLD in routers.ts:117)
+  3. `!customerContact` (or empty/whitespace string — Drizzle defensiveness)
+  4. No recent assistant message containing 電話/聯絡/聯繫方式/號碼 in the last
+     5 assistant turns (lookback = ~5 user-turn cooldown between asks)
+- `buildPhoneAskInstruction(ctx)` — returns a Mandarin prompt fragment in
+  the existing 老闆 / 中古車 / 高雄 dealership tone, OR empty string when
+  `shouldAskForPhone` is false. The fragment provides example phrasings as
+  tone references but explicitly invites Gemini to paraphrase based on
+  conversation context — does NOT script verbatim wording.
+
+Wired into `routers.ts` web `chat` mutation: computed after intent
+detection, appended at the end of the inline systemPrompt template (after
+`targetVehiclePromptWeb` and `intentInstructionsWeb`) for recency bias.
+Logged when injected so we can grep production logs to verify behavior.
+
+**Why prompt-only over a `phoneAskedAt` DB column:**
+- We already load the message history in the chat handler — a regex scan over
+  it is cheaper, accurate (matches what the LLM actually said, not what we
+  intended to flag), and avoids a schema change + idempotent migrations
+  (`runMigrations()` is fragile per the Railway/Nixpacks deployment story).
+- "Asked recently?" is exactly what the recent message scan answers.
+- One file (`phoneAsk.ts`), one call site (3 lines in routers.ts), 38 tests.
+
+**Why ≥ 50 (not 60 or 80):**
+- 50 is the existing QUALITY_LEAD_THRESHOLD — lead reached "qualified" tier.
+- 80 would be too late: by then the visitor's already shown high intent and
+  the operator notification (PR #92) re-fires anyway.
+- Below 50 = noisy; the 8-dimension scoring already filters casual browsers.
+
+**Why channel-gated to web only:**
+- LINE captures userId at follow time — we have a guaranteed push channel.
+  Asking for a phone there is redundant clutter.
+- Facebook/youtube/other are placeholder channels that don't actually flow
+  customer messages today; gated off defensively.
+
+**Outcome:**
+- 38 new unit tests pass; full suite 791 / 46 (was 753 / 46 — net +38, no
+  regression in the pre-existing 46 DB-required failures).
+- 6 pre-existing client-side tsc errors unchanged.
+- Branch `claude/phase-2-chat-phone-ask` opened, draft PR follows.
+
+**Verification plan (post-deploy):**
+- Operator side: monitor `Conversations` dashboard. Suppressed score-50
+  notifications (PR #92 hid them) should now re-emerge as score-with-contact
+  notifications because the AI captured the phone in-chat.
+- Production log grep: `WebChat PhoneAsk: injected (score=...)` confirms the
+  trigger fires for real visitors.
+- Phone-capture rate on web channel should rise vs. the pre-PR-92 baseline
+  (currently ~0% based on Megan's report).
+
+**Artifacts:**
+- `kun-auto-chatbot/server/phoneAsk.ts` (NEW — decision logic + prompt fragment)
+- `kun-auto-chatbot/server/phoneAsk.test.ts` (NEW — 38 tests, factLock-style)
+- `kun-auto-chatbot/server/routers.ts` (import + 3-line wire-up + 1-char append in template literal)
+- `recall-stack/primer.md` (Latest section + Exact Next Step)
+- Branch: `claude/phase-2-chat-phone-ask` (off origin/main `2c7618e`)
+- Draft PR: opened against `419vive/kunjia-autos-ai-chatbot`, base `main`
+
+---
+
 ## 2026-05-02 — Web lead notification: actionability fixes (deep link + vehicle names + no-contact suppression)
 
 **Context:**

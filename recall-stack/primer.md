@@ -1,10 +1,12 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/evaluate-openai-agents-FYaAh` (designated by session instructions; name is misleading — work is web-lead notification fix, not OpenAI Agents eval). PRs #88 + #89 already merged to main 2026-04-23.
+Branch: `claude/phase-2-chat-phone-ask` (off origin/main `2c7618e`). Phase-2 follow-up to PR #92 (web-lead-notify, merged 2026-05-02). PRs #88 + #89 already merged to main 2026-04-23.
 
-Latest (2026-05-04): **Memory reliability fix** — added `@docs/PROJECT_JOURNAL.md` to CLAUDE.md auto-import (alongside existing `@recall-stack/primer.md`). Journal now auto-loads on every session via Claude Code's `@` directive — bulletproof, no hooks, no LLM, no fallible logic. The deferred fix to `auto-memory-hook.mjs` is now intentional non-fix: `@claude-flow/memory` package is proprietary, ML-based, and duplicates what file imports already do. Hook silently skips, which is correct behavior.
+Latest (2026-05-03): **Phase 2 chat-widget phone ask shipped** — when a web visitor's lead score reaches ≥ 50 AND no phone yet AND no recent ask, the AI naturally requests a phone in the same turn. Prompt-only (no DB migration), self-suppressing via 5-turn lookback over assistant message history. Channel-gated to web (LINE has identity). New `server/phoneAsk.ts` + `server/phoneAsk.test.ts` (38 tests). Wired into the inline web `chat` system prompt in `server/routers.ts`. Closes the actionability loop PR #92 opened: PR #92 hid the noisy notification; this one converts the lead by asking for contact in-chat.
 
-Previously (2026-05-02): **Web lead notification actionability fix** (PR #92, merged) — conversationId + dashboard deep link, resolves vehicle IDs to "Brand Model Year", suppresses score-50 notifications when web visitor has no contact info.
+Earlier (2026-05-04): **Memory reliability fix** (PR #93, merged) — added `@docs/PROJECT_JOURNAL.md` to CLAUDE.md auto-import. Journal auto-loads on every session via Claude Code's `@` directive — deterministic, no hooks, no LLM, no fallible logic.
+
+Earlier (2026-05-02): **Web lead notification actionability fix** (PR #92, merged) — conversationId + dashboard deep link, resolves vehicle IDs to "Brand Model Year", suppresses score-50 notifications when web visitor has no contact info.
 
 ## Deployed + Working
 
@@ -19,11 +21,11 @@ Previously (2026-05-02): **Web lead notification actionability fix** (PR #92, me
 
 ## Exact Next Step
 
-1. Commit the memory-reliability fix (CLAUDE.md + recall-stack/primer.md edits)
-2. Push to `claude/evaluate-openai-agents-FYaAh` and open draft PR
-3. Verify next session: confirm I see journal entries automatically without being asked
+1. After Railway redeploys, monitor next 1-2 weeks of web leads on the `Conversations` dashboard: phone-capture rate on web channel should rise. Suppressed score-50 notifications (PR #92) should re-appear as score-≥-80 + contact-attached notifications.
+2. Production log grep for `WebChat PhoneAsk: injected` to confirm trigger fires.
+3. After PR #94 merges, verify next session that the UserPromptSubmit memory hook auto-injects relevant journal excerpts on memory-trigger keywords.
 
-Phase 2 (汽車店, deferred): chat widget asks for phone at score ≥ 50 to convert anonymous visitors into contactable leads.
+Phase 3 candidates (not started): operator-side phone-capture-rate metric in admin dashboard; A/B test soft-ask vs. explicit "Get a quote" CTA at score ≥ 80.
 
 ## Open Blockers
 
