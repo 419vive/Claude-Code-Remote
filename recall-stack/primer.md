@@ -2,7 +2,9 @@
 
 Branch: `claude/phase-2-chat-phone-ask` (off origin/main `2c7618e`). Phase-2 follow-up to PR #92 (web-lead-notify, merged 2026-05-02). PRs #88 + #89 already merged to main 2026-04-23.
 
-Latest (2026-05-03): **Phase 2 chat-widget phone ask shipped** — when a web visitor's lead score reaches ≥ 50 AND no phone yet AND no recent ask, the AI naturally requests a phone in the same turn. Prompt-only (no DB migration), self-suppressing via 5-turn lookback over assistant message history. Channel-gated to web (LINE has identity). New `server/phoneAsk.ts` + `server/phoneAsk.test.ts` (38 tests). Wired into the inline web `chat` system prompt in `server/routers.ts`. Closes the actionability loop PR #92 opened: PR #92 hid the noisy notification; this one converts the lead by asking for contact in-chat.
+Latest (2026-05-03): **Phase 2 chat-widget phone ask shipped** (PR #95, merged) — when a web visitor's lead score reaches ≥ 50 AND no phone yet AND no recent ask, the AI naturally requests a phone in the same turn. Prompt-only (no DB migration), self-suppressing via 5-turn lookback over assistant message history. Channel-gated to web (LINE has identity). New `server/phoneAsk.ts` + `server/phoneAsk.test.ts` (38 tests). Closes the actionability loop PR #92 opened.
+
+Also (2026-05-03): **Memory hook hardening** (PR #94, this branch) — new `UserPromptSubmit` hook `.claude/helpers/memory-search-hook.sh` injects journal excerpts when the prompt contains memory-trigger keywords (之前 / 上次 / 有沒有 / 曾經 / 先前 / 決定過 / before / did we / decided / previously / remember / recall / last time). Complements PR #93's `@docs/PROJECT_JOURNAL.md` import (which only fires on SessionStart). Hook fails silent on any error, capped at ~50 lines / ~3KB. Removed dead `auto-memory-hook.mjs import`/`sync` registrations from SessionStart/Stop. 1-week trial: monitor token consumption.
 
 Earlier (2026-05-04): **Memory reliability fix** (PR #93, merged) — added `@docs/PROJECT_JOURNAL.md` to CLAUDE.md auto-import. Journal auto-loads on every session via Claude Code's `@` directive — deterministic, no hooks, no LLM, no fallible logic.
 

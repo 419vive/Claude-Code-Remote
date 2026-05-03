@@ -204,6 +204,88 @@ identified" problem. 750 prior tests still green; tsc clean on touched files
 
 ---
 
+## 2026-05-03 — Memory hook hardening: UserPromptSubmit injects journal excerpts on keyword triggers
+
+**Context:**
+PR #93 (draft, may merge soon) added `@docs/PROJECT_JOURNAL.md` to CLAUDE.md so
+the harness inlines the journal automatically at session start. That works for
+session bootstrap but does nothing once context gets compacted away mid-session,
+or for long sessions where the journal slips out of the active window. The user
+wanted a second defensive layer that fires on every prompt containing
+memory-recall keywords, ensuring the model can't claim to "not remember"
+prior decisions when the journal in fact has them.
+
+**Decision:**
+
+1. **New `.claude/helpers/memory-search-hook.sh`** registered on `UserPromptSubmit`:
+   - Reads JSON from stdin via `jq -r '.prompt // empty'` with empty fallback.
+   - Triggers on regex: `之前|上次|有沒有|曾經|先前|決定過|為什麼|怎麼|before|did we|how did we|why did we|decided|previously|remember|recall|last time`.
+   - On match: extracts up to 5 distinctive content words from the prompt
+     (drops trigger words and stopwords), then `grep -B 2 -A 30 -m 3 -iE`
+     against `docs/PROJECT_JOURNAL.md`.
+   - Fallback to top journal entry header + 30 lines if no content-word match.
+   - Output prefixed with `[Memory] Relevant journal excerpts (auto-injected):`,
+     capped at 50 lines / ~3KB. Harness wraps stdout as `<system-reminder>`.
+   - Fails silently on every error path (missing jq, missing journal, parse
+     fail, regex fail) — exit 0 always. A crashing hook would brick sessions.
+
+2. **Removed two dead entries from `.claude/settings.json`:**
+   - `SessionStart`: dropped `auto-memory-hook.mjs import` (the `@` import in
+     CLAUDE.md replaced it; the mjs hook silently no-op'd because
+     `@claude-flow/memory` npm package is proprietary and intentionally not
+     installed). Kept `hook-handler.cjs session-restore`.
+   - `Stop`: dropped `auto-memory-hook.mjs sync` (paired with the import —
+     both obsolete). The Stop hooks array became empty so the key was removed.
+   - **Did NOT delete the `auto-memory-hook.mjs` file itself** — leaving it
+     in `.claude/helpers/` for now in case the package becomes available later.
+
+**Why this complements `@docs/PROJECT_JOURNAL.md` import:**
+
+The `@` import is one-shot at session start. As context grows and gets
+compacted, the journal evaporates. This hook re-injects relevant slices
+on demand, keyed off the linguistic signal that the user is asking about
+prior state. Two-layer defense: `@` for cold start, hook for warm sessions.
+
+**Trigger keywords:**
+
+`之前`, `上次`, `有沒有`, `曾經`, `先前`, `決定過`, `為什麼`, `怎麼`,
+`before`, `did we`, `how did we`, `why did we`, `decided`, `previously`,
+`remember`, `recall`, `last time`. Most prompts won't match; the hook is
+silent when it doesn't trigger.
+
+**Trial expectation:**
+
+User wants to monitor token consumption for 1 week. Excerpts are capped at
+~50 lines / ~3KB per fire, but if Chinese conversations frequently hit
+multiple triggers per message the budget could compound. If consumption
+looks acceptable after 1 week of real use, this becomes the long-term
+solution; otherwise we revisit (e.g., narrow the keyword set, shrink the
+output cap, or move to MCP semantic search instead of grep).
+
+**Manual verification:**
+
+| Input stdin | Result | Exit |
+|-------------|--------|------|
+| `{"prompt":"我們之前是不是決定過 Fact Lock"}` | Prints 2026-04-23 Fact Lock entry | 0 |
+| `{"prompt":"How are you today?"}` | No output (no trigger) | 0 |
+| `{"prompt":"did we decide on Railway deploys before?"}` | Prints 2026-04-22 Railway entry | 0 |
+| `not-json` | No output (jq fails silently) | 0 |
+| (empty) | No output | 0 |
+
+**Artifacts:**
+
+- `.claude/helpers/memory-search-hook.sh` (new, 110 lines, executable)
+- `.claude/settings.json` (UserPromptSubmit gains entry, SessionStart loses
+  one, Stop key removed)
+- `recall-stack/primer.md` (one-line note in Latest section)
+
+**Outcome:**
+
+Branch `claude/memory-hook-hardening`, draft PR. Awaiting 1 week of real-use
+data before merge.
+
+---
+
 ## 2026-04-23 — Fact Lock: 3-bug kill (price / 新車 / 台北內湖) via 5-layer defense
 
 **Context:**
