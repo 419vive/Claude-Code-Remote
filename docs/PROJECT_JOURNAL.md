@@ -14,6 +14,87 @@
 
 ---
 
+## 2026-05-22 — claude-seo plugin install (upgrade from loose SEO skills)
+
+**Context:**
+Jerry asked whether he should install `github.com/AgriciDaniel/claude-seo` (6.7k
+stars, MIT, Claude Code plugin) or if he already had something equivalent. On
+inspection, repo had loose SEO skills (`seo-audit`, `ai-seo`, `programmatic-seo`,
+`schema-markup`, `site-architecture`) but ZERO installed plugins and NO
+marketplaces configured (`claude plugin list` clean, `marketplace list` empty).
+The loose skills are reasoning playbooks; claude-seo adds 25 sub-skills + 18
+sub-agents with **real tooling** — Google API integrations (Search Console,
+PageSpeed, CrUX, GA4), DataForSEO MCP, local-SEO/GBP analysis, Core Web Vitals
+measurement, schema validators, and a Playwright-based visual analyzer.
+
+Jerry pushed back on my initial "don't install, you have enough" answer and
+asked me to actually do a serious dig and install something — either a gap-fill
+or a better version of what's already there. Fair point: claude-seo IS a strict
+upgrade over the loose skills, especially the `seo-local` + `seo-maps` agents
+which are directly relevant for 崑家汽車 (brick-and-mortar Kaohsiung dealership
+that needs Google Business Profile + Maps presence).
+
+**Decision:**
+Install `claude-seo@agricidaniel-seo` via `claude plugin install`, then persist
+the install to project scope by writing `extraKnownMarketplaces` +
+`enabledPlugins` keys to `.claude/settings.json` so it survives sandbox resets
+and propagates to anyone cloning the repo.
+
+User-scope install (`/root/.claude/`) was the default — would have evaporated
+on the next cloud-sandbox reset since the sandbox is ephemeral per project-side
+docs. Moving the registration into the committed `.claude/settings.json` makes
+it durable.
+
+**Why over keeping loose skills:**
+
+1. **Local SEO matters for this business.** Dealership is at 高雄市三民區大順二路269號;
+   `seo-local` + `seo-maps` agents handle GBP audits, NAP consistency, geo-grid
+   rank tracking, review intelligence — none of which the loose skills do.
+2. **API-backed audits beat reasoning prompts.** `seo-google` agent calls Search
+   Console / CrUX / GA4 for real ranking + CWV data. Loose skills can only
+   reason about what the user pastes in.
+3. **`seo-drift` is unique.** Baselines critical page elements (title, meta,
+   schema, h1s) and detects regressions over time. Helpful for the existing
+   `seo.ts` content (1782 lines of hardcoded shop SEO) — if anything drifts
+   from intended values, the agent catches it.
+4. **No loss.** Loose skills (`ai-seo`, `programmatic-seo`, etc.) still load
+   from `.claude/skills/` independently — plugin doesn't replace them. Net
+   capability is additive.
+
+**Cost:**
+- ~3,541 tok always-on overhead added to every session.
+- On-invoke costs of 500-4,600 tok per agent fire (only paid when summoned).
+- Acceptable budget — Jerry's main concern is feature velocity, not token spend,
+  and the journal + primer already exceed this per-session.
+
+**Outcome:**
+- `claude plugin list` confirms `claude-seo@agricidaniel-seo v1.9.9` enabled.
+- 18 agents now reachable under `claude-seo:` namespace
+  (`seo-local`, `seo-maps`, `seo-google`, `seo-technical`, `seo-schema`,
+  `seo-performance`, `seo-drift`, `seo-content`, `seo-backlinks`, `seo-cluster`,
+  `seo-ecommerce`, `seo-flow`, `seo-geo`, `seo-image-gen`, `seo-sxo`,
+  `seo-dataforseo`, `seo-sitemap`, `seo-visual`).
+- 25 skills loaded (mostly mirror the agent names + a few playbooks).
+- `.claude/settings.json` updated with marketplace + enabledPlugins keys.
+
+**How to use day-one:**
+- `Agent claude-seo:seo-local` against the 崑家汽車 site URL — get GBP + NAP +
+  local schema audit.
+- `Agent claude-seo:seo-google` — needs Search Console / GA4 credentials in
+  env to actually fetch data; otherwise falls back to public CrUX queries.
+- `Agent claude-seo:seo-drift` — first run captures baseline; subsequent runs
+  diff against it. Useful once Megan starts editing on-site copy.
+- DataForSEO requires API key (paid service). Skip unless Jerry wants to pay
+  for that tier.
+
+**Artifacts:**
+- `.claude/settings.json` (+11 lines: marketplace + enabledPlugins)
+- Branch: `claude/review-dependencies-2qA0r`
+- Plugin source: https://github.com/AgriciDaniel/claude-seo @ 1.9.9
+- Plugin cache: `/root/.claude/plugins/cache/agricidaniel-seo/claude-seo` (user-scope, not committed; rehydrates from marketplace on next session)
+
+---
+
 ## 2026-05-04 — Memory reliability: auto-import journal via `@` directive (replaces broken auto-memory-hook)
 
 **Context:**
