@@ -14,6 +14,79 @@
 
 ---
 
+## 2026-06-28 — LINE vehicle photos show 8891 watermark (hotlink) → server-side image proxy
+
+**Context:**
+Jerry screenshotted a LINE chat (contact 凱) where the AI's Subaru Forester
+Flex card showed a grey **"8891 中古車" watermark placeholder** instead of the
+real car photo, while an adjacent carousel card (an older, manually-photo'd
+vehicle) showed a real photo. Question: 「為什麼照片同步沒有跑出來」.
+
+Disambiguating observation from Jerry: the Forester photo renders **fine on the
+崑家 website and on 8891 itself — only LINE shows the watermark**. That rules out
+"sync stored no real photo" and pins it on how LINE fetches the image.
+
+**Root cause:**
+8891's image CDN (`p1.8891.com.tw`, etc.) **hotlink-protects against LINE's
+server-side image fetcher**. We store raw 8891 URLs and hand them straight to
+LINE Flex hero `url` fields (`lineFlexTemplates.ts`) with **no re-hosting/proxy**.
+Browsers on our own domain get the real JPEG (8891 allows them); LINE's fetcher
+gets the anti-leech watermark. Newer auto-synced cars (Forester) hit this;
+older IDs 1–12 had photos set via `update-photos.mjs` so they happened to render.
+
+**Decision:**
+Add a server-side image proxy rather than rewrite the sync. New `server/imageProxy.ts`:
+- `GET /img/8891?u=<encoded 8891 url>` re-fetches the image with the **same
+  browser-style headers the 8891 sync already uses successfully** (iPhone UA +
+  `Referer: https://www.8891.com.tw/`) and streams the real bytes back. LINE
+  then fetches from OUR HTTPS domain → always gets the real photo.
+- `isProxiableImageUrl()` — SSRF guard: only `https:` + host matching
+  `/(^|\.)8891\.com\.tw$/`. Rejects look-alikes (`8891.com.tw.evil.com`),
+  http, internal addresses, junk.
+- `toProxiedPhotoUrl()` — wraps 8891 urls to `${BASE_URL}/img/8891?u=…`,
+  passes everything else (placeholder.com fallbacks) through untouched.
+- Mounted in `_core/index.ts` **outside `/api/`** so the no-cache header
+  doesn't strip image caching; sets `Cache-Control: public … immutable`.
+- Failure fallback: redirect 302 to the original url (no worse than today).
+- Applied `toProxiedPhotoUrl()` at all 4 LINE 8891-image emission points in
+  `lineFlexTemplates.ts`: vehicle bubble hero, photo-carousel bubble heroes,
+  video-showcase hero, video-showcase 3-photo strip. (Website unchanged — it
+  already works.)
+
+**Why proxy over re-host/download:**
+- Zero new infra (no S3/Cloudinary), no DB migration, no change to the fragile
+  Railway/Nixpacks startup path.
+- Deterministic — replays the exact request shape 8891 already honours, so it
+  doesn't depend on reverse-engineering 8891's precise hotlink rule.
+- Self-healing: works for every current AND future synced car automatically.
+
+**Outcome:**
+- New `server/imageProxy.test.ts` — 14 tests (SSRF whitelist + wrap behaviour),
+  all green. Pure functions, no network.
+- `server/lineFlexTemplates.test.ts`: 8 failures are **pre-existing** (verified
+  identical via `git stash` on the original file — `buildRichMenuResponseMessages`
+  / `buildAppointmentCard`, unrelated to images).
+- `tsc --noEmit`: only the 6 known pre-existing client-side errors; 0 in touched
+  server files. `npm run build` clean (560.3kb).
+- **Cannot verify live from sandbox** — firewall blocks 8891 (HTTP 000) and the
+  prod DB, same as the documented Railway limitation. Needs a Railway deploy.
+
+**Verification plan (post-deploy):**
+1. Open `${BASE_URL}/img/8891?u=<an 8891 photo url>` in a browser → should show
+   the real car photo, not the watermark.
+2. Trigger a vehicle card in LINE → hero shows the real photo.
+3. Grep prod logs for `ImageProxy` warns (upstream-not-image / fetch-failed)
+   to catch any 8891 URLs that still fail.
+
+**Artifacts:**
+- `kun-auto-chatbot/server/imageProxy.ts` (NEW — router + 2 pure guards)
+- `kun-auto-chatbot/server/imageProxy.test.ts` (NEW — 14 tests)
+- `kun-auto-chatbot/server/lineFlexTemplates.ts` (import + 4 `toProxiedPhotoUrl` wraps)
+- `kun-auto-chatbot/server/_core/index.ts` (mount `imageProxyRouter`)
+- Branch: `claude/photo-sync-issue-e1ni0l`
+
+---
+
 ## 2026-05-04 — Memory reliability: auto-import journal via `@` directive (replaces broken auto-memory-hook)
 
 **Context:**
