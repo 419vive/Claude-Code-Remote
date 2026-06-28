@@ -1,8 +1,10 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/phase-2-chat-phone-ask` (off origin/main `2c7618e`). Phase-2 follow-up to PR #92 (web-lead-notify, merged 2026-05-02). PRs #88 + #89 already merged to main 2026-04-23.
+Branch: `claude/photo-sync-issue-e1ni0l` (off main `d2905f4`). PRs #92/#93/#94/#95 merged.
 
-Latest (2026-05-03): **Phase 2 chat-widget phone ask shipped** (PR #95, merged) — when a web visitor's lead score reaches ≥ 50 AND no phone yet AND no recent ask, the AI naturally requests a phone in the same turn. Prompt-only (no DB migration), self-suppressing via 5-turn lookback over assistant message history. Channel-gated to web (LINE has identity). New `server/phoneAsk.ts` + `server/phoneAsk.test.ts` (38 tests). Closes the actionability loop PR #92 opened.
+Latest (2026-06-28): **LINE vehicle-photo watermark fix shipped** (this branch) — Jerry's LINE card showed 8891's grey "8891 中古車" watermark instead of the real Subaru Forester photo, but the SAME photo renders fine on the website + 8891. Root cause: 8891 **hotlink-protects against LINE's server-side image fetcher** — we hand LINE raw `p1.8891.com.tw` URLs with no re-hosting. Fix: new `server/imageProxy.ts` exposes `GET /img/8891?u=…` that re-fetches with 8891-valid headers (iPhone UA + `Referer: https://www.8891.com.tw/`) and streams real bytes back; `toProxiedPhotoUrl()` wraps all 4 LINE 8891-image spots in `lineFlexTemplates.ts`. SSRF-guarded (https + `*.8891.com.tw` only). 14 new tests green; build clean. **Needs Railway deploy to verify live** (sandbox firewall blocks 8891).
+
+Earlier (2026-05-03): **Phase 2 chat-widget phone ask shipped** (PR #95, merged) — when a web visitor's lead score reaches ≥ 50 AND no phone yet AND no recent ask, the AI naturally requests a phone in the same turn. Prompt-only (no DB migration), self-suppressing via 5-turn lookback over assistant message history. Channel-gated to web (LINE has identity). New `server/phoneAsk.ts` + `server/phoneAsk.test.ts` (38 tests). Closes the actionability loop PR #92 opened.
 
 Also (2026-05-03): **Memory hook hardening** (PR #94, this branch) — new `UserPromptSubmit` hook `.claude/helpers/memory-search-hook.sh` injects journal excerpts when the prompt contains memory-trigger keywords (之前 / 上次 / 有沒有 / 曾經 / 先前 / 決定過 / before / did we / decided / previously / remember / recall / last time). Complements PR #93's `@docs/PROJECT_JOURNAL.md` import (which only fires on SessionStart). Hook fails silent on any error, capped at ~50 lines / ~3KB. Removed dead `auto-memory-hook.mjs import`/`sync` registrations from SessionStart/Stop. 1-week trial: monitor token consumption.
 
@@ -23,9 +25,9 @@ Earlier (2026-05-02): **Web lead notification actionability fix** (PR #92, merge
 
 ## Exact Next Step
 
-1. After Railway redeploys, monitor next 1-2 weeks of web leads on the `Conversations` dashboard: phone-capture rate on web channel should rise. Suppressed score-50 notifications (PR #92) should re-appear as score-≥-80 + contact-attached notifications.
-2. Production log grep for `WebChat PhoneAsk: injected` to confirm trigger fires.
-3. After PR #94 merges, verify next session that the UserPromptSubmit memory hook auto-injects relevant journal excerpts on memory-trigger keywords.
+1. **Verify photo-proxy after Railway deploy** (this branch's PR): (a) open `${BASE_URL}/img/8891?u=<an 8891 photo url>` in a browser → real car photo, not watermark; (b) trigger a vehicle card in LINE → hero shows real photo; (c) grep prod logs for `ImageProxy` warns to catch any 8891 URLs that still fail. Sandbox can't test live (firewall blocks 8891).
+2. After Railway redeploys, monitor next 1-2 weeks of web leads on the `Conversations` dashboard: phone-capture rate on web channel should rise. Suppressed score-50 notifications (PR #92) should re-appear as score-≥-80 + contact-attached notifications.
+3. Production log grep for `WebChat PhoneAsk: injected` to confirm trigger fires.
 
 Phase 3 candidates (not started): operator-side phone-capture-rate metric in admin dashboard; A/B test soft-ask vs. explicit "Get a quote" CTA at score ≥ 80.
 

@@ -6,6 +6,7 @@
 import type { Vehicle } from "../drizzle/schema";
 import { SHOP_PHONE, SHOP_ADDRESS, SHOP_ADDRESS_PLAIN, SHOP_CONTACT_PERSON, SHOP_HOURS } from "../shared/shopConfig";
 import { formatPriceForCard } from "../shared/priceFormat";
+import { toProxiedPhotoUrl } from "./imageProxy";
 
 // ============ HELPER: Parse photo URLs from vehicle ============
 
@@ -122,7 +123,7 @@ function buildVehicleBubble(v: Vehicle): any {
     size: "kilo",
     hero: {
       type: "image",
-      url: photoUrl,
+      url: toProxiedPhotoUrl(photoUrl),
       size: "full",
       aspectRatio: "4:3",
       aspectMode: "cover",
@@ -285,7 +286,7 @@ export function buildPhotoCarousel(vehicle: Vehicle): any[] {
       size: "kilo",
       hero: {
         type: "image",
-        url: url,
+        url: toProxiedPhotoUrl(url),
         size: "full",
         aspectRatio: "4:3",
         aspectMode: "cover",
@@ -384,7 +385,7 @@ export function buildVideoShowcaseCard(vehicle: Vehicle): any {
       size: "mega",
       hero: {
         type: "image",
-        url: heroPhoto,
+        url: toProxiedPhotoUrl(heroPhoto),
         size: "full",
         aspectRatio: "20:13",
         aspectMode: "cover",
@@ -477,7 +478,7 @@ export function buildVideoShowcaseCard(vehicle: Vehicle): any {
             spacing: "sm",
             contents: photos.slice(0, 3).map((url: string) => ({
               type: "image",
-              url,
+              url: toProxiedPhotoUrl(url),
               size: "full",
               aspectRatio: "1:1",
               aspectMode: "cover",

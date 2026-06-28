@@ -16,6 +16,7 @@ import { deployRichMenu } from "../lineRichMenu";
 import { RATE_LIMIT_CONFIG, logSecurityEvent } from "../security";
 import { trackingRouter } from "../trackingApi";
 import { pixelEventsRouter } from "../pixelEventsRelay";
+import { imageProxyRouter } from "../imageProxy";
 import { registerAdminAuthRoutes, seedAdminUser } from "./adminAuth";
 import { createSeoRouter } from "../seo";
 import mysql from "mysql2/promise";
@@ -366,6 +367,11 @@ async function startServer() {
 
   // Pixel Agents event relay (for remote session → local viewer)
   app.use(pixelEventsRouter);
+
+  // 8891 image proxy — serves vehicle photos to LINE with 8891-valid headers
+  // so they render in Flex cards instead of the anti-hotlink watermark.
+  // Mounted outside /api/ so image responses stay cacheable.
+  app.use(imageProxyRouter);
 
   // tRPC API
   app.use(
