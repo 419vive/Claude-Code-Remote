@@ -14,6 +14,71 @@
 
 ---
 
+## 2026-06-29 — Threads Lead Radar (human-in-the-loop social listening)
+
+**Context:**
+Jerry wanted a workflow that auto-finds people on FB/社團/Threads saying they
+want to buy a used car and auto-comments recommending 崑家 + website link.
+Researched feasibility/compliance hard (8-agent verification workflow).
+
+**Verified findings (workflow `social-lead-radar-compliance`):**
+- **Auto-commenting on strangers = banned** (Meta ToS automation + unsolicited
+  outreach; a human typing the reply does NOT cure it — the violation tracks
+  HOW the post was accessed + whether outreach is solicited). Also group admins
+  ban dealer self-promo. So the original "auto-comment" idea is a dead end.
+- **FB Groups = triple dead end**: Groups API deprecated Apr 2024 (no read path
+  for member OR admin), logged-in scraping banned (Jan 2025 ToS), most groups
+  private.
+- **Meta Content Library ≠ loophole**: research-only (academic/non-profit,
+  vetted), commercial use contractually barred, data locked in secure enclave.
+- **Threads = the one viable home** for "discover public posts → human replies".
+  Official `keyword_search` needs Meta App Review (`threads_keyword_search`),
+  500 queries/rolling-7-day cap. BUT third-party APIs (Apify actors,
+  EnsembleData) offer Threads keyword search **without** App Review / without
+  using the dealership's Meta creds (they scrape; we buy data) — cheaper, no
+  Meta review. Trade-off: scraping vendor (greyer, can break), but the
+  dealership's own account stays safe (it only logs in to reply by hand).
+- **Higher-ROI alternative (told Jerry)**: Meta paid **Lead Ads** + Automotive
+  Inventory Ads — sanctioned, ~US$25-50/lead, captures name+phone in-app.
+
+**Decision (Jerry chose Threads radar; "開始建"):**
+New `server/threadsLeadRadar.ts` — env-gated (`THREADS_SEARCH_API_KEY`), inert
+without it. Pipeline: query third-party Threads keyword-search API (Apify
+run-sync default, configurable) → `isBuyIntent()` filter (buy keywords AND not
+seller) → `shouldNotify()` dedupe + recency window → Gemini draft reply
+(`generateLeadReply`, lazy-imports llm to stay DB-free; template fallback) →
+push to operators (Jerry+Megan) via existing `getOperatorUserIds` + LINE push.
+Human reviews + replies manually in Threads (keeps us ToS-clean).
+Scheduler registered in `_core/index.ts` (`startThreadsLeadRadarScheduler(60)`).
+
+**Why third-party API over Meta App Review:** removes the App-Review blocker
+Jerry kept hitting; no 500/week cap; account-safe. Pure-vs-impure split keeps
+intent/dedupe/builders unit-tested without network.
+
+**Outcome:**
+- `server/threadsLeadRadar.test.ts` — 22 tests (intent filter, dedupe/recency,
+  vendor-field normalization, draft/message builders, env config). All green.
+- tsc: only the 6 pre-existing client errors; build clean (571.0kb).
+- **Inert until Jerry: (1) gets an Apify/EnsembleData API key, (2) sets
+  `THREADS_SEARCH_API_KEY` + `THREADS_SEARCH_ACTOR` on Railway, (3) pays the
+  past-due Railway bill.** Can't test live from sandbox (firewall).
+- v1 dedupe is in-memory (resets on redeploy; recency window bounds re-notify).
+  Phase 2: persist seen ids to DB.
+
+**Env vars (all optional; radar off without the first):**
+`THREADS_SEARCH_API_KEY` (Apify token), `THREADS_SEARCH_ACTOR` (Apify actor id,
+e.g. `user~threads-keyword-search`), `THREADS_SEARCH_KEYWORDS` (csv override),
+`THREADS_SEARCH_KEYWORD_FIELD` (default `keyword`), `THREADS_SEARCH_EXTRA_INPUT`
+(JSON), `THREADS_SEARCH_LOOKBACK_HOURS` (default 48).
+
+**Artifacts:**
+- `kun-auto-chatbot/server/threadsLeadRadar.ts` (NEW)
+- `kun-auto-chatbot/server/threadsLeadRadar.test.ts` (NEW — 22 tests)
+- `kun-auto-chatbot/server/_core/index.ts` (start scheduler)
+- Branch: `claude/threads-lead-radar` (off main `9dbacb5`)
+
+---
+
 ## 2026-06-28 — LINE vehicle photos show 8891 watermark (hotlink) → server-side image proxy
 
 **Context:**
