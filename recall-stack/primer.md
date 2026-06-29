@@ -1,8 +1,10 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/photo-sync-issue-e1ni0l` (off main `d2905f4`). PRs #92/#93/#94/#95 merged.
+Branch: `claude/ai-response-timing-chat-46l4sd` (off main, latest `9dbacb5` = PR #100). PRs #92/#93/#94/#95/#100 merged.
 
-Latest (2026-06-28): **LINE vehicle-photo watermark fix shipped** (this branch) — Jerry's LINE card showed 8891's grey "8891 中古車" watermark instead of the real Subaru Forester photo, but the SAME photo renders fine on the website + 8891. Root cause: 8891 **hotlink-protects against LINE's server-side image fetcher** — we hand LINE raw `p1.8891.com.tw` URLs with no re-hosting. Fix: new `server/imageProxy.ts` exposes `GET /img/8891?u=…` that re-fetches with 8891-valid headers (iPhone UA + `Referer: https://www.8891.com.tw/`) and streams real bytes back; `toProxiedPhotoUrl()` wraps all 4 LINE 8891-image spots in `lineFlexTemplates.ts`. SSRF-guarded (https + `*.8891.com.tw` only). 14 new tests green; build clean. **Needs Railway deploy to verify live** (sandbox firewall blocks 8891).
+Latest (2026-06-29): **AI auto-stop on critical buyer questions + appointment form** (this branch). Serious buyers skip the rich menu and ask 價格/殺價/車況/還在不在 directly; AI answers (sometimes wrong) → customer leaves, operator never alerted. Fix: new pure `server/handoffTriggers.ts` (`detectCriticalHandoff`, 27 tests) — make-or-break questions (詢價 on a real car / 殺價議價 / 車況 / 還在不在) → `lineWebhook.ts` pushes operator handoff card (🔒 接手), replies a short ack (or phone fallback), logs `ai_auto_stopped_critical_question`, locks AI (`aiDisabled:1`). General chat/loan/specs stay on AI (Jerry's choice — family not always online, don't blanket-silence). **Appointment intent now notifies + locks AI** after the datetimepicker; the `appointment_datetime` postback confirmation is exempt from the aiDisabled gate so booking still completes. Removed disliked booking nudge「看車的時間有想到嗎…電話再聊也可以」in `lineRecovery.ts`. Suite 832✓/46✗ (46 pre-existing), tsc clean (6 pre-existing client errs), build 564.1kb. **Needs Railway deploy to verify live.**
+
+Earlier (2026-06-28): **LINE photo watermark fix** (PR #100, merged) — 8891 hotlinks against LINE's fetcher; `server/imageProxy.ts` `GET /img/8891?u=…` re-fetches with iPhone UA + 8891 Referer, `toProxiedPhotoUrl()` wraps 4 LINE image spots. SSRF-guarded. 14 tests.
 
 Earlier (2026-05-03): **Phase 2 chat-widget phone ask shipped** (PR #95, merged) — when a web visitor's lead score reaches ≥ 50 AND no phone yet AND no recent ask, the AI naturally requests a phone in the same turn. Prompt-only (no DB migration), self-suppressing via 5-turn lookback over assistant message history. Channel-gated to web (LINE has identity). New `server/phoneAsk.ts` + `server/phoneAsk.test.ts` (38 tests). Closes the actionability loop PR #92 opened.
 
@@ -25,9 +27,9 @@ Earlier (2026-05-02): **Web lead notification actionability fix** (PR #92, merge
 
 ## Exact Next Step
 
-1. **Verify photo-proxy after Railway deploy** (this branch's PR): (a) open `${BASE_URL}/img/8891?u=<an 8891 photo url>` in a browser → real car photo, not watermark; (b) trigger a vehicle card in LINE → hero shows real photo; (c) grep prod logs for `ImageProxy` warns to catch any 8891 URLs that still fail. Sandbox can't test live (firewall blocks 8891).
-2. After Railway redeploys, monitor next 1-2 weeks of web leads on the `Conversations` dashboard: phone-capture rate on web channel should rise. Suppressed score-50 notifications (PR #92) should re-appear as score-≥-80 + contact-attached notifications.
-3. Production log grep for `WebChat PhoneAsk: injected` to confirm trigger fires.
+1. **Verify AI auto-stop after Railway deploy** (this branch's PR): (a) customer (no menu) asks「這台多少錢」/「可以殺價嗎」/「有沒有事故」/「還在嗎」on a car in context → AI sends short ack (not a price/condition answer), operator gets 🔒 接手 card, conversation locks; (b)「我想預約看車」→ datetimepicker → operator card + lock → customer picks time → STILL gets confirmation + booking-form link; (c) grep prod logs for `🛑 Critical high-intent question` and `ai_auto_stopped_appointment`. Sandbox can't test live (firewall).
+2. **Watch the over-lock trade-off**: appointment intent now permanently locks AI (Jerry's choice). If too many booking convos pile up needing `/unlock`, switch appointments to auto-expiring 30-min `human_handoff` instead of `aiDisabled:1`.
+3. Tune `detectCriticalHandoff` regexes (`handoffTriggers.ts`) if real traffic shows false-positives/negatives — it's a pure, fully-tested module so easy to adjust.
 
 Phase 3 candidates (not started): operator-side phone-capture-rate metric in admin dashboard; A/B test soft-ask vs. explicit "Get a quote" CTA at score ≥ 80.
 

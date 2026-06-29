@@ -99,7 +99,13 @@ async function checkConversationRecovery() {
         { type: "action", action: { type: "uri", label: "📞 直接打電話", uri: "tel:0936812818" } },
       );
     } else if (track.lastTopic === "booking") {
-      nudgeText = "看車的時間有想到嗎？不用完全確定，我們電話再聊也可以 😊";
+      // Jerry (2026-06-29): removed the old "看車的時間有想到嗎？不用完全確定，我們電話再聊也可以"
+      // line — it pressured customers about timing prematurely and felt like the AI
+      // rushing to close. Booking conversations now auto-stop the AI (appointment
+      // intent → aiDisabled), and aiDisabled conversations are already skipped above,
+      // so this softer line only ever reaches the lighter "talked about booking but
+      // didn't commit" cases. Low-pressure, no timing push.
+      nudgeText = "如果還有想了解的，或想安排時間來看車，隨時跟我說就好 😊";
       quickReplyItems.push(
         { type: "action", action: { type: "message", label: "📅 預約看車", text: "我想預約看車" } },
         { type: "action", action: { type: "message", label: "🕐 時間彈性", text: "我時間彈性，你們幫我安排" } },
