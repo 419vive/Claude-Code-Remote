@@ -12,6 +12,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startSyncScheduler, sync8891 } from "../sync8891";
+import { startThreadsLeadRadarScheduler } from "../threadsLeadRadar";
 import { deployRichMenu } from "../lineRichMenu";
 import { RATE_LIMIT_CONFIG, logSecurityEvent } from "../security";
 import { trackingRouter } from "../trackingApi";
@@ -489,6 +490,8 @@ setTimeout(function(){window.location.href="${LINE_OA_URL}"},300);
       .then(result => logger.info("Sync", `Initial sync completed: ${result}`))
       .catch(err => logger.error("Sync", "Initial sync failed:", err));
     startSyncScheduler(6);
+    // Threads lead radar — env-gated (no-op without THREADS_SEARCH_API_KEY)
+    startThreadsLeadRadarScheduler(60);
     // Auto-deploy Rich Menu on startup to keep it in sync with code
     const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
     if (lineToken) {
