@@ -14,6 +14,90 @@
 
 ---
 
+## 2026-06-29 — AI auto-stops on critical buyer questions + appointment form (operator-takeover timing)
+
+**Context:**
+Jerry flagged two LINE-flow timing problems:
+1. **Menu-tappers (low intent):** customers who repeatedly tap the rich-menu
+   buttons (車輛庫存 / 50萬以下) already surface to the operator via the existing
+   notification cards. Working, but low purchase intent — "只是了解車行".
+2. **Direct askers (high intent) get no alert:** serious buyers SKIP the menu and
+   ask detail questions straight (價格 / 殺價 / 車況 / 還在不在). The AI answers
+   immediately, sometimes **wrongly**, the customer leaves, and the operator gets
+   no fresh red-dot — they only discover the (already-finished, error-laden)
+   conversation later. He also disliked the booking-recovery nudge
+   「看車的時間有想到嗎？不用完全確定，我們電話再聊也可以」 (AI rushing to close in <5s),
+   and wanted the **appointment form pop-up to also stop AI** so he can step in to
+   discuss needs (「比較好介入詢問需求」).
+
+**Decision (confirmed with Jerry via question prompt):**
+- **Direct questions → auto-stop AI only for the make-or-break ones**
+  (詢價 on a real car / 殺價議價 / 車況 / 還在不在). General chat, loan, and specs
+  (里程/顏色/年份) stay on the AI. New pure module `server/handoffTriggers.ts`
+  (`detectCriticalHandoff`), 27 tests in `handoffTriggers.test.ts`.
+  - price_negotiation → always; pricing → only with a detected vehicle;
+    condition (事故/泡水/烤漆/認證報告…) → always; availability (還在嗎…) → only
+    with a detected vehicle (excludes ambiguous bare 還有嗎 = browsing).
+  - On trigger: push the operator handoff card (`sendHumanHandoffNotification`,
+    has the 🔒 接手 button), reply a short human-handoff ack (or a phone-forward
+    fallback when no operator is online), log an `operator_takeover /
+    ai_auto_stopped_critical_question` analytics event, then
+    `status:'human_handoff', aiDisabled:1`. Wired in `lineWebhook.ts` AFTER the
+    spec/trade-in/appointment direct-response blocks so those accurate
+    deterministic flows are untouched.
+- **Appointment form → notify operator + auto-stop AI.** After the datetimepicker
+  is sent, fire the handoff card + `ai_auto_stopped_appointment` event + lock.
+  Crucially, the `appointment_datetime` postback confirmation (chosen time +
+  booking-form link) is now **exempt from the aiDisabled gate** — it's a
+  deterministic widget, not an LLM reply — so the customer can still finish
+  booking while the operator takes over the needs discussion.
+- **Removed the disliked nudge sentence** in `lineRecovery.ts` booking branch;
+  replaced with a low-pressure line that doesn't push timing. (Booking convos are
+  now aiDisabled anyway, and the recovery loop already skips aiDisabled, so this
+  line only reaches the lighter "talked booking but didn't commit" cases.)
+
+**Why this shape:**
+- Family availability (dad 70, Megan part-time) means blanket auto-stop on *every*
+  question would leave customers with silence when no one's watching — hence
+  Jerry's choice to auto-stop only the highest-stakes questions, leave the rest on
+  the AI, and always give a customer-facing ack + phone fallback.
+- Reuses the existing operator-takeover machinery (`sendHumanHandoffNotification`
+  + buildHumanHandoffFlex + the operator_takeover postback) — no new notification
+  plumbing, consistent UX with the rest of the takeover system.
+
+**Outcome:**
+- `handoffTriggers.test.ts`: 27/27 green. Full suite: 832 passed / 46 failed —
+  the 46 are the **pre-existing** DB/env-dependent failures (identical count with
+  my changes stashed). `tsc`: only the 6 known pre-existing client-side errors,
+  0 in touched server files. `esbuild` clean (564.1kb).
+- **Cannot verify live from sandbox** (firewall blocks LINE/prod DB) — needs a
+  Railway deploy.
+
+**Known trade-off (flagged for Jerry):**
+Appointment intent now permanently locks AI (aiDisabled=1) per his choice — every
+booking customer needs an operator `/unlock` to get AI back. Fine at current
+volume (~6 cars/mo); if it gets noisy we can switch appointments to the
+auto-expiring 30-min `human_handoff` instead.
+
+**Verification plan (post-deploy):**
+1. Customer (no menu) asks「這台多少錢」/「可以殺價嗎」/「有沒有事故」/「還在嗎」on a
+   car in context → AI sends the short ack (not a price/condition answer),
+   operator gets the 🔒 接手 card, conversation locks.
+2. Customer「我想預約看車」→ datetimepicker shows → operator gets card + lock →
+   customer picks a time → still gets the confirmation + booking-form link.
+3. Grep prod logs: `🛑 Critical high-intent question` and
+   `ai_auto_stopped_appointment`.
+
+**Artifacts:**
+- `kun-auto-chatbot/server/handoffTriggers.ts` (NEW — pure detector)
+- `kun-auto-chatbot/server/handoffTriggers.test.ts` (NEW — 27 tests)
+- `kun-auto-chatbot/server/lineWebhook.ts` (import + appointment lock + postback
+  exemption + critical-handoff block)
+- `kun-auto-chatbot/server/lineRecovery.ts` (booking nudge sentence replaced)
+- Branch: `claude/ai-response-timing-chat-46l4sd`
+
+---
+
 ## 2026-06-28 — LINE vehicle photos show 8891 watermark (hotlink) → server-side image proxy
 
 **Context:**

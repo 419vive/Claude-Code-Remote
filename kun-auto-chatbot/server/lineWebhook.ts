@@ -14,6 +14,7 @@ import { sanitizeChatMessage, validateLLMOutput, getGuardrailMode } from "./secu
 import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting, isOperator, parseOperatorCommand, type OperatorCommand } from "./lineUtils";
 import { getAssistantContentForTrigger, buildOwnerNotificationFlex, getMilestoneLevel, checkAndNotifyOwner, buildHumanHandoffFlex, sendHumanHandoffNotification, sendNewCustomerNotification } from "./lineNotification";
 import { updateConversationTracker, sendFollowUpMessages } from "./lineRecovery";
+import { detectCriticalHandoff } from "./handoffTriggers";
 import { SHOP_ADDRESS, SHOP_PHONE, SHOP_CONTACT_PERSON, SHOP_HOURS } from "../shared/shopConfig";
 
 // ============ TYPING INDICATOR ============
@@ -886,22 +887,21 @@ async function processLineEvent(
 
         console.log(`[LINE] Appointment datetime selected: ${selectedDatetime} by ${postbackUserId?.slice(0, 8)}...`);
 
-        // Save to conversation (and short-circuit if operator has taken over)
-        let postbackConvAiDisabled = false;
+        // Save to conversation. NOTE: the appointment confirmation below is a
+        // deterministic booking widget (chosen date/time + a link to the booking
+        // form), NOT an AI-generated chat reply — so it is sent even when the
+        // conversation is aiDisabled. This is intentional: appointment intent
+        // now auto-stops the AI (Jerry 2026-06-29), but the customer must still
+        // be able to finish booking. The early aiDisabled gate keeps all LLM
+        // free-text replies stopped; only this deterministic step is exempt.
         if (postbackUserId) {
           const postbackSession = `line-${postbackUserId}`;
           const postbackConv = await db.getConversationBySessionId(postbackSession);
           if (postbackConv) {
             await db.addMessage({ conversationId: postbackConv.id, role: "user", content: `[客戶選擇預約時間：${formattedDatetime}]` });
-            if ((postbackConv as any).aiDisabled === 1) {
-              postbackConvAiDisabled = true;
-              console.log(`[LINE Postback] Conversation ${postbackConv.id} is aiDisabled — skipping confirmation reply`);
-            } else {
-              await db.addMessage({ conversationId: postbackConv.id, role: "assistant", content: `已選擇 ${formattedDatetime}，引導至預約表單` });
-            }
+            await db.addMessage({ conversationId: postbackConv.id, role: "assistant", content: `已選擇 ${formattedDatetime}，引導至預約表單` });
           }
         }
-        if (postbackConvAiDisabled) return;
 
         // Build URL to book-visit page with pre-filled date/time
         const baseUrl = process.env.BASE_URL || "https://claude-code-remote-production.up.railway.app";
@@ -1705,6 +1705,74 @@ async function processLineEvent(
         body: JSON.stringify({ replyToken, messages: [flexMessage] }),
       });
     } catch (err) { console.error("[LINE] Reply failed:", err); }
+
+    // ============ APPOINTMENT → NOTIFY OPERATOR + STOP AI ============
+    // Jerry (2026-06-29): when the booking form pops up, alert the operator and
+    // hand the customer over so a real person discusses their needs. The
+    // datetimepicker → confirmation → booking-form flow is deterministic (not the
+    // LLM), so it still completes — the appointment_datetime postback handler is
+    // exempt from the aiDisabled gate. Only the free-text AI chat is stopped.
+    await sendHumanHandoffNotification(
+      conversation!,
+      `${headerText}（客人想預約看車，AI 已暫停等待真人介入）`,
+      "（AI 已發送日期選擇器，改由真人接手需求討論）",
+      channelAccessToken,
+      ownerUserId,
+    );
+    await db.addAnalyticsEvent({
+      conversationId: convId,
+      userId,
+      eventCategory: 'operator_takeover',
+      eventAction: 'ai_auto_stopped_appointment',
+      eventLabel: vehicleName || 'no-vehicle',
+      channel: 'line',
+    });
+    await db.updateConversation(convId, { status: 'human_handoff', aiDisabled: 1 });
+    return;
+  }
+
+  // ============ CRITICAL HIGH-INTENT QUESTION → STOP AI + NOTIFY OPERATOR ============
+  // Jerry (2026-06-29): serious buyers skip the rich menu and ask the make-or-break
+  // questions directly (價格 / 殺價 / 車況 / 還在不在). A wrong AI answer to one of these
+  // loses the sale, so per his decision these specific questions auto-stop the AI and
+  // hand off to a real person — with an immediate operator alert (red-dot card + 接手
+  // button). Everything else (general chat, loan, specs) stays on the AI.
+  // Placed AFTER the spec/trade-in/appointment direct-response blocks so those
+  // accurate, deterministic flows are untouched.
+  const criticalHandoff = detectCriticalHandoff({
+    message: userMessage,
+    intents: customerIntents,
+    hasVehicle: !!detection.vehicle,
+  });
+  if (criticalHandoff.triggered) {
+    console.log(`[LINE] 🛑 Critical high-intent question (${criticalHandoff.reason}) — stopping AI, notifying operator`);
+    const notificationSent = await sendHumanHandoffNotification(
+      conversation!,
+      `${userMessage}\n（高意願訊號：${criticalHandoff.reason}，AI 已暫停等待真人）`,
+      "（AI 未回覆，改由真人接手）",
+      channelAccessToken,
+      ownerUserId,
+    );
+    const ackReply = notificationSent
+      ? "這部分我請我們專人幫您確認，馬上回覆您 🙏"
+      : `這部分我幫您請專人確認，您也可以直接撥打 ${SHOP_PHONE} 找${SHOP_CONTACT_PERSON}，會更快喔！`;
+    await db.addMessage({ conversationId: convId, role: "assistant", content: ackReply });
+    try {
+      await fetch("https://api.line.me/v2/bot/message/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+        body: JSON.stringify({ replyToken, messages: [{ type: "text", text: ackReply }] }),
+      });
+    } catch (err) { console.error("[LINE] Critical handoff reply failed:", err); }
+    await db.addAnalyticsEvent({
+      conversationId: convId,
+      userId,
+      eventCategory: 'operator_takeover',
+      eventAction: 'ai_auto_stopped_critical_question',
+      eventLabel: criticalHandoff.reason || 'unknown',
+      channel: 'line',
+    });
+    await db.updateConversation(convId, { status: 'human_handoff', aiDisabled: 1 });
     return;
   }
 
