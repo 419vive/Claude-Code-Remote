@@ -13,18 +13,19 @@ Latest (2026-07-06): **Phase 2 complete + Phase 3 streaming/polling foundation s
 - **Tests**: 837✓/46✗ (46 pre-existing DB-dependent)
 - **Build**: 577kb clean
 
-**PHASE 3 IN PROGRESS** (4 Opus agents still running):
-1. **Web P0-2**: Real-time human reply architecture → useMessages.ts polling hook (3s interval, delta-fetching, dedup)
-2. **Web P1-2**: Streaming completion → chatStreamRouter.ts (/api/chat/stream SSE), llm.ts async generator, Chat.tsx consumer
-3. **LINE P1-5**: Memory system → DB injection + re-ask gating (extract→inject→gate pattern)
-4. **LINE P0-3**: Trade-in photo context awareness (photo trigger + trade-in scope awareness)
+**PHASE 3 IN PROGRESS** (4 Opus agents running, streaming + memory mostly done):
+1. **Web P0-2**: Real-time human reply architecture → useMessages.ts polling hook (3s interval, delta-fetching, dedup) ✓
+2. **Web P1-2**: Streaming completion → chatStreamRouter.ts (/api/chat/stream SSE), llm.ts async generator, Chat.tsx consumer ✓
+3. **LINE P1-5**: Memory system → customerMemoryExtractor.ts (extract), DB schema extended (persist), dynamicPromptBuilder injection (gate) ✓
+4. **LINE P0-3**: Trade-in photo context awareness (photo trigger + trade-in scope awareness) [still running]
 
-**Commits pushed today:**
+**Commits today:**
+- 2efec90: Conversation memory + streaming polish (memory tests aligned, chatHistoryRouter, useMessages integration)
+- cb3aa83: Project memory docs (web streaming completion)
 - d494581: Phase 3 foundation (useMessages, chatStreamRouter, Chat polling integration)
 - 3ddaace: VehicleLanding design compliance
 - ff5bef9: Web chat context passthrough
 - e2dbc84: Search 0-results escape routes
-- (earlier): search sorting, memory DB schema, design overhaul, streaming prep
 
 ## Next Action
 
