@@ -1127,7 +1127,42 @@ async function processLineEvent(
       return;
     }
 
-    // 3) Anything else (free-text) → stay silent; the operator handles it.
+    // 3) FAQ chips → deterministic FAQ answer cards (same pattern as rich-menu)
+    if (detectFaqTrigger(userMessage)) {
+      console.log(`[LINE] Conv ${conversation.id} aiDisabled — serving deterministic FAQ answer, AI stays locked`);
+      const faqMessages = buildFaqAnswerMessages(userMessage);
+      if (faqMessages.length > 0) {
+        await db.addMessage({ conversationId: conversation.id, role: "assistant", content: getAssistantContentForTrigger({ type: "faq_chip" }) });
+        try {
+          await fetch("https://api.line.me/v2/bot/message/reply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+            body: JSON.stringify({ replyToken, messages: faqMessages }),
+          });
+        } catch (err) { console.error("[LINE] aiDisabled FAQ reply failed:", err); }
+      }
+      return;
+    }
+
+    // 4) Photo/image uploads → deterministic photo carousel (same pattern as rich-menu)
+    if (detectPhotoTrigger(userMessage)) {
+      console.log(`[LINE] Conv ${conversation.id} aiDisabled — serving deterministic photo carousel, AI stays locked`);
+      const allVehicles = await db.getAllVehicles();
+      const photoMessages = buildPhotoCarousel(userMessage, allVehicles);
+      if (photoMessages.length > 0) {
+        await db.addMessage({ conversationId: conversation.id, role: "assistant", content: getAssistantContentForTrigger({ type: "photo_browse" }) });
+        try {
+          await fetch("https://api.line.me/v2/bot/message/reply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+            body: JSON.stringify({ replyToken, messages: photoMessages }),
+          });
+        } catch (err) { console.error("[LINE] aiDisabled photo reply failed:", err); }
+      }
+      return;
+    }
+
+    // 5) Anything else (free-text) → stay silent; the operator handles it.
     console.log(`[LINE] Conversation ${conversation.id} is aiDisabled (operator takeover), skipping LLM handling`);
     return;
   }
