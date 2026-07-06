@@ -61,6 +61,7 @@ export default function Chat() {
       sessionId,
       message: content,
       channel: "web",
+      vehicleContext: vehicleContext ? vehicleContext : undefined,
     });
   };
 

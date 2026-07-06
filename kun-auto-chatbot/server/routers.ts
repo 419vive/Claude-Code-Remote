@@ -525,6 +525,7 @@ export const appRouter = router({
         message: z.string().min(1),
         customerName: z.string().optional(),
         channel: z.enum(["web", "line", "facebook", "youtube", "other"]).default("web"),
+        vehicleContext: z.string().optional(), // e.g., "Honda Fit 2016" passed from vehicle detail page
       }))
       .mutation(async ({ input }) => {
         // SECURITY: Sanitize chat message input
@@ -573,10 +574,10 @@ export const appRouter = router({
           conversation = { ...conversation!, customerContact: detectedPhone };
           logger.info("Chat", "Phone number detected and saved: [REDACTED]");
         }
-        
+
         // Score the message
         const scoring = await scoreMessage(convId, sanitizedMessage);
-        
+
         // Update lead score
         if (scoring.totalDelta > 0) {
           const newScore = (conversation!.leadScore || 0) + scoring.totalDelta;
@@ -587,16 +588,23 @@ export const appRouter = router({
           });
           conversation = { ...conversation!, leadScore: newScore, leadStatus: newStatus };
         }
-        
+
         // Build context messages for LLM
         const history = await db.getMessagesByConversation(convId, 20);
-        
+
         // ============ VEHICLE DETECTION v5: Context-aware detection ============
         const allVehiclesForDetection = await db.getAllVehicles();
         const vIndex = buildVehicleIndex(allVehiclesForDetection);
         // Pass conversation history so follow-up questions can resolve to previously discussed vehicles
         const historyForDetection = history.map((m: any) => ({ role: m.role, content: m.content }));
-        const detectionWeb = detectVehicleFromMessage(input.message, allVehiclesForDetection, historyForDetection, vIndex);
+
+        // Augment message with vehicleContext from URL (e.g., visitor came from vehicle detail page)
+        // This helps the AI understand which car the visitor is interested in even if the message is ambiguous
+        const messageForDetection = input.vehicleContext
+          ? `[當前查看的車：${input.vehicleContext}] ${input.message}`
+          : input.message;
+
+        const detectionWeb = detectVehicleFromMessage(messageForDetection, allVehiclesForDetection, historyForDetection, vIndex);
         logger.info("WebChat VehicleDetection", `type=${detectionWeb.type}, vehicle=${detectionWeb.vehicle?.brand || 'none'} ${detectionWeb.vehicle?.model || ''}, question=${detectionWeb.questionType}, answer=${detectionWeb.directAnswer}`);
         
         // Build smart vehicle KB: if target vehicle detected, show it prominently and abbreviate others

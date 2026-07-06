@@ -155,6 +155,46 @@ function isDuplicate(messageId: string): boolean {
   return false;
 }
 
+// ============ TRADE-IN CONTEXT DETECTION ============
+// Checks if a conversation is in a trade-in flow by scanning the last ~5
+// assistant messages for the trade-in template. Used to distinguish between
+// customer shopping for inventory (photo of car brand/model) vs.
+// customer responding to a trade-in request (photo of their own car).
+async function isTradeInContext(conversationId: number): Promise<boolean> {
+  try {
+    const allMessages = await db.getMessagesByConversation(conversationId, 10);
+    if (!allMessages || allMessages.length === 0) return false;
+
+    // Scan the last 5 messages in reverse (most recent first)
+    const recentMessages = allMessages.slice(-5);
+
+    // Look for the trade-in template marker in assistant messages
+    // The template contains "估車仍會以實際看到車況為主" or "可以先提供以下資訊給我"
+    const tradeInMarkers = [
+      "估車仍會以實際看到車況為主",
+      "可以先提供以下資訊給我",
+      "品牌／年份／里程數",
+      "車身外觀與內裝的詳細照片",
+    ];
+
+    for (const msg of recentMessages) {
+      if (msg.role === "assistant") {
+        for (const marker of tradeInMarkers) {
+          if (msg.content.includes(marker)) {
+            console.log(`[LINE Image] Trade-in context detected: message contains "${marker}"`);
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  } catch (err) {
+    console.error("[LINE Image] Error checking trade-in context:", err);
+    return false;
+  }
+}
+
 // ============ OPERATOR COMMAND HANDLER ============
 // Executes /lock, /unlock, /list, /status, /help when an operator (whitelisted
 // userId) texts the bot from their own LINE. Replies in-thread.
@@ -739,28 +779,70 @@ async function processLineEvent(
           body: JSON.stringify({ replyToken, messages: replyMessages }),
         });
       } else {
-        // No match in inventory — still acknowledge the identification
-        await fetch("https://api.line.me/v2/bot/message/reply", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${channelAccessToken}`,
-          },
-          body: JSON.stringify({
-            replyToken,
-            messages: [{
-              type: "text",
-              text: `我看到你傳了一張 ${identified.brand} ${identified.model} 的照片！🚗\n不過目前庫存裡沒有這台車。\n\n要不要看看我們其他的好車？👇`,
-              quickReply: {
-                items: [
-                  { type: "action", action: { type: "message", label: "🚗 瀏覽所有車輛", text: "我想看車，有什麼車可以推薦？" } },
-                  { type: "action", action: { type: "message", label: "💰 50萬以下", text: "50萬以下有什麼好車？" } },
-                  { type: "action", action: { type: "message", label: "📞 直接聯繫", text: "可以給我你們的聯絡方式嗎？" } },
-                ],
-              },
-            }],
-          }),
-        });
+        // No match in inventory — check if this is a trade-in photo vs. inventory shopping
+        const sessionId = `line-${userId}`;
+        let conversation = await db.getConversationBySessionId(sessionId);
+
+        // Determine if customer was responding to a trade-in request
+        const inTradeInContext = conversation ? await isTradeInContext(conversation.id) : false;
+
+        if (inTradeInContext) {
+          // Trade-in photo response: acknowledge receipt and notify operator
+          console.log(`[LINE Image] Trade-in photo detected, acknowledging and notifying operator`);
+
+          const tradeInAckText = `收到你的愛車照片了！📸\n\n已轉給${SHOP_CONTACT_PERSON}估價，會盡快回覆你！`;
+
+          await fetch("https://api.line.me/v2/bot/message/reply", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${channelAccessToken}`,
+            },
+            body: JSON.stringify({
+              replyToken,
+              messages: [{
+                type: "text",
+                text: tradeInAckText,
+              }],
+            }),
+          });
+
+          // Notify operator about the trade-in photo
+          if (conversation) {
+            const ownerUserId = ENV.LINE_OWNER_USER_ID;
+            const handoffMessage = `客戶上傳了愛車照片（${identified.brand} ${identified.model}）待估價`;
+            await sendHumanHandoffNotification(
+              conversation,
+              handoffMessage,
+              "（收到客戶愛車照片）",
+              channelAccessToken,
+              ownerUserId
+            );
+          }
+        } else {
+          // Inventory shopping: no match found, suggest browsing
+          await fetch("https://api.line.me/v2/bot/message/reply", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${channelAccessToken}`,
+            },
+            body: JSON.stringify({
+              replyToken,
+              messages: [{
+                type: "text",
+                text: `我看到你傳了一張 ${identified.brand} ${identified.model} 的照片！🚗\n不過目前庫存裡沒有這台車。\n\n要不要看看我們其他的好車？👇`,
+                quickReply: {
+                  items: [
+                    { type: "action", action: { type: "message", label: "🚗 瀏覽所有車輛", text: "我想看車，有什麼車可以推薦？" } },
+                    { type: "action", action: { type: "message", label: "💰 50萬以下", text: "50萬以下有什麼好車？" } },
+                    { type: "action", action: { type: "message", label: "📞 直接聯繫", text: "可以給我你們的聯絡方式嗎？" } },
+                  ],
+                },
+              }],
+            }),
+          });
+        }
       }
 
       // Save to conversation history

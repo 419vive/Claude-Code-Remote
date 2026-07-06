@@ -54,18 +54,14 @@ function getIntentQuestions(vehicle: any) {
       id: "price",
       icon: "💰",
       label: "這台多少錢？有優惠嗎？",
-      color: "#C4A265",
-      bgColor: "rgba(196, 162, 101, 0.1)",
-      borderColor: "rgba(196, 162, 101, 0.25)",
+      className: "bg-primary/10 border-primary/25 text-primary",
       lineMessage: `我看到這台 ${name} ${year}，網頁上標 ${price}，有什麼優惠嗎？`,
     },
     {
       id: "visit",
       icon: "🚗",
       label: "我想預約看這台車",
-      color: "#06C755",
-      bgColor: "rgba(6, 199, 85, 0.1)",
-      borderColor: "rgba(6, 199, 85, 0.25)",
+      className: "bg-green-500/10 border-green-500/25 text-green-500",
       lineMessage: `我想預約看這台 ${name} ${year}，什麼時候方便？`,
       bookUrl: true,
     },
@@ -73,18 +69,14 @@ function getIntentQuestions(vehicle: any) {
       id: "trade",
       icon: "🔄",
       label: "我有舊車想換這台",
-      color: "#9B59B6",
-      bgColor: "rgba(155, 89, 182, 0.1)",
-      borderColor: "rgba(155, 89, 182, 0.25)",
+      className: "bg-primary/10 border-primary/25 text-primary",
       lineMessage: `我有一台舊車想換這台 ${name} ${year}，可以幫我估價折抵嗎？`,
     },
     {
       id: "loan",
       icon: "💰",
       label: "貸款利率怎麼算？",
-      color: "#E67E22",
-      bgColor: "rgba(230, 126, 34, 0.1)",
-      borderColor: "rgba(230, 126, 34, 0.25)",
+      className: "bg-primary/10 border-primary/25 text-primary",
       lineMessage: "",
       loanUrl: true,
     },
@@ -125,9 +117,9 @@ export default function VehicleLanding() {
 
   const isSold = vehicle?.status === "sold" || vehicle?.status === "reserved";
 
-  // Fetch similar vehicles when this one is sold (must be before early returns)
+  // Fetch similar vehicles for both live and sold vehicles (must be before early returns)
   const { data: allVehiclesData } = trpc.vehicle.list.useQuery(undefined, {
-    enabled: !!isSold,
+    enabled: vehicleId !== null && !isNaN(vehicleId),
   });
   const allVehicles = allVehiclesData?.items;
 
@@ -169,19 +161,19 @@ export default function VehicleLanding() {
   const totalPhotos = photos.length;
 
   const similarVehicles = useMemo(() => {
-    if (!isSold || !allVehicles || !vehicle) return [];
+    if (!allVehicles || !vehicle) return [];
     return allVehicles
       .filter((v: any) => v.id !== vehicle.id && v.brand === vehicle.brand)
       .slice(0, 3);
-  }, [isSold, allVehicles, vehicle]);
+  }, [allVehicles, vehicle]);
 
   const otherVehicles = useMemo(() => {
-    if (!isSold || !allVehicles || !vehicle || similarVehicles.length >= 3) return [];
+    if (!allVehicles || !vehicle || similarVehicles.length >= 3) return [];
     const similarIds = new Set(similarVehicles.map((v: any) => v.id));
     return allVehicles
       .filter((v: any) => v.id !== vehicle.id && !similarIds.has(v.id))
       .slice(0, 3 - similarVehicles.length);
-  }, [isSold, allVehicles, vehicle, similarVehicles]);
+  }, [allVehicles, vehicle, similarVehicles]);
 
   // Touch swipe for photo gallery
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -846,6 +838,45 @@ export default function VehicleLanding() {
             <a href="/faq" className="block text-xs text-white/40 hover:text-white/80 transition-colors">常見問題 FAQ →</a>
           </div>
         </div>
+
+        {/* Similar vehicle recommendations */}
+        {(similarVehicles.length > 0 || otherVehicles.length > 0) && (
+          <div className="bg-white/[0.08] backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden mb-4">
+            <div className="px-5 py-4">
+              <p className="text-white font-bold text-base mb-3">
+                看了這台也看看
+              </p>
+              <div className="space-y-3">
+                {[...similarVehicles, ...otherVehicles].map((v: any) => {
+                  const vPhoto = v.photoUrls ? String(v.photoUrls).split("|")[0]?.trim() : "";
+                  const vPrice = v.priceDisplay || `${v.price}萬`;
+                  return (
+                    <a
+                      key={v.id}
+                      href={`/vehicle/${v.id}`}
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.06] border border-white/10 hover:bg-white/[0.1] transition-all"
+                    >
+                      <div className="w-20 h-14 rounded-lg overflow-hidden bg-black/20 flex-shrink-0">
+                        {vPhoto ? (
+                          <img src={vPhoto} alt={`${v.brand} ${v.model}`} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Car className="w-6 h-6 text-white/20" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium text-sm truncate">{v.brand} {v.model}</p>
+                        <p className="text-white/40 text-xs">{v.modelYear ? `${v.modelYear}年` : ""} · {v.mileage || ""}</p>
+                      </div>
+                      <div className="text-[#C4A265] font-bold text-sm flex-shrink-0">{vPrice}</div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="text-center">

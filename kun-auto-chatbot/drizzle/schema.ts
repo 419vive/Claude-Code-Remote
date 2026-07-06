@@ -76,6 +76,12 @@ export const conversations = mysqlTable("conversations", {
   // (operator has taken over). Distinct from status='human_handoff' which is
   // a temporary/auto-expiring handoff state. Only an admin can clear this.
   aiDisabled: int("aiDisabled").default(0).notNull(),
+  // Extracted customer preferences — prevents re-asking same questions
+  budget: int("budget"), // stored in units (e.g., 3000000 for 30萬)
+  budgetRange: varchar("budgetRange", { length: 32 }), // e.g., "30-50" (in 萬)
+  preferredBrand: varchar("preferredBrand", { length: 256 }), // comma-separated brands
+  preferredBodyType: varchar("preferredBodyType", { length: 128 }), // e.g., "SUV,轎車"
+  preferredVisitTime: varchar("preferredVisitTime", { length: 64 }), // e.g., "週末下午"
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

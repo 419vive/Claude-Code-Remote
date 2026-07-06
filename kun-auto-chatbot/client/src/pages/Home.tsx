@@ -304,6 +304,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("all");
   const [priceRange, setPriceRange] = useState("all");
+  const [sortBy, setSortBy] = useState<"newest" | "price-asc" | "price-desc" | "year-desc" | "mileage-asc">("newest");
   const compare = useCompareList();
   const [recentlyViewed] = useState<RecentlyViewedItem[]>(() => getRecentlyViewed());
   const [galleryState, setGalleryState] = useState<{ photos: string[]; index: number; alt: string } | null>(null);
@@ -402,11 +403,32 @@ export default function Home() {
 
   const filteredVehicles = useMemo(() => {
     if (!vehicles) return [];
+
+    // Chinese synonym map for search
+    const synonyms: Record<string, string> = {
+      "豐田": "Toyota",
+      "豐坦": "Toyota",
+      "休旅": "SUV",
+      "越野": "SUV",
+      "軍用": "SUV",
+      "轎車": "sedan",
+      "掀背": "hatchback",
+      "皮卡": "pickup",
+      "箱型": "van",
+      "油電": "hybrid",
+    };
+
     return vehicles.filter((v) => {
       if (selectedBrand !== "all" && v.brand !== selectedBrand) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
+        // Translate Chinese synonyms to English equivalents
+        const normalizedQuery = synonyms[searchQuery] || q;
         const match =
+          v.brand.toLowerCase().includes(normalizedQuery) ||
+          v.model.toLowerCase().includes(normalizedQuery) ||
+          (v.features || "").toLowerCase().includes(normalizedQuery) ||
+          (v.bodyType || "").toLowerCase().includes(normalizedQuery) ||
           v.brand.toLowerCase().includes(q) ||
           v.model.toLowerCase().includes(q) ||
           (v.features || "").toLowerCase().includes(q) ||
@@ -423,6 +445,27 @@ export default function Home() {
       return true;
     });
   }, [vehicles, searchQuery, selectedBrand, priceRange]);
+
+  const sortedVehicles = useMemo(() => {
+    const sorted = [...filteredVehicles];
+    switch (sortBy) {
+      case "price-asc":
+        return sorted.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+      case "price-desc":
+        return sorted.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+      case "year-desc":
+        return sorted.sort((a, b) => (Number(b.modelYear) || 0) - (Number(a.modelYear) || 0));
+      case "mileage-asc":
+        return sorted.sort((a, b) => (Number(a.mileage) || 999999) - (Number(b.mileage) || 999999));
+      case "newest":
+      default:
+        return sorted.sort((a, b) => {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return bTime - aTime;
+        });
+    }
+  }, [filteredVehicles, sortBy]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -542,6 +585,18 @@ export default function Home() {
                 <SelectItem value="over80">80萬以上</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+              <SelectTrigger className="w-[120px] sm:w-[140px]">
+                <SelectValue placeholder="排序" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">最新</SelectItem>
+                <SelectItem value="price-asc">價格 低→高</SelectItem>
+                <SelectItem value="price-desc">價格 高→低</SelectItem>
+                <SelectItem value="year-desc">年份 新→舊</SelectItem>
+                <SelectItem value="mileage-asc">里程 少→多</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -638,7 +693,7 @@ export default function Home() {
             在售車輛
             {!isLoading && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({filteredVehicles.length} 輛)
+                ({sortedVehicles.length} 輛)
               </span>
             )}
           </h2>
@@ -658,7 +713,7 @@ export default function Home() {
               </Card>
             ))}
           </div>
-        ) : filteredVehicles.length === 0 ? (
+        ) : sortedVehicles.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground">
             <Car className="mx-auto mb-3 h-12 w-12 opacity-30" />
             <p>沒有符合條件的車輛</p>
@@ -666,7 +721,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredVehicles.map((v) => (
+            {sortedVehicles.map((v) => (
               <VehicleCard key={v.id} vehicle={v} isComparing={compare.has(v.id)} onToggleCompare={() => compare.toggle(v.id)} onOpenGallery={openGallery} />
             ))}
           </div>
