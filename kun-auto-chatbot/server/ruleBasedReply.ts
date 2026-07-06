@@ -226,7 +226,7 @@ function buildVehicleInquiryReply(vehicle: any, greeting: string, customerContac
   return `${greeting}你對這台${v.brand} ${v.model}有興趣眼光不錯喔！這台是${specs}售價${price}，想了解車況細節、預約看車試駕還是貸款方案呢`;
 }
 
-function buildVehicleAnswerReply(detection: RuleContext["detection"], greeting: string): string {
+export function buildVehicleAnswerReply(detection: RuleContext["detection"], greeting: string): string {
   const v = detection.vehicle;
   if (!v) return "";
 

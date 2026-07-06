@@ -8,7 +8,7 @@ import { detectRichMenuTrigger, buildRichMenuResponseMessages, buildAppointmentD
 import { formatTimeSlotsForPrompt } from "./timeSlotHelper";
 import { detectVehicleFromMessage, buildSmartVehicleKB, buildTargetVehiclePrompt, detectCustomerIntents, buildIntentInstructions, buildVehicleIndex } from "./vehicleDetectionService";
 import { buildLLMMessages, type PromptContext } from "./dynamicPromptBuilder";
-import { isRuleBasedMode, generateRuleBasedReply } from "./ruleBasedReply";
+import { isRuleBasedMode, generateRuleBasedReply, buildVehicleAnswerReply } from "./ruleBasedReply";
 import { sanitizeChatMessage, validateLLMOutput, getGuardrailMode } from "./security";
 
 import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting, isOperator, parseOperatorCommand, type OperatorCommand } from "./lineUtils";
