@@ -129,18 +129,21 @@ export function useMessages({
       const newMessages = data?.messages || [];
 
       if (newMessages.length > 0) {
-        // On first fetch, replace messages; on subsequent fetches, append new messages
+        // On first fetch, replace messages; on subsequent fetches, append new messages.
+        // Dedup reads `prev` via the functional updater (not the outer `messages` state)
+        // so this callback's identity stays stable across polls — depending on `messages`
+        // directly would tear down and reschedule the poll interval on every new message,
+        // silently doubling the effective latency.
         if (!lastFetchTimeRef.current) {
           setMessages(newMessages);
         } else {
-          // Avoid duplicates: filter out messages we already have
-          const existingIds = new Set(messages.map((m: Message) => m.createdAt));
-          const freshMessages = newMessages.filter(
-            (m: Message) => !existingIds.has(m.createdAt)
-          );
-          if (freshMessages.length > 0) {
-            setMessages((prev: Message[]) => [...prev, ...freshMessages]);
-          }
+          setMessages((prev: Message[]) => {
+            const existingIds = new Set(prev.map((m: Message) => m.createdAt));
+            const freshMessages = newMessages.filter(
+              (m: Message) => !existingIds.has(m.createdAt)
+            );
+            return freshMessages.length > 0 ? [...prev, ...freshMessages] : prev;
+          });
         }
 
         // Update the last fetch time to the latest message's timestamp
@@ -158,7 +161,7 @@ export function useMessages({
     } finally {
       setIsLoading(false);
     }
-  }, [sessionId, messages]);
+  }, [sessionId]);
 
   /**
    * Initial load: fetch full message history

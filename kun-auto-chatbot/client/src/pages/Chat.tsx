@@ -43,12 +43,14 @@ export default function Chat() {
     if (serverMessages.length === 0) return; // Server has no messages yet
 
     // Find messages that are not yet in the local display
-    // (compare by role + timestamp to avoid duplicates)
+    // (compare by role + full content — a truncated key risks two distinct
+    // messages sharing the same prefix, e.g. similar operator greetings,
+    // silently dropping the second one)
     const localSet = new Set(
-      messages.map((m) => `${m.role}:${m.content.slice(0, 20)}`)
+      messages.map((m) => `${m.role}:${m.content}`)
     );
     const newMessages = serverMessages.filter(
-      (m) => !localSet.has(`${m.role}:${m.content.slice(0, 20)}`)
+      (m) => !localSet.has(`${m.role}:${m.content}`)
     );
 
     if (newMessages.length > 0) {

@@ -86,7 +86,13 @@ chatStreamRouter.post("/api/chat/stream", async (req: express.Request, res: Resp
 
     // Vehicle detection
     const allVehiclesForDetection = await db.getAllVehicles();
-    const detectionWeb = detectVehicleFromMessage(sanitizedMessage, allVehiclesForDetection);
+    // Augment message with vehicleContext from URL (e.g., visitor came from vehicle
+    // detail page) so detection can resolve ambiguous questions to the car the
+    // visitor was viewing, even if their message doesn't name it explicitly.
+    const messageForDetection = typeof vehicleContext === "string" && vehicleContext
+      ? `[當前查看的車：${vehicleContext}] ${sanitizedMessage}`
+      : sanitizedMessage;
+    const detectionWeb = detectVehicleFromMessage(messageForDetection, allVehiclesForDetection);
     const customerIntentsWeb = detectCustomerIntents(sanitizedMessage);
     const targetVehiclePromptWeb = buildTargetVehiclePrompt(detectionWeb, sanitizedMessage, conversation.customerContact);
     const intentInstructionsWeb = buildIntentInstructions(customerIntentsWeb, sanitizedMessage, "人客", conversation.customerContact, detectionWeb.vehicle);
