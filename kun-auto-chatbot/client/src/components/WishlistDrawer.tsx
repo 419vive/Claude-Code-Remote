@@ -37,12 +37,12 @@ export default function WishlistDrawer() {
       {/* Floating trigger button -- bottom-right, above sticky bar */}
       <button
         onClick={openDrawer}
-        className="fixed bottom-36 md:bottom-20 left-4 z-40 flex items-center justify-center w-11 h-11 rounded-full bg-[#1B3A5C] border border-[#C4A265]/30 shadow-lg transition-transform hover:scale-110 active:scale-95"
+        className="fixed bottom-36 md:bottom-20 left-4 z-40 flex items-center justify-center w-11 h-11 rounded-full bg-[#1B3A5C] border border-primary/30 shadow-lg transition-transform hover:scale-110 active:scale-95"
         aria-label="收藏清單"
       >
-        <Heart className="w-5 h-5 text-[#C4A265]" />
+        <Heart className="w-5 h-5 text-primary" />
         {count > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[#C4A265] text-white text-[10px] font-bold px-1">
+          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-primary text-white text-[10px] font-bold px-1">
             {count}
           </span>
         )}
@@ -65,7 +65,7 @@ export default function WishlistDrawer() {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <div className="flex items-center gap-2">
-            <Heart className="w-5 h-5 text-[#C4A265]" />
+            <Heart className="w-5 h-5 text-primary" />
             <h2 className="text-white font-bold text-lg">
               我的收藏
               {items.length > 0 && (
@@ -95,7 +95,7 @@ export default function WishlistDrawer() {
               </p>
               <a
                 href="/"
-                className="mt-5 inline-block px-5 py-2.5 rounded-xl bg-[#C4A265] text-white text-sm font-medium hover:bg-[#a8893e] transition-colors"
+                className="mt-5 inline-block px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 瀏覽車庫
               </a>
@@ -127,7 +127,7 @@ export default function WishlistDrawer() {
                     <p className="text-white font-medium text-sm truncate">
                       {item.brand} {item.model}
                     </p>
-                    <p className="text-[#C4A265] font-bold text-sm">{item.price}</p>
+                    <p className="text-primary font-bold text-sm">{item.price}</p>
                   </div>
                   <button
                     onClick={(e) => {
