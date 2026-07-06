@@ -112,7 +112,7 @@ export function useMessages({
         }),
       });
 
-      const response = await fetch(`/api/trpc/chat.history?${queryParams}`, {
+      const response = await fetch(`/api/chat/history?${queryParams}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -125,13 +125,8 @@ export function useMessages({
 
       const data = await response.json();
 
-      // tRPC response format: { result: { data: { messages, conversation } } }
-      const result = data?.result?.data;
-      if (!result) {
-        throw new Error("Invalid response format from server");
-      }
-
-      const newMessages = result.messages || [];
+      // Response format: { messages: [...], conversation: {...} }
+      const newMessages = data?.messages || [];
 
       if (newMessages.length > 0) {
         // On first fetch, replace messages; on subsequent fetches, append new messages

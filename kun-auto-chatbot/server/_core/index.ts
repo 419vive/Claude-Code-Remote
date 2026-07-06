@@ -18,6 +18,7 @@ import { trackingRouter } from "../trackingApi";
 import { pixelEventsRouter } from "../pixelEventsRelay";
 import { imageProxyRouter } from "../imageProxy";
 import { chatStreamRouter } from "../chatStreamRouter";
+import { chatHistoryRouter } from "../chatHistoryRouter";
 import { registerAdminAuthRoutes, seedAdminUser } from "./adminAuth";
 import { createSeoRouter } from "../seo";
 import mysql from "mysql2/promise";
