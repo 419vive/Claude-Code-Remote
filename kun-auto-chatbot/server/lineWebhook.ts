@@ -4,7 +4,7 @@ import { invokeLLM } from "./_core/llm";
 import { ENV } from "./_core/env";
 import * as db from "./db";
 import { notifyOwner } from "./_core/notification";
-import { detectRichMenuTrigger, buildRichMenuResponseMessages, detectPhotoTrigger, buildPhotoCarousel, buildFollowWelcomeMessages, buildFaqCarousel, detectFaqTrigger, buildFaqAnswerMessages, buildContextualQuickReply, buildVehicleCarouselMessages, buildVideoShowcaseCard, type ConversationContext } from "./lineFlexTemplates";
+import { detectRichMenuTrigger, buildRichMenuResponseMessages, buildAppointmentDatetimePicker, detectPhotoTrigger, buildPhotoCarousel, buildFollowWelcomeMessages, buildFaqCarousel, detectFaqTrigger, buildFaqAnswerMessages, buildContextualQuickReply, buildVehicleCarouselMessages, buildVideoShowcaseCard, type ConversationContext } from "./lineFlexTemplates";
 import { formatTimeSlotsForPrompt } from "./timeSlotHelper";
 import { detectVehicleFromMessage, buildSmartVehicleKB, buildTargetVehiclePrompt, detectCustomerIntents, buildIntentInstructions, buildVehicleIndex } from "./vehicleDetectionService";
 import { buildLLMMessages, type PromptContext } from "./dynamicPromptBuilder";
@@ -15,7 +15,7 @@ import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGree
 import { getAssistantContentForTrigger, buildOwnerNotificationFlex, getMilestoneLevel, checkAndNotifyOwner, buildHumanHandoffFlex, sendHumanHandoffNotification, sendNewCustomerNotification } from "./lineNotification";
 import { updateConversationTracker, sendFollowUpMessages } from "./lineRecovery";
 import { detectCriticalHandoff } from "./handoffTriggers";
-import { SHOP_ADDRESS, SHOP_PHONE, SHOP_CONTACT_PERSON, SHOP_HOURS } from "../shared/shopConfig";
+import { SHOP_ADDRESS, SHOP_PHONE, SHOP_CONTACT_PERSON } from "../shared/shopConfig";
 
 // ============ TYPING INDICATOR ============
 // Show "typing..." animation in LINE chat while bot is processing
@@ -1077,12 +1077,58 @@ async function processLineEvent(
   let conversation = await db.getConversationBySessionId(sessionId);
 
   // ============ EARLY OPERATOR-TAKEOVER LOCK ============
-  // If aiDisabled=1, AI must do NOTHING automated for this conversation —
-  // no typing indicator, no 8891 offer, no rich-menu reply, no LLM. We still
-  // record the customer's message so the operator can read it in the dashboard.
+  // If aiDisabled=1, the AI must not produce any free-text / LLM reply for this
+  // conversation. BUT the persistent rich-menu browse buttons (看車庫存 / 熱門推薦
+  // / 50萬以下 / 阿家客服 / 五大保證) and the 預約賞車 datetimepicker are NOT the
+  // AI "answering" — they're deterministic UI widgets the customer taps. Silencing
+  // them (the bug this fixes) makes the whole menu look dead the moment a
+  // conversation gets locked — which now happens automatically on appointment /
+  // critical-question handoffs (PR #102). So we still serve those menu taps while
+  // keeping the AI locked (aiDisabled is never flipped back), matching the
+  // appointment_datetime postback exemption further down. Only free-text chat is
+  // suppressed. We always record the customer's message first for the dashboard.
   if (conversation && (conversation as any).aiDisabled === 1) {
-    console.log(`[LINE] Conversation ${conversation.id} is aiDisabled (operator takeover), skipping all automated handling`);
     await db.addMessage({ conversationId: conversation.id, role: "user", content: userMessage });
+
+    // 1) Rich-menu browse buttons → deterministic vehicle carousel / static card.
+    const lockedMenuTrigger = detectRichMenuTrigger(userMessage);
+    if (lockedMenuTrigger) {
+      console.log(`[LINE] Conv ${conversation.id} aiDisabled — serving deterministic rich-menu (${lockedMenuTrigger.type}), AI stays locked`);
+      const allVehicles = await db.getAllVehicles();
+      const flexMessages = buildRichMenuResponseMessages(lockedMenuTrigger, allVehicles);
+      if (flexMessages.length > 0) {
+        // Record what the customer was shown so the operator sees it in the dashboard.
+        await db.addMessage({ conversationId: conversation.id, role: "assistant", content: getAssistantContentForTrigger(lockedMenuTrigger) });
+        try {
+          await fetch("https://api.line.me/v2/bot/message/reply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+            body: JSON.stringify({ replyToken, messages: flexMessages }),
+          });
+        } catch (err) { console.error("[LINE] aiDisabled rich-menu reply failed:", err); }
+      }
+      return;
+    }
+
+    // 2) 預約賞車 button (exact text) → re-send the datetimepicker so booking stays
+    //    possible during a takeover. Exact-match (not the broad appointment intent
+    //    regex) so the bot never injects a picker into an operator's live free-text
+    //    conversation. No re-notify / re-lock — already locked.
+    if (userMessage.trim() === "我想預約看車") {
+      console.log(`[LINE] Conv ${conversation.id} aiDisabled — serving appointment datetimepicker, AI stays locked`);
+      await db.addMessage({ conversationId: conversation.id, role: "assistant", content: "預約看車 — 已發送日期選擇器（AI 已鎖定，真人接手中）" });
+      try {
+        await fetch("https://api.line.me/v2/bot/message/reply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+          body: JSON.stringify({ replyToken, messages: [buildAppointmentDatetimePicker()] }),
+        });
+      } catch (err) { console.error("[LINE] aiDisabled appointment reply failed:", err); }
+      return;
+    }
+
+    // 3) Anything else (free-text) → stay silent; the operator handles it.
+    console.log(`[LINE] Conversation ${conversation.id} is aiDisabled (operator takeover), skipping LLM handling`);
     return;
   }
 
@@ -1609,91 +1655,7 @@ async function processLineEvent(
     const vehicleId = (detection.vehicle as any)?.id ? String((detection.vehicle as any).id) : '';
     const headerText = vehicleName ? `預約看車（${vehicleName}）` : '預約看車';
 
-    // Generate dynamic dates for datetimepicker
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const formatDate = (d: Date) =>
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    const todayStr = formatDate(now);
-    const maxDate = new Date(now);
-    maxDate.setDate(maxDate.getDate() + 30);
-    const maxStr = formatDate(maxDate);
-
-    const postbackDataParts = [`action=appointment_datetime`];
-    if (vehicleId) postbackDataParts.push(`vehicleId=${encodeURIComponent(vehicleId)}`);
-    if (vehicleName) postbackDataParts.push(`vehicleName=${encodeURIComponent(vehicleName)}`);
-    const postbackData = postbackDataParts.join('&');
-
-    const flexMessage = {
-      type: "flex",
-      altText: headerText,
-      contents: {
-        type: "bubble",
-        header: {
-          type: "box",
-          layout: "vertical",
-          backgroundColor: "#1E3A5F",
-          contents: [
-            {
-              type: "text",
-              text: headerText,
-              color: "#FFFFFF",
-              size: "lg",
-              weight: "bold",
-              wrap: true,
-            },
-          ],
-        },
-        body: {
-          type: "box",
-          layout: "vertical",
-          spacing: "md",
-          contents: [
-            {
-              type: "text",
-              text: "請選擇您方便的日期和時間",
-              size: "md",
-              wrap: true,
-              color: "#333333",
-            },
-            {
-              type: "button",
-              style: "primary",
-              color: "#1E3A5F",
-              action: {
-                type: "datetimepicker",
-                label: "📅 選擇日期與時間",
-                data: postbackData,
-                mode: "datetime",
-                initial: `${todayStr}T10:00`,
-                min: `${todayStr}T09:00`,
-                max: `${maxStr}T20:00`,
-              },
-            },
-            {
-              type: "text",
-              text: `營業時間 ${SHOP_HOURS}`,
-              size: "sm",
-              color: "#888888",
-              wrap: true,
-            },
-          ],
-        },
-        footer: {
-          type: "box",
-          layout: "vertical",
-          contents: [
-            {
-              type: "text",
-              text: `地址：${SHOP_ADDRESS}`,
-              size: "xs",
-              color: "#888888",
-              wrap: true,
-            },
-          ],
-        },
-      },
-    };
+    const flexMessage = buildAppointmentDatetimePicker({ vehicleName, vehicleId });
 
     const appointmentLogText = `預約看車${vehicleName ? `（${vehicleName}）` : ''} — 已發送日期選擇器`;
     console.log(`[LINE] Appointment flex message response`);

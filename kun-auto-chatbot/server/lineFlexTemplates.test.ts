@@ -8,6 +8,7 @@ import {
   buildPhotoCarousel,
   detectPhotoTrigger,
   buildAppointmentCard,
+  buildAppointmentDatetimePicker,
   buildWelcomeCard,
   buildSimpleCard,
 } from "./lineFlexTemplates";
@@ -534,6 +535,57 @@ describe("LINE Flex Message Templates", () => {
       ]);
       expect(card.type).toBe("flex");
       expect(card.altText).toBe("測試標題");
+    });
+  });
+
+  describe("buildAppointmentDatetimePicker", () => {
+    // Helper: pull the datetimepicker action out of the flex bubble body
+    const pickerAction = (msg: any) => {
+      const button = msg.contents.body.contents.find((c: any) => c.type === "button");
+      return button?.action;
+    };
+
+    it("returns a flex bubble containing a datetimepicker action", () => {
+      const msg = buildAppointmentDatetimePicker();
+      expect(msg.type).toBe("flex");
+      const action = pickerAction(msg);
+      expect(action).toBeDefined();
+      expect(action.type).toBe("datetimepicker");
+      expect(action.mode).toBe("datetime");
+    });
+
+    it("uses a generic header + postback when no vehicle is given", () => {
+      const msg = buildAppointmentDatetimePicker();
+      expect(msg.altText).toBe("預約看車");
+      const header = JSON.stringify(msg.contents.header);
+      expect(header).toContain("預約看車");
+      expect(pickerAction(msg).data).toBe("action=appointment_datetime");
+    });
+
+    it("embeds the vehicle name + id (URL-encoded) in header and postback", () => {
+      const msg = buildAppointmentDatetimePicker({ vehicleName: "BMW X1", vehicleId: "42" });
+      expect(msg.altText).toBe("預約看車（BMW X1）");
+      const data = pickerAction(msg).data;
+      expect(data).toContain("action=appointment_datetime");
+      expect(data).toContain(`vehicleId=${encodeURIComponent("42")}`);
+      expect(data).toContain(`vehicleName=${encodeURIComponent("BMW X1")}`);
+    });
+
+    it("derives min/initial from `now` and max from now+30 days (deterministic)", () => {
+      // Local-time construction avoids TZ drift in the yyyy-mm-dd formatting.
+      const now = new Date(2026, 6, 6, 10, 0, 0); // 2026-07-06 local
+      const action = pickerAction(buildAppointmentDatetimePicker({ now }));
+      expect(action.initial).toBe("2026-07-06T10:00");
+      expect(action.min).toBe("2026-07-06T09:00");
+      expect(action.max).toBe("2026-08-05T20:00"); // +30 days
+    });
+
+    it("matches the shape the main appointment flow relied on (regression guard)", () => {
+      const msg = buildAppointmentDatetimePicker({ vehicleName: "Kia Stonic" });
+      // header bubble carries the navy brand color the inline version used
+      expect(JSON.stringify(msg.contents.header)).toContain("#1E3A5F");
+      // footer still surfaces the shop address
+      expect(JSON.stringify(msg.contents.footer)).toContain("地址");
     });
   });
 });

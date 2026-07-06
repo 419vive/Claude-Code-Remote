@@ -747,6 +747,113 @@ export function buildAppointmentCard(): any {
   };
 }
 
+/**
+ * Build the appointment datetimepicker Flex bubble (the actual date/time picker,
+ * distinct from buildAppointmentCard's static intro card).
+ *
+ * Extracted from lineWebhook.ts so it can be reused both by the main appointment
+ * flow AND by the aiDisabled early gate (a locked conversation should still be
+ * able to book — the datetimepicker is a deterministic widget, not an LLM reply,
+ * same reasoning as the appointment_datetime postback exemption).
+ *
+ * `now` is injectable for deterministic tests; defaults to the current time.
+ */
+export function buildAppointmentDatetimePicker(opts?: {
+  vehicleName?: string;
+  vehicleId?: string;
+  now?: Date;
+}): any {
+  const vehicleName = opts?.vehicleName || "";
+  const vehicleId = opts?.vehicleId || "";
+  const headerText = vehicleName ? `預約看車（${vehicleName}）` : "預約看車";
+
+  // Generate dynamic dates for datetimepicker
+  const now = opts?.now || new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const formatDate = (d: Date) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const todayStr = formatDate(now);
+  const maxDate = new Date(now);
+  maxDate.setDate(maxDate.getDate() + 30);
+  const maxStr = formatDate(maxDate);
+
+  const postbackDataParts = [`action=appointment_datetime`];
+  if (vehicleId) postbackDataParts.push(`vehicleId=${encodeURIComponent(vehicleId)}`);
+  if (vehicleName) postbackDataParts.push(`vehicleName=${encodeURIComponent(vehicleName)}`);
+  const postbackData = postbackDataParts.join("&");
+
+  return {
+    type: "flex",
+    altText: headerText,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#1E3A5F",
+        contents: [
+          {
+            type: "text",
+            text: headerText,
+            color: "#FFFFFF",
+            size: "lg",
+            weight: "bold",
+            wrap: true,
+          },
+        ],
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          {
+            type: "text",
+            text: "請選擇您方便的日期和時間",
+            size: "md",
+            wrap: true,
+            color: "#333333",
+          },
+          {
+            type: "button",
+            style: "primary",
+            color: "#1E3A5F",
+            action: {
+              type: "datetimepicker",
+              label: "📅 選擇日期與時間",
+              data: postbackData,
+              mode: "datetime",
+              initial: `${todayStr}T10:00`,
+              min: `${todayStr}T09:00`,
+              max: `${maxStr}T20:00`,
+            },
+          },
+          {
+            type: "text",
+            text: `營業時間 ${SHOP_HOURS}`,
+            size: "sm",
+            color: "#888888",
+            wrap: true,
+          },
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: `地址：${SHOP_ADDRESS}`,
+            size: "xs",
+            color: "#888888",
+            wrap: true,
+          },
+        ],
+      },
+    },
+  };
+}
+
 // ============ SIMPLE CARD ============
 // Generic card with title, body, and actions
 
