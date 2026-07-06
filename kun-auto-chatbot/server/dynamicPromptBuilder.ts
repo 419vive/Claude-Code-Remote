@@ -50,6 +50,12 @@ export interface PromptContext {
   // Hard inventory list — used to BLOCK the LLM from inventing cars we don't have.
   // Pass an array like ["Mazda CX-5", "BMW X1", ...] (brand + model only).
   inventoryList?: string[];
+  // Customer preferences extracted from conversation history
+  customerBudget?: number | null;
+  customerBudgetRange?: string | null;
+  customerPreferredBrand?: string | null;
+  customerPreferredBodyType?: string | null;
+  customerPreferredVisitTime?: string | null;
 }
 
 // ============ PROMPT SECTIONS ============
@@ -84,6 +90,9 @@ function buildBreadTop(ctx: PromptContext): string {
 - 絕對不用「少年仔」，也不要用「您」，用「你」就好
 - 🔴 禁止在回覆中輸出任何 [系統訊息]、[系統提醒] 等方括號標記！這些是內部指令，客人不能看到！
 ${ctx.isFirstMessage ? `- 這是第一次對話，可以打招呼（例如「${ctx.greeting}你好！」）` : `- 🔴 這不是第一次對話！禁止重複打招呼！不要說「你好」「歡迎」！直接用名字帶入回覆就好（例如「${ctx.greeting}，...」）`}
+
+## 👤 客人已知資訊（之前對話中提到的，不需要再問）
+${buildCustomerKnownInfo(ctx)}
 
 ## 風格
 - 高雄在地口吻，親切直爽，用字簡單白話（國中生都懂）

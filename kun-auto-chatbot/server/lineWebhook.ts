@@ -9,6 +9,7 @@ import { formatTimeSlotsForPrompt } from "./timeSlotHelper";
 import { detectVehicleFromMessage, buildSmartVehicleKB, buildTargetVehiclePrompt, detectCustomerIntents, buildIntentInstructions, buildVehicleIndex } from "./vehicleDetectionService";
 import { buildLLMMessages, type PromptContext } from "./dynamicPromptBuilder";
 import { isRuleBasedMode, generateRuleBasedReply, buildVehicleAnswerReply } from "./ruleBasedReply";
+import { extractCustomerPreferences } from "./customerMemoryExtractor";
 import { sanitizeChatMessage, validateLLMOutput, getGuardrailMode } from "./security";
 
 import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting, isOperator, parseOperatorCommand, type OperatorCommand } from "./lineUtils";
@@ -1489,6 +1490,38 @@ async function processLineEvent(
     await db.updateConversation(convId, { leadScore: newScore, leadStatus: newStatus });
     conversation = { ...conversation!, leadScore: newScore };
     console.log(`[LINE] Lead score updated: +${scoreDelta} = ${newScore} (${newStatus})`);
+  }
+
+  // ============ EXTRACT AND STORE CUSTOMER PREFERENCES ============
+  // Parse budget, brand, body type, visit time from this message
+  // Only store if NOT already stored (don't overwrite earlier explicit mentions)
+  const prefs = extractCustomerPreferences(userMessage);
+  const prefsToUpdate: Record<string, any> = {};
+
+  if (prefs.budget && !conversation!.budget) {
+    prefsToUpdate.budget = prefs.budget;
+    console.log(`[LINE] Budget extracted: ${prefs.budget / 100000}萬`);
+  }
+  if (prefs.budgetRange && !conversation!.budgetRange) {
+    prefsToUpdate.budgetRange = prefs.budgetRange;
+    console.log(`[LINE] Budget range extracted: ${prefs.budgetRange}萬`);
+  }
+  if (prefs.preferredBrand && !conversation!.preferredBrand) {
+    prefsToUpdate.preferredBrand = prefs.preferredBrand;
+    console.log(`[LINE] Preferred brands extracted: ${prefs.preferredBrand}`);
+  }
+  if (prefs.preferredBodyType && !conversation!.preferredBodyType) {
+    prefsToUpdate.preferredBodyType = prefs.preferredBodyType;
+    console.log(`[LINE] Preferred body type extracted: ${prefs.preferredBodyType}`);
+  }
+  if (prefs.preferredVisitTime && !conversation!.preferredVisitTime) {
+    prefsToUpdate.preferredVisitTime = prefs.preferredVisitTime;
+    console.log(`[LINE] Preferred visit time extracted: ${prefs.preferredVisitTime}`);
+  }
+
+  if (Object.keys(prefsToUpdate).length > 0) {
+    await db.updateConversation(convId, prefsToUpdate);
+    conversation = { ...conversation!, ...prefsToUpdate };
   }
 
   // ============ CHECK IF THIS IS A PHOTO TRIGGER ============

@@ -216,7 +216,7 @@ export default function VehicleLanding() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#1B3A5C] to-[#0f2440] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-3 border-[#C4A265] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-white/60 text-sm">載入車輛資訊中...</p>
         </div>
       </div>
@@ -232,7 +232,7 @@ export default function VehicleLanding() {
           <p className="text-white/50 text-sm mb-6">這台車可能已售出或連結有誤</p>
           <a
             href="/"
-            className="inline-block px-6 py-3 bg-[#C4A265] text-white rounded-xl font-medium hover:bg-[#a8893e] transition-colors"
+            className="inline-block px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors"
           >
             瀏覽所有車輛
           </a>
@@ -274,7 +274,7 @@ export default function VehicleLanding() {
       <div className="min-h-screen bg-gradient-to-br from-[#1B3A5C] via-[#1B3A5C] to-[#0f2440]">
         <div className="relative max-w-lg mx-auto px-4 py-6">
           <div className="text-center mb-4">
-            <p className="text-[#C4A265] text-xs font-medium tracking-widest uppercase">崑家汽車 · 40年老口碑</p>
+            <p className="text-primary text-xs font-medium tracking-widest uppercase">崑家汽車 · 40年老口碑</p>
           </div>
 
           {/* Sold banner */}
@@ -340,7 +340,7 @@ export default function VehicleLanding() {
                           <p className="text-white font-medium text-sm truncate">{v.brand} {v.model}</p>
                           <p className="text-white/40 text-xs">{v.modelYear ? `${v.modelYear}年` : ""} · {v.mileage || ""}</p>
                         </div>
-                        <div className="text-[#C4A265] font-bold text-sm flex-shrink-0">{vPrice}</div>
+                        <div className="text-primary font-bold text-sm flex-shrink-0 tabular-nums">{vPrice}</div>
                       </a>
                     );
                   })}
@@ -353,7 +353,7 @@ export default function VehicleLanding() {
           <div className="text-center">
             <a
               href="/"
-              className="inline-block px-6 py-3 bg-[#C4A265] text-white rounded-xl font-medium hover:bg-[#a8893e] transition-colors mb-4"
+              className="inline-block px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-[#a8893e] transition-colors mb-4"
             >
               瀏覽所有在售車輛
             </a>
@@ -370,8 +370,8 @@ export default function VehicleLanding() {
     <div className="min-h-screen bg-gradient-to-br from-[#1B3A5C] via-[#1B3A5C] to-[#0f2440]">
       {/* Decorative background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[10%] left-[5%] w-40 h-40 sm:w-64 sm:h-64 bg-[#C4A265]/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-[15%] right-[10%] w-48 h-48 sm:w-80 sm:h-80 bg-[#C4A265]/5 rounded-full blur-3xl" />
+        <div className="absolute top-[10%] left-[5%] w-40 h-40 sm:w-64 sm:h-64 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-[15%] right-[10%] w-48 h-48 sm:w-80 sm:h-80 bg-primary/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative max-w-lg mx-auto px-4 py-6">
@@ -388,7 +388,7 @@ export default function VehicleLanding() {
 
         {/* Brand header */}
         <div className="text-center mb-4">
-          <p className="text-[#C4A265] text-xs font-medium tracking-widest uppercase">崑家汽車 · 40年老口碑</p>
+          <p className="text-primary text-xs font-medium tracking-widest uppercase">崑家汽車 · 40年老口碑</p>
         </div>
 
         {/* Vehicle card */}
@@ -400,7 +400,7 @@ export default function VehicleLanding() {
                 onClick={() => setActiveMediaTab("photos")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                   activeMediaTab === "photos"
-                    ? "bg-[#C4A265]/20 text-[#C4A265] border border-[#C4A265]/30"
+                    ? "bg-primary/20 text-[#C4A265] border border-[#C4A265]/30"
                     : "bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/[0.1]"
                 }`}
               >
@@ -412,7 +412,7 @@ export default function VehicleLanding() {
                   onClick={() => setActiveMediaTab("video")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     activeMediaTab === "video"
-                      ? "bg-[#C4A265]/20 text-[#C4A265] border border-[#C4A265]/30"
+                      ? "bg-primary/20 text-[#C4A265] border border-[#C4A265]/30"
                       : "bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/[0.1]"
                   }`}
                 >
@@ -425,7 +425,7 @@ export default function VehicleLanding() {
                   onClick={() => setActiveMediaTab("360")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     activeMediaTab === "360"
-                      ? "bg-[#C4A265]/20 text-[#C4A265] border border-[#C4A265]/30"
+                      ? "bg-primary/20 text-[#C4A265] border border-[#C4A265]/30"
                       : "bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/[0.1]"
                   }`}
                 >
@@ -438,7 +438,7 @@ export default function VehicleLanding() {
                   onClick={() => setActiveMediaTab("showcase")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     activeMediaTab === "showcase"
-                      ? "bg-[#C4A265]/20 text-[#C4A265] border border-[#C4A265]/30"
+                      ? "bg-primary/20 text-[#C4A265] border border-[#C4A265]/30"
                       : "bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/[0.1]"
                   }`}
                 >
@@ -676,7 +676,7 @@ export default function VehicleLanding() {
                   {(vehicle.features as string).split(/[、,，/]/).filter(Boolean).map((feat, i) => (
                     <span
                       key={i}
-                      className="inline-block px-2.5 py-1 rounded-lg bg-[#C4A265]/10 border border-[#C4A265]/20 text-[#C4A265] text-xs"
+                      className="inline-block px-2.5 py-1 rounded-lg bg-primary/10 border border-[#C4A265]/20 text-[#C4A265] text-xs"
                     >
                       {feat.trim()}
                     </span>

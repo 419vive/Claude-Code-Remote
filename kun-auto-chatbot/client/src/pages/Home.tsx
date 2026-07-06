@@ -714,10 +714,68 @@ export default function Home() {
             ))}
           </div>
         ) : sortedVehicles.length === 0 ? (
-          <div className="py-16 text-center text-muted-foreground">
-            <Car className="mx-auto mb-3 h-12 w-12 opacity-30" />
-            <p>沒有符合條件的車輛</p>
-            <p className="mt-1 text-sm">試試調整搜尋條件</p>
+          <div className="flex flex-col items-center justify-center py-16 gap-6">
+            <div className="text-center">
+              <Car className="mx-auto mb-3 h-12 w-12 opacity-30" />
+              <p className="text-lg font-medium text-foreground mb-2">沒有符合條件的車款</p>
+              <p className="text-sm text-muted-foreground mb-6">試試調整搜尋條件</p>
+            </div>
+
+            {/* Reset button */}
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedBrand("all");
+                setPriceRange("all");
+              }}
+            >
+              清除篩選
+            </Button>
+
+            {/* Show 3 closest-price alternatives if filtering by price */}
+            {priceRange !== "all" && vehicles && vehicles.length > 0 && (
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-3">最接近的車款：</p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {(() => {
+                    const priceMids: Record<string, number> = {
+                      "under30": 15,
+                      "30to50": 40,
+                      "50to80": 65,
+                      "over80": 100,
+                    };
+                    const mid = priceMids[priceRange] || 50;
+
+                    return vehicles
+                      .sort((a, b) => Math.abs((Number(a.price) || 0) - mid) - Math.abs((Number(b.price) || 0) - mid))
+                      .slice(0, 3)
+                      .map(v => (
+                        <a
+                          key={v.id}
+                          href={`/vehicle/${v.id}`}
+                          className="text-sm text-primary hover:underline px-2 py-1 rounded-md bg-primary/5 hover:bg-primary/10 transition-colors"
+                        >
+                          {v.brand} {v.model} ({Number(v.price)}萬)
+                        </a>
+                      ));
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* AI handoff button */}
+            <Button
+              variant="default"
+              onClick={() => {
+                setChatOpen(true);
+                const suggestion = searchQuery || selectedBrand !== "all" ? `幫我推薦${selectedBrand !== "all" ? selectedBrand : ""}合適的車` : "幫我推薦合適的車";
+                handleChatSend(suggestion);
+              }}
+              className="gap-2"
+            >
+              💬 問阿家
+            </Button>
           </div>
         ) : (
           <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
