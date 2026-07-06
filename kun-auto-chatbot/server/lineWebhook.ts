@@ -1773,6 +1773,47 @@ async function processLineEvent(
     return;
   }
 
+  // ============ SIMPLE FACTUAL QUESTION SHORTCUT (ZERO GEMINI) ============
+  // Questions like "里程多少", "什麼顏色", "幾年的", "變速箱" already have deterministic
+  // answers from vehicleDetectionService.ts getQuestionAnswer(). Skip Gemini entirely.
+  // Conditions: vehicle detected + direct answer available + single short question + no critical intents
+  // Response time: <500ms (no LLM), zero hallucination risk.
+  const isSingleShortQuestion =
+    detection.vehicle &&
+    detection.directAnswer &&
+    !criticalHandoff.triggered &&
+    customerIntents.length <= 1 &&
+    userMessage.length < 15;
+
+  if (isSingleShortQuestion) {
+    console.log(`[LINE] Simple factual Q shortcut (${detection.questionType}): "${userMessage}"`);
+    replyText = buildVehicleAnswerReply(detection, greeting);
+
+    // Log the direct answer to transcript
+    await db.addMessage({ conversationId: convId, role: "assistant", content: replyText });
+
+    // Quick reply chips for next steps
+    const quickReplyCtx: ConversationContext = {
+      hasVehicle: true,
+      hasAppointment: false,
+      hasContact: !!conversation!.customerContact,
+      vehicleName: `${(detection.vehicle as any).brand} ${(detection.vehicle as any).model}`,
+      messageCount: history.length,
+      leadScore: conversation!.leadScore || 0,
+    };
+    const quickReply = buildContextualQuickReply(quickReplyCtx);
+
+    console.log(`[LINE] Fast reply sent (${replyText.length}B, <500ms)`);
+    try {
+      await fetch("https://api.line.me/v2/bot/message/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
+        body: JSON.stringify({ replyToken, messages: [{ type: "text", text: replyText, quickReply }] }),
+      });
+    } catch (err) { console.error("[LINE] Fast reply failed:", err); }
+    return;
+  }
+
   // ============ RULE-BASED MODE vs LLM MODE ============
   if (isRuleBasedMode()) {
     console.log("[LINE] Rule-based mode active (FORCE_RULE_BASED_REPLY=1)");
