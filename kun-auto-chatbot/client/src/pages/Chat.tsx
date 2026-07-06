@@ -1,5 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
-import { trpc } from "@/lib/trpc";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { AIChatBox, type Message } from "@/components/AIChatBox";
 import { nanoid } from "nanoid";
 import { Car, Phone } from "lucide-react";
@@ -37,10 +36,14 @@ export default function Chat() {
   }, [messages]);
 
   const [isLoading, setIsLoading] = useState(false);
+  const messageIndexRef = useRef(-1);
+  const assistantMessageRef = useRef("");
 
   const handleSend = async (content: string) => {
     setMessages((prev) => [...prev, { role: "user", content }]);
     setIsLoading(true);
+    messageIndexRef.current = -1;
+    assistantMessageRef.current = "";
 
     try {
       // Start streaming from the new endpoint
@@ -65,8 +68,8 @@ export default function Chat() {
 
       const decoder = new TextDecoder();
       let buffer = "";
-      let assistantMessage = "";
-      let messageIndex = -1; // Will be set when we add the assistant message
+      let currentEvent: string | null = null;
+      let currentData: string | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -74,57 +77,53 @@ export default function Chat() {
 
         buffer += decoder.decode(value, { stream: true });
 
-        // Parse SSE messages
+        // Parse SSE messages (event\ndata\n\n format)
         const lines = buffer.split("\n");
         buffer = lines.pop() || ""; // Keep incomplete line in buffer
 
-        for (const line of lines) {
-          const trimmedLine = line.trim();
-          if (!trimmedLine) continue;
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
 
-          if (trimmedLine.startsWith("event: ")) {
-            const eventType = trimmedLine.slice(7);
-            const nextLineMatch = lines[lines.indexOf(trimmedLine) + 1];
+          if (line === "") {
+            // Empty line signals end of message
+            if (currentEvent && currentData !== null) {
+              if (currentEvent === "token") {
+                assistantMessageRef.current += currentData;
 
-            if (eventType === "token") {
-              // Extract token from next 'data:' line
-              const dataLineIdx = lines.indexOf(trimmedLine) + 1;
-              if (dataLineIdx < lines.length) {
-                const dataLine = lines[dataLineIdx];
-                if (dataLine.startsWith("data: ")) {
-                  const token = dataLine.slice(6);
-                  assistantMessage += token;
-
-                  // Add assistant message on first token, update on subsequent tokens
-                  setMessages((prev) => {
-                    if (messageIndex === -1) {
-                      // First token: add new assistant message
-                      messageIndex = prev.length;
-                      return [
-                        ...prev,
-                        {
-                          role: "assistant",
-                          content: token,
-                        },
-                      ];
-                    } else {
-                      // Subsequent tokens: update existing message
-                      const updated = [...prev];
-                      updated[messageIndex] = {
-                        ...updated[messageIndex],
-                        content: assistantMessage,
-                      };
-                      return updated;
-                    }
-                  });
-                }
+                setMessages((prev) => {
+                  if (messageIndexRef.current === -1) {
+                    // First token: add new assistant message
+                    messageIndexRef.current = prev.length;
+                    return [
+                      ...prev,
+                      {
+                        role: "assistant",
+                        content: assistantMessageRef.current,
+                      },
+                    ];
+                  } else {
+                    // Subsequent tokens: update existing message
+                    const updated = [...prev];
+                    updated[messageIndexRef.current] = {
+                      ...updated[messageIndexRef.current],
+                      content: assistantMessageRef.current,
+                    };
+                    return updated;
+                  }
+                });
+              } else if (currentEvent === "done") {
+                // Stream finished successfully
+                break;
+              } else if (currentEvent === "error") {
+                throw new Error(currentData || "Stream error from server");
               }
-            } else if (eventType === "done") {
-              // Stream finished successfully
-              break;
-            } else if (eventType === "error") {
-              throw new Error("Stream error from server");
             }
+            currentEvent = null;
+            currentData = null;
+          } else if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7);
+          } else if (line.startsWith("data: ")) {
+            currentData = line.slice(6);
           }
         }
       }
@@ -206,7 +205,7 @@ export default function Chat() {
           <AIChatBox
             messages={messages}
             onSendMessage={handleSend}
-            isLoading={chatMutation.isPending}
+            isLoading={isLoading}
             placeholder={vehicleContext ? `詢問 ${vehicleContext} 的問題...` : "請輸入您想詢問的車輛問題..."}
             height="calc(100vh - 8rem)"
             emptyStateMessage={vehicleContext ? `想了解 ${vehicleContext} 嗎？選個問題或直接打字！` : "歡迎來到崑家汽車！有什麼我可以幫您的嗎？"}
