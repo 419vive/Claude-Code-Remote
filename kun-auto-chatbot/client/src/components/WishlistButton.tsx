@@ -66,7 +66,7 @@ export default function WishlistButton({ vehicle, size = "sm", className = "" }:
     >
       <Heart
         className={`${iconSize} transition-colors ${
-          saved ? "fill-primary text-primary" : "fill-none text-white/50"
+          saved ? "fill-[#C4A265] text-[#C4A265]" : "fill-none text-white/50"
         }`}
       />
     </button>
