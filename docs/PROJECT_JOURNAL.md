@@ -14,7 +14,7 @@
 
 ---
 
-## 2026-07-06 — Chinese synonym search bug found during manual verification (豐田/休旅 returned zero results)
+## 2026-07-06 — 4 bugs found + fixed verifying the Railway deploy checklist (PR #104)
 
 **Context:**
 Jerry was told to manually verify the Phase 2+3 Railway deployment, starting with
@@ -44,22 +44,96 @@ correct matches; 油電→hybrid and plain-English search were already passing
 (coincidentally lowercase synonym value). `npm run build` clean, 598.8kb (matches
 prior baseline).
 
+Continued through the remaining checklist items the same way (code-level
+verification instead of asking Jerry to click through, since the sandbox
+cannot reach the live site at all). Three more real bugs surfaced:
+
+**Bug 2 — Vehicle context passthrough silently dead** (`server/chatStreamRouter.ts`):
+`Chat.tsx` sends `vehicleContext` (the car a visitor was viewing on the detail
+page) to `/api/chat/stream` on every message. That endpoint destructured
+`vehicleContext` from the request body but never referenced it again — the
+legacy tRPC `chat.send` mutation in `routers.ts` does this correctly
+(`[當前查看的車：...]` prefix before vehicle detection), but `Chat.tsx` only
+calls the streaming endpoint, so the AI never actually knew which car the
+visitor came from. Fix: build the same `[當前查看的車：...]` prefix before
+calling `detectVehicleFromMessage`, guarded with a `typeof === "string"` check
+since this endpoint has no zod validation layer.
+
+**Bug 3 — SSE streaming silently buffered by gzip** (`server/_core/index.ts`):
+Global `compression` middleware had no exemption for `/api/chat/stream`.
+Confirmed via the `compressible` package directly: `text/event-stream` is
+compressible by mime-db default. Since `sendSSE` never calls `res.flush()`,
+gzip buffers internally until its window fills or the stream ends — meaning
+every token could arrive in bursts instead of one at a time, quietly
+defeating the entire "500-800ms first token" goal from the streaming feature
+shipped earlier this session. Fixed with the same path-based exemption
+pattern already used for `/api/line/webhook`.
+
+**Bug 4 — Operator polling latency compounds after every message**
+(`client/src/hooks/useMessages.ts` + `client/src/pages/Chat.tsx`):
+`fetchMessages`'s `useCallback` depended on `messages`, and the polling
+`useEffect` depends on `fetchMessages` — so every time a new message arrived,
+`fetchMessages` got a new identity, tearing down and rebuilding the
+`setInterval` from scratch. Net effect: instead of a steady 3s cadence, every
+new message added a fresh `pollInterval` delay before the next poll, roughly
+doubling effective latency each time messages were actively flowing (exactly
+when it matters most — an operator mid-conversation). Fixed by reading current
+messages via the functional `setState` form instead of closing over the
+`messages` state, so `fetchMessages`'s identity — and the interval it backs —
+stays stable. Separately, `Chat.tsx`'s own merge step deduped its first pass
+on `content.slice(0, 20)` while its second pass used full content — a mismatch
+that could silently drop a genuinely new operator message sharing a 20-char
+prefix with an earlier one (plausible with similar Chinese openers). Fixed to
+use full content on both passes.
+
+**Verification (all 4 fixes together):**
+- `npm run build`: clean, 599.1kb (~0.3kb over baseline, no errors).
+- `tsc --noEmit`: 12 pre-existing errors, confirmed identical count before/after
+  via `git stash` (none of the 4 fixes touch already-broken files/lines).
+- `npx vitest run`: 892 passed / 46 failed — unchanged from baseline (46 are
+  pre-existing DB-dependent failures, no live DB in this sandbox).
+- Rich-menu-while-locked and trade-in-photo-context items were verified by
+  direct code reading (no bugs found — both matched documented behavior
+  exactly, confirmed against `lineWebhook.ts`'s `isTradeInContext` and the
+  aiDisabled early-gate).
+
+**Also found, NOT fixed — flagged for Jerry's call:**
+"Design compliance" (no gold, navy + LINE green only) was verified true for
+`VehicleLanding.tsx` and `Home.tsx` specifically (the two pages the original
+fix documented) — both are clean. But `#C4A265` gold is still pervasive across
+12 other files site-wide: `WishlistButton.tsx`, `WishlistDrawer.tsx`,
+`VideoShowcaseNudge.tsx`, `ProactiveChatTrigger.tsx`, `MediaKit.tsx`,
+`SmartRedirect.tsx`, `BlogIndex.tsx`, `FaqPage.tsx`, `AboutUs.tsx`,
+`CarValuation.tsx`, `blogPosts.ts`, `remotion/types.ts`. That was never in
+scope for the documented fix. `MediaKit.tsx` even labels `#C4A265` as an
+intentional brand-kit swatch for press purposes — so this needs a design/business
+decision (which pages should follow the new navy-only system vs. keep gold
+intentionally), not a unilateral 12-file rewrite. Did not touch.
+
 **Outcome:**
 - Branch `claude/kunjiia-menu-buttons-issue-nt0re1` reset off latest `origin/main`
   (previous PR for this branch, #102/#103 lineage, was already merged — per repo
   convention this is treated as fresh follow-up work, not a stacked commit).
-- PR #104 opened (draft) against `main`. No CI configured to run on PRs in this
-  repo (only scheduled/push-triggered workflows exist) — 0 check runs, expected.
+- PR #104 opened (draft) against `main`, later updated with all 4 fixes. No CI
+  configured to run on PRs in this repo (only scheduled/push-triggered workflows
+  exist) — 0 check runs, expected, not a blocker.
 - Subscribed to PR activity; scheduled a ~1hr self check-in since webhooks don't
   deliver CI success or new-push events.
 
 **Still needs Jerry (or a future session with prod access):**
-Manual click-through on the live site once #104 merges + deploys, to confirm
-豐田/休旅 actually return vehicles in the real (non-mock) inventory — the mock
-test proves the logic is correct, not that production data matches expectations.
+- Manual click-through on the live site once #104 merges + deploys: search
+  豐田/休旅, chat from a vehicle detail page and confirm context awareness, an
+  operator round-trip in the web widget. All 4 fixes were verified at the code
+  level against mock data / by direct reading — not against live production data.
+- A decision on the site-wide `#C4A265` gold usage (12 files) — separate scope
+  from this PR, intentionally not touched.
 
 **Artifacts:**
-- `kun-auto-chatbot/client/src/pages/Home.tsx` (1-line fix)
+- `kun-auto-chatbot/client/src/pages/Home.tsx` (synonym lowercase fix)
+- `kun-auto-chatbot/server/chatStreamRouter.ts` (vehicleContext wiring)
+- `kun-auto-chatbot/server/_core/index.ts` (compression exemption)
+- `kun-auto-chatbot/client/src/hooks/useMessages.ts` + `client/src/pages/Chat.tsx`
+  (poll interval stability + dedup key fix)
 - PR: https://github.com/419vive/kunjia-autos-ai-chatbot/pull/104
 - Branch: `claude/kunjiia-menu-buttons-issue-nt0re1`
 

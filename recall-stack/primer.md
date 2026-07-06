@@ -4,72 +4,52 @@ Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (reset off latest main 2026-0
 prior lineage — PR #102/#103 — already merged & deployed). PR #104 open (draft),
 subscribed to activity, ~1hr self check-in scheduled.
 
-Latest (2026-07-06): Phase 2+3 deployed to Railway + confirmed live. Now manually
-verifying the 7-item RAILWAY_DEPLOY_CHECKLIST — found + fixed a real bug on item 1.
+Latest (2026-07-06): Phase 2+3 deployed to Railway + confirmed live. Ran the full
+7-item RAILWAY_DEPLOY_CHECKLIST verification (sandbox can't reach Railway/kuncar.tw
+— reconfirmed 403 CONNECT tunnel — so verified each item at the code level: real
+logic run against mock data, or direct code reading, instead of asking Jerry to
+click through). **Found + fixed 4 real bugs, all pushed to PR #104:**
 
-**Bug fixed (PR #104):** `client/src/pages/Home.tsx` Chinese synonym search —
-豐田/休旅/越野/軍用 returned ZERO results in production (capitalized synonym value
-never lowercased before case-sensitive `.includes()`). One-line fix, verified with
-a standalone mock-data test script (sandbox can't reach Railway/kuncar.tw — same
-firewall block as 2026-04-22 entry, reconfirmed via curl 403). Build clean 598.8kb.
+1. Chinese synonym search (豐田/休旅/越野/軍用) returned zero results —
+   capitalized synonym value never lowercased before case-sensitive `.includes()`.
+2. Vehicle context passthrough was silently dead on `/api/chat/stream` —
+   `vehicleContext` destructured but never used (legacy tRPC path did it right;
+   `Chat.tsx` only calls the streaming endpoint now).
+3. SSE streaming was being buffered by gzip — `text/event-stream` is compressible
+   by mime-db default, no exemption existed, so tokens arrived in bursts not
+   one-by-one. Added same exemption pattern as `/api/line/webhook`.
+4. Operator polling latency doubled after every new message — `fetchMessages`
+   depended on `messages` state, tearing down/rebuilding the poll interval each
+   time. Also fixed a truncated (20-char) dedup key in `Chat.tsx` that could
+   drop a genuinely new operator message sharing a prefix with an earlier one.
+
+Rich-menu-while-locked and trade-in-photo-context items: verified correct by
+direct code reading, no bugs found.
+
+**Flagged, not fixed:** `#C4A265` gold still used site-wide in 12 files
+(WishlistButton/Drawer, VideoShowcaseNudge, ProactiveChatTrigger, MediaKit,
+SmartRedirect, BlogIndex, FaqPage, AboutUs, CarValuation, blogPosts.ts,
+remotion/types.ts) — out of scope for the documented VehicleLanding/Home fix.
+MediaKit.tsx treats it as an intentional brand-kit swatch. Needs Jerry's call,
+not a unilateral rewrite.
+
+Verification each round: `npm run build` clean (599.1kb), `tsc --noEmit` 12
+pre-existing errors (unchanged count via git-stash comparison), `vitest run`
+892✓/46✗ (46 pre-existing DB-dependent, unchanged baseline).
 
 ## NEXT ACTION
-Continue the 7-item checklist (2-7 remaining): streaming latency, vehicle context
-passthrough, design compliance, trade-in photo awareness, operator polling, sort
-dropdown. Same method as item 1 — prefer standalone logic verification over asking
-Jerry to click through, since this sandbox cannot reach the live site at all.
-Watch for PR #104 CI/reviews (none configured/none yet as of last check).
-
----
-
-Earlier (2026-07-06): **✅ PHASE 2 + PHASE 3 COMPLETE — READY FOR RAILWAY DEPLOYMENT**
-
-**PHASE 2 COMPLETE** (Haiku + Sonnet agents all done):
-- Rich-menu button fixes: locked convos still show FAQ chips, photos, carousels (early gate exemptions)
-- Search sorting + Chinese synonyms (豐田→Toyota, 休旅→SUV, etc.)
-- Vehicle context passthrough: chat knows which car visitor was viewing
-- VehicleLanding design overhaul: removed 8891 gold (#C4A265), use design tokens only, rebranded "8891嚴選" → "崑家認証車況"
-- Simple Q fast-track: 里程多少 → DB lookup <500ms, skip Gemini
-- **Tests**: 837✓/46✗ (46 pre-existing DB-dependent)
-- **Build**: 577kb clean
-
-**PHASE 3 COMPLETE** (all 4 Opus agents done):
-1. **Web P0-2**: Real-time polling → useMessages.ts hook (3s interval, delta-fetch, dedup) ✓
-2. **Web P1-2**: Streaming → /api/chat/stream SSE, first token 500-800ms (was 2-5s) ✓
-3. **LINE P1-5**: Memory → extract/inject/gate (no re-asks of budget/brand/visit-time) ✓
-4. **LINE P0-3**: Trade-in photos → context-aware "已轉給賴先生估價" vs "我們沒有這台車" ✓
-
-**Commits today (6 total):**
-- c85114b: Final polish (useMessages, chatHistoryRouter, memory tests)
-- af10a71: LINE P1-5 memory system complete
-- a7006dd: Web P1-2 streaming complete  
-- ab6e05b: LINE P0-3 trade-in photo awareness
-- 0ac180c: Operator role support + memory tests
-- Earlier: Phase 2 features (search, context, design, fast-track)
-
-**Build & Test Status:**
-- Tests: 874✓/46✗ (no regression)
-- Build: 595.6kb clean
-- tsc: 0 errors in touched files
-
-## NEXT ACTION: DEPLOY TO RAILWAY
-
-1. **Merge to main** (or let Railway detect this branch)
-2. **Railway auto-deploy** (~2-3 min)
-3. **Live verification**:
-   - Streaming: first token <500ms (was 2-5s)
-   - Polling: operator replies ~3s
-   - Memory: no re-asks
-   - Trade-in: context-aware photos
-
-See scratchpad/RAILWAY_DEPLOY_CHECKLIST.md for 7 verification tests.
-**Deployment confidence: HIGH**
+Watch PR #104 for CI/review activity (none configured/none yet as of last
+check — no CI runs on PRs in this repo). ~1hr self check-in scheduled. When it
+merges + deploys: manual click-through recommended (search 豐田/休旅, vehicle-
+context chat, operator round-trip) since all fixes were verified against mock
+data, not live production data. Separately: ask Jerry whether the 12-file gold
+cleanup should happen and in which pages.
 
 ## Open Blockers
 
 - Railway auto-deploy unreliable (manual redeploy needed sometimes — not our code)
 - Dashboard UI for admin mutations not built (backend ready; LINE coverage OK for MVP)
-- Streaming full completion pending (useMessages + invokeLLMStream still being wired)
+- Site-wide `#C4A265` gold cleanup (12 files) — awaiting Jerry's scope decision
 
 ## Key Knowledge
 
@@ -87,3 +67,5 @@ See scratchpad/RAILWAY_DEPLOY_CHECKLIST.md for 7 verification tests.
 - Postback takeover buttons on notification cards
 - Phantom-vehicle guardrail (prompt + output validator + fallback)
 - Fact Lock (shopConfig single source of truth)
+- Real-time polling (useMessages.ts, 3s interval) + SSE token streaming (both
+  now confirmed correctly wired, see bugs 2-4 above)
