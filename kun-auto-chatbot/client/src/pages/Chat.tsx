@@ -36,14 +36,100 @@ export default function Chat() {
     }
   }, [messages]);
 
-  const chatMutation = trpc.chat.send.useMutation({
-    onSuccess: (data) => {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.response ?? data.reply },
-      ]);
-    },
-    onError: () => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSend = async (content: string) => {
+    setMessages((prev) => [...prev, { role: "user", content }]);
+    setIsLoading(true);
+
+    try {
+      // Start streaming from the new endpoint
+      const response = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          message: content,
+          channel: "web",
+          vehicleContext: vehicleContext ? vehicleContext : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      // Get the ReadableStream from the response body
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let assistantMessage = "";
+      let messageIndex = -1; // Will be set when we add the assistant message
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE messages
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+
+          if (trimmedLine.startsWith("event: ")) {
+            const eventType = trimmedLine.slice(7);
+            const nextLineMatch = lines[lines.indexOf(trimmedLine) + 1];
+
+            if (eventType === "token") {
+              // Extract token from next 'data:' line
+              const dataLineIdx = lines.indexOf(trimmedLine) + 1;
+              if (dataLineIdx < lines.length) {
+                const dataLine = lines[dataLineIdx];
+                if (dataLine.startsWith("data: ")) {
+                  const token = dataLine.slice(6);
+                  assistantMessage += token;
+
+                  // Add assistant message on first token, update on subsequent tokens
+                  setMessages((prev) => {
+                    if (messageIndex === -1) {
+                      // First token: add new assistant message
+                      messageIndex = prev.length;
+                      return [
+                        ...prev,
+                        {
+                          role: "assistant",
+                          content: token,
+                        },
+                      ];
+                    } else {
+                      // Subsequent tokens: update existing message
+                      const updated = [...prev];
+                      updated[messageIndex] = {
+                        ...updated[messageIndex],
+                        content: assistantMessage,
+                      };
+                      return updated;
+                    }
+                  });
+                }
+              }
+            } else if (eventType === "done") {
+              // Stream finished successfully
+              break;
+            } else if (eventType === "error") {
+              throw new Error("Stream error from server");
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Chat stream error:", err);
       setMessages((prev) => [
         ...prev,
         {
@@ -52,17 +138,9 @@ export default function Chat() {
             "抱歉，系統暫時忙碌中。您可以直接撥打 0936-812-818 聯繫賴先生。",
         },
       ]);
-    },
-  });
-
-  const handleSend = (content: string) => {
-    setMessages((prev) => [...prev, { role: "user", content }]);
-    chatMutation.mutate({
-      sessionId,
-      message: content,
-      channel: "web",
-      vehicleContext: vehicleContext ? vehicleContext : undefined,
-    });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Auto-send prefilled message from VehicleLanding (once)
