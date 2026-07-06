@@ -204,6 +204,23 @@ async function runMigrations() {
         );
         logger.info("Database", "✅ conversations customer memory columns added");
       }
+
+      // 0006: ensure messages.role enum includes 'operator' (for operator replies via web polling)
+      const [roleRows]: any = await conn.execute(
+        `SELECT COLUMN_TYPE
+           FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'messages'
+            AND COLUMN_NAME = 'role'`
+      );
+      const roleType = String(roleRows?.[0]?.COLUMN_TYPE || '');
+      if (roleType && !roleType.includes('operator')) {
+        logger.info("Database", "Upgrading messages.role enum to include 'operator'...");
+        await conn.execute(
+          `ALTER TABLE \`messages\` MODIFY COLUMN \`role\` enum('user','assistant','system','operator') NOT NULL`
+        );
+        logger.info("Database", "✅ messages.role enum upgraded");
+      }
     } catch (alterErr) {
       // Fail open: log but don't block startup. The app has fallbacks for
       // missing columns (reads return undefined → falsy lock check).
@@ -404,6 +421,9 @@ async function startServer() {
 
   // Chat streaming endpoint (Server-Sent Events)
   app.use(chatStreamRouter);
+
+  // Chat history polling endpoint (for operator replies)
+  app.use(chatHistoryRouter);
 
   // tRPC API
   app.use(

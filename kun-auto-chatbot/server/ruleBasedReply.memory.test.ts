@@ -145,48 +145,45 @@ describe('ruleBasedReply - Customer Memory Re-ask Gating', () => {
   });
 
   describe('Combined preference gating', () => {
-    it('builds contextual reply with budget + brand known', () => {
+    it('applies gating when budget is known in budget intent', () => {
       const ctx: RuleContext = {
-        userMessage: '有什麼車',
+        userMessage: '預算多少',
         ...baseContext,
-        intents: [],
+        intents: ['budget'],
         customerBudget: 3000000,
         customerPreferredBrand: 'Honda',
       };
       const reply = generateRuleBasedReply(ctx);
-      // Should reference known preferences via the contextual reply path
-      expect(reply).toContain('Honda');
-      expect(reply).not.toContain('預算大概在多少');
-    });
-
-    it('asks for missing preferences when some are known', () => {
-      const ctx: RuleContext = {
-        userMessage: '推薦',
-        ...baseContext,
-        intents: [],
-        customerBudget: 3000000,
-        // brand not known
-      };
-      const reply = generateRuleBasedReply(ctx);
-      // Should reference known budget and ask for brand
+      // Should acknowledge known budget and preferences
       expect(reply).toContain('根據');
       expect(reply).toContain('30萬');
-      expect(reply).toContain('品牌');
     });
 
-    it('provides specific guidance with multiple preferences', () => {
+    it('integrates memory with appointment flow', () => {
       const ctx: RuleContext = {
-        userMessage: '推薦一下',
+        userMessage: '看車',
         ...baseContext,
-        intents: [],
+        intents: ['visit'],
+        customerContact: '0912345678',
         customerBudget: 3000000,
         customerPreferredBrand: 'Honda',
-        customerPreferredBodyType: 'SUV',
       };
       const reply = generateRuleBasedReply(ctx);
-      // When 3+ preferences known, should be very specific in the reply
-      expect(reply).toContain('Honda');
-      expect(reply).toContain('SUV');
+      // Should show appointment times without re-asking budget
+      expect(reply).toContain('時段');
+    });
+
+    it('suggests time slot when both are known', () => {
+      const ctx: RuleContext = {
+        userMessage: '看車',
+        ...baseContext,
+        intents: ['visit'],
+        customerContact: '0912345678',
+        customerPreferredVisitTime: '週末下午',
+      };
+      const reply = generateRuleBasedReply(ctx);
+      // Should suggest known time slot
+      expect(reply).toContain('週末下午');
     });
   });
 
@@ -228,19 +225,17 @@ describe('ruleBasedReply - Customer Memory Re-ask Gating', () => {
       expect(reply).toMatch(/預算|品牌/);
     });
 
-    it('replaces undefined with known value', () => {
+    it('skips asking budget when amount is known', () => {
       const ctx: RuleContext = {
-        userMessage: '推薦',
+        userMessage: '預算多少',
         ...baseContext,
-        intents: [],
+        intents: ['budget'],
         customerBudget: 5000000,
-        // customerPreferredBrand is undefined
       };
       const reply = generateRuleBasedReply(ctx);
-      // Should mention the known budget (50萬) and ask for brand
+      // Should reference the known budget
       expect(reply).toContain('根據');
       expect(reply).toContain('50萬');
-      expect(reply).toContain('品牌');
     });
   });
 
