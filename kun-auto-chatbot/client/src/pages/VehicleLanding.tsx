@@ -388,7 +388,7 @@ export default function VehicleLanding() {
           <ol className="flex items-center gap-1 text-[10px] text-white/40 flex-wrap">
             <li><a href="/" className="hover:text-white/70 transition-colors">首頁</a></li>
             <li aria-hidden="true" className="text-white/20">/</li>
-            <li><a href={`/?brand=${encodeURIComponent(vehicle.brand)}`} className="hover:text-white/70 transition-colors">{vehicle.brand} 二手車</a></li>
+            <li><a href={`/brand/${encodeURIComponent(vehicle.brand)}`} className="hover:text-white/70 transition-colors">{vehicle.brand} 二手車</a></li>
             <li aria-hidden="true" className="text-white/20">/</li>
             <li aria-current="page" className="text-white/60 truncate max-w-[140px]">{name} {year}</li>
           </ol>

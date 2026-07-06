@@ -14,6 +14,85 @@
 
 ---
 
+## 2026-07-06 — Rich-menu buttons go dead once a conversation is aiDisabled (regression from #102)
+
+**Context:**
+Jerry paid the lapsed Railway bill, then reported: tapping the LINE rich-menu
+buttons (看車庫存 / 預約賞車 / 熱門推薦 / 50萬以下) shows **nothing** — no vehicle
+carousel, no reply. Two causes stacked:
+1. **Railway payment lapse** — service was suspended, so during his test the
+   webhook was unreachable and LINE got no reply at all. Resolved by him paying.
+2. **Code regression from PR #102 (commit 76b7821, live):** the rich-menu
+   buttons send plain *text messages* (看車庫存 → "我想看車，有什麼車可以推薦？"
+   etc.). The early `aiDisabled===1` gate in `lineWebhook.ts` returned
+   immediately with **no exception for deterministic rich-menu responses**.
+   PR #102 made `aiDisabled=1` fire automatically on appointment intent AND
+   critical-question handoffs, so the moment a conversation locks once (e.g.
+   Jerry tapping 預約賞車 during his own #102 testing), **every subsequent menu
+   tap is silenced**. The older `human_handoff`-status gate deliberately made a
+   rich-menu exception (`isRichMenuAction` reactivates); the newer, stronger
+   `aiDisabled` gate did not. His own test account was almost certainly stuck
+   `aiDisabled=1`, so his whole menu looked dead even after Railway came back.
+
+**Decision:**
+Serve **deterministic UI widgets** even while `aiDisabled=1`, keeping the AI
+locked. Same philosophy already applied to the `appointment_datetime` postback
+(documented as gate-exempt because it's a widget, not an LLM reply). In the
+early gate, before the silent return:
+- Rich-menu browse triggers (`detectRichMenuTrigger` → vehicle_browse / popular /
+  budget / welcome / faq) → serve `buildRichMenuResponseMessages` carousel/card,
+  record the assistant content for the dashboard, **do not flip aiDisabled back**.
+- Exact text `我想預約看車` (the 預約賞車 button) → re-send the datetimepicker via a
+  new extracted `buildAppointmentDatetimePicker()` helper. Exact-match (not the
+  broad appointment-intent regex) so the bot never injects a picker into an
+  operator's live free-text takeover. **No re-notify / no re-lock** (already locked).
+- Everything else (free-text) → stay silent, operator handles it.
+Also extracted the inline datetimepicker (85 lines in `lineWebhook.ts`) into
+`buildAppointmentDatetimePicker()` in `lineFlexTemplates.ts` (DRY — the main
+appointment flow now calls it too; behavior-preserving, `now` injectable for tests).
+
+**Why this shape:**
+- Browse carousels + the booking picker are pure DB/template output — showing
+  them during a human takeover is helpful, never contradicts the operator, and
+  keeps the customer moving. Only the *LLM's own words* need to be suppressed.
+- Exact-match on the appointment button (vs. the intent regex) is the key safety
+  choice: a locked conversation is one an operator may be handling live, so we
+  must NOT auto-fire a picker on conversational phrases like「什麼時候可以去」.
+
+**Outcome:**
+- `tsc`: 0 errors in touched server files (6 known pre-existing client errors
+  unchanged). `esbuild` clean (~566kb). Full suite **837 passed / 46 failed** —
+  the 46 are the pre-existing DB-required failures (identical count with changes
+  stashed; +5 new passing tests for `buildAppointmentDatetimePicker`).
+- `lineFlexTemplates.test.ts` still has its **8 pre-existing stale failures**
+  (documented before — buildAppointmentCard time-slots, detectRichMenuTrigger
+  預約賞車, photo/color assertions); verified identical count via `git stash`.
+  Not touched — out of scope.
+- **Cannot verify live from sandbox** (firewall blocks LINE/prod DB) — needs a
+  Railway deploy.
+
+**Immediate unblock for Jerry (told him):** his own test LINE convo is likely
+still `aiDisabled=1` from #102 testing → after deploy, either re-test from a
+fresh customer LINE, or `/unlock <last8>` his own conversation, to see all 4
+buttons alive.
+
+**Verification plan (post-deploy):**
+1. Lock a conversation (tap 預約賞車 or ask 殺價) → then tap 看車庫存 / 熱門推薦 /
+   50萬以下 → each still returns its carousel; AI stays locked (no free-text LLM
+   reply). Grep logs: `aiDisabled — serving deterministic rich-menu`.
+2. On the locked convo tap 預約賞車 → datetimepicker still appears; picking a time
+   still completes the booking (postback exemption). No duplicate operator card.
+3. Fresh (unlocked) customer → all 4 buttons work as before.
+
+**Artifacts:**
+- `kun-auto-chatbot/server/lineFlexTemplates.ts` (NEW `buildAppointmentDatetimePicker`)
+- `kun-auto-chatbot/server/lineFlexTemplates.test.ts` (+5 tests)
+- `kun-auto-chatbot/server/lineWebhook.ts` (early-gate widget exemption + import
+  cleanup + appointment block uses the helper)
+- Branch: `claude/kunjiia-menu-buttons-issue-nt0re1`
+
+---
+
 ## 2026-06-29 — AI auto-stops on critical buyer questions + appointment form (operator-takeover timing)
 
 **Context:**

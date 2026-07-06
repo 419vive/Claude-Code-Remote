@@ -7,6 +7,8 @@ import SeoFooter from "@/components/SeoFooter";
 import StickyBookingBar from "@/components/StickyBookingBar";
 import { VehicleListCard } from "@/components/VehicleListCard";
 
+const LINE_OA_URL = "https://page.line.me/825oftez";
+
 export default function BrandPage() {
   const [matched, params] = useRoute("/brand/:brand");
   const [, setLocation] = useLocation();
