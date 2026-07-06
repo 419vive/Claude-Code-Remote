@@ -14,6 +14,94 @@
 
 ---
 
+## 2026-07-06 — Web chat "no reply" bug + handoff redesign: redirect hard questions to LINE (PR #104)
+
+**Context:**
+Jerry tested the site mid-review and reported the chatbot sometimes not
+replying to certain questions at all. He also asked for a specific behavior:
+(1) answer directly when the info is 8891-sourced inventory data (already
+true — no change needed), (2) when a question is too hard/uncertain, use
+judgment and guide the customer to add the official LINE account, mentioning
+a sales rep will help — because he wants the actual business conversation to
+happen on LINE (where operator tooling already works), not stall out on the
+anonymous web widget where nobody may ever see it.
+
+**Root cause of "no reply":**
+`server/chatStreamRouter.ts`'s system prompt instructs the AI to emit an
+internal `[HUMAN_HANDOFF]` marker when it can't answer, "invisible to the
+customer" per the prompt's own claim. But the SSE loop streamed every RAW
+token to the client immediately as generated (`sendSSE("token", token)`),
+and the marker-stripping (`fullResponse.replace(/\[HUMAN_HANDOFF\]/g, "")`)
+only ran on the server's tracked copy AFTER the full loop finished — it never
+touched what the client had already rendered live. If the model's entire
+output was mostly just the marker (LLMs don't always perfectly follow the
+"also write a reassuring sentence" instruction), the customer saw literal
+`[HUMAN_HANDOFF]` text or near-nothing, reading exactly like "the bot didn't
+reply."
+
+Separately found while investigating: this endpoint's handoff path claimed
+"真人客服已通知" (a human has been notified) via an SSE `"handoff"` event, but
+(a) no actual LINE push notification is ever sent on this endpoint (the
+LEGACY tRPC `routers.ts` path does send one via `LINE_OWNER_USER_ID` +
+`notifyOwner()`, but `Chat.tsx` doesn't call that endpoint anymore), and (b)
+`Chat.tsx`'s SSE parser has no case for `"handoff"` events at all, so that
+reassurance message was silently dropped client-side regardless. It also set
+`aiDisabled: 1`, which this endpoint never checks on subsequent messages
+anyway — so the flag was pure misleading state for anyone looking at the
+admin dashboard, not an actual functional lock.
+
+**Decision:**
+1. **Streaming-safe marker filter**: replaced the naive per-token forward
+   with a sliding-window buffer that holds back only the last
+   `HANDOFF_MARKER.length - 1` characters (shorter than the marker itself),
+   so a partial marker can never be flushed to the client. Once the full
+   marker appears in the buffer it's stripped before anything downstream of
+   it is ever sent. Verified against 6 simulated token-split scenarios
+   (character-by-character split, marker-only response, marker split
+   mid-word alongside natural language, normal answers with no marker, and a
+   deliberate false-alarm case — bracket text that merely starts with
+   "[HUMAN" but isn't the real marker — confirmed it passes through
+   untouched and does NOT trigger a false handoff).
+2. **Behavior change**: rewrote the web-channel handoff prompt instruction.
+   Was: "回覆內容要說：這個問題我幫你轉給專人來回答，真人客服馬上就到！請稍等一下"
+   (implies waiting on the web page for a reply that structurally can't
+   arrive there). Now: guide the customer to add the official LINE account
+   (`${SHOP_LINE_ID}`) with a natural sentence, explicitly telling the model
+   this is a web chat with no real-time human available, so never say "please
+   wait."
+3. **Dropped the `aiDisabled` lock + dead `"handoff"` SSE event** for this
+   endpoint specifically — since the new fallback already redirects the
+   customer off-platform to LINE (which has its own working operator/AI
+   flow), there's no web-side operator to lock the conversation for.
+   Replaced with a simple `addAnalyticsEvent` log (`eventCategory: "handoff"`,
+   `eventAction: "redirected_to_line"`) for visibility without the misleading
+   DB state.
+
+**Why not also fix the legacy `routers.ts` chat.send mutation with the same
+change?** `Chat.tsx` (the only client currently calling into the web chat)
+exclusively uses `/api/chat/stream` — confirmed earlier this session while
+investigating the vehicle-context-passthrough bug. The tRPC `chat.send`
+mutation isn't reachable from the live UI, so it's dead code for this
+purpose; not worth the risk of touching it in the same PR.
+
+**Verification:**
+`npm run build` clean (600.6kb), `tsc --noEmit` 12 pre-existing errors
+(unchanged, `git stash`-verified), `vitest run` 892✓/46✗ (unchanged
+baseline). Marker-leak fix verified via a standalone simulation script
+against the 6 scenarios above — all clean.
+
+**Still needs Jerry (or a future session with prod access):** a live
+click-through asking a genuinely hard/ambiguous question, to confirm the new
+LINE-redirect message reads naturally in production (verified at the code/
+logic level only, not against the real Gemini model's actual phrasing).
+
+**Artifacts:**
+- `kun-auto-chatbot/server/chatStreamRouter.ts` (streaming marker filter,
+  handoff prompt rewrite, dropped aiDisabled lock + dead SSE event)
+- PR: https://github.com/419vive/kunjia-autos-ai-chatbot/pull/104
+
+---
+
 ## 2026-07-06 — 4 bugs + gold cleanup on 7 pages, verifying the Railway deploy checklist (PR #104)
 
 **Context:**
