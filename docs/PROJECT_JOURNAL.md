@@ -14,6 +14,57 @@
 
 ---
 
+## 2026-07-06 — Chinese synonym search bug found during manual verification (豐田/休旅 returned zero results)
+
+**Context:**
+Jerry was told to manually verify the Phase 2+3 Railway deployment, starting with
+"search 豐田, check it shows Toyota cars." Sandbox can't reach Railway/kuncar.tw
+(same firewall block as the 2026-04-22 journal entry — confirmed still true via
+curl, 403 CONNECT tunnel failed), so instead of asking Jerry to click through
+manually, the filter logic in `client/src/pages/Home.tsx` was extracted verbatim
+into a standalone Node script and run against mock vehicle data (no DB/live site
+needed — the filtering is pure client-side over already-fetched data).
+
+**Bug found:**
+`synonyms[searchQuery] || q` resolves 豐田/豐坦 → `"Toyota"` and 休旅/越野/軍用 →
+`"SUV"` (capitalized, per the literal map), but the result was never lowercased
+before the case-sensitive `.includes()` check against already-`.toLowerCase()`'d
+vehicle fields. `"toyota".includes("Toyota")` is `false` in JS. Synonyms whose
+value happened to already be lowercase (`sedan`, `hatchback`, `pickup`, `van`,
+`hybrid`) worked fine, which is why this shipped unnoticed — only the two most
+commonly-searched terms (Toyota, SUV) were silently broken.
+
+**Fix:** `const normalizedQuery = (synonyms[searchQuery] || q).toLowerCase();`
+One-line change, `client/src/pages/Home.tsx`.
+
+**Verification:**
+5 test cases run against mock inventory (Toyota RAV4/Altis, Honda CR-V, Mazda
+CX-5, BMW 320i) before and after the fix — 豐田 and 休旅 went from 0 matches to
+correct matches; 油電→hybrid and plain-English search were already passing
+(coincidentally lowercase synonym value). `npm run build` clean, 598.8kb (matches
+prior baseline).
+
+**Outcome:**
+- Branch `claude/kunjiia-menu-buttons-issue-nt0re1` reset off latest `origin/main`
+  (previous PR for this branch, #102/#103 lineage, was already merged — per repo
+  convention this is treated as fresh follow-up work, not a stacked commit).
+- PR #104 opened (draft) against `main`. No CI configured to run on PRs in this
+  repo (only scheduled/push-triggered workflows exist) — 0 check runs, expected.
+- Subscribed to PR activity; scheduled a ~1hr self check-in since webhooks don't
+  deliver CI success or new-push events.
+
+**Still needs Jerry (or a future session with prod access):**
+Manual click-through on the live site once #104 merges + deploys, to confirm
+豐田/休旅 actually return vehicles in the real (non-mock) inventory — the mock
+test proves the logic is correct, not that production data matches expectations.
+
+**Artifacts:**
+- `kun-auto-chatbot/client/src/pages/Home.tsx` (1-line fix)
+- PR: https://github.com/419vive/kunjia-autos-ai-chatbot/pull/104
+- Branch: `claude/kunjiia-menu-buttons-issue-nt0re1`
+
+---
+
 ## 2026-07-06 — Real-time operator replies in web chat (polling architecture, MVP shipped)
 
 **Context:**

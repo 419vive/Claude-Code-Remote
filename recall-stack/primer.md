@@ -1,8 +1,28 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (6 commits ahead of main, all pushed 2026-07-06 18:35 UTC).
+Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (reset off latest main 2026-07-06,
+prior lineage — PR #102/#103 — already merged & deployed). PR #104 open (draft),
+subscribed to activity, ~1hr self check-in scheduled.
 
-Latest (2026-07-06): **✅ PHASE 2 + PHASE 3 COMPLETE — READY FOR RAILWAY DEPLOYMENT**
+Latest (2026-07-06): Phase 2+3 deployed to Railway + confirmed live. Now manually
+verifying the 7-item RAILWAY_DEPLOY_CHECKLIST — found + fixed a real bug on item 1.
+
+**Bug fixed (PR #104):** `client/src/pages/Home.tsx` Chinese synonym search —
+豐田/休旅/越野/軍用 returned ZERO results in production (capitalized synonym value
+never lowercased before case-sensitive `.includes()`). One-line fix, verified with
+a standalone mock-data test script (sandbox can't reach Railway/kuncar.tw — same
+firewall block as 2026-04-22 entry, reconfirmed via curl 403). Build clean 598.8kb.
+
+## NEXT ACTION
+Continue the 7-item checklist (2-7 remaining): streaming latency, vehicle context
+passthrough, design compliance, trade-in photo awareness, operator polling, sort
+dropdown. Same method as item 1 — prefer standalone logic verification over asking
+Jerry to click through, since this sandbox cannot reach the live site at all.
+Watch for PR #104 CI/reviews (none configured/none yet as of last check).
+
+---
+
+Earlier (2026-07-06): **✅ PHASE 2 + PHASE 3 COMPLETE — READY FOR RAILWAY DEPLOYMENT**
 
 **PHASE 2 COMPLETE** (Haiku + Sonnet agents all done):
 - Rich-menu button fixes: locked convos still show FAQ chips, photos, carousels (early gate exemptions)
