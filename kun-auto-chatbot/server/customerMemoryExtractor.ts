@@ -35,7 +35,7 @@ export function extractBudget(message: string): number | undefined {
   }
 
   // Reject if it's a range (30到50萬, 30-50萬, etc.)
-  if (/\d+\s*(?:到|～|~|-)\s*\d+/).test(message)) {
+  if (/\d+\s*(?:到|～|~|-)\s*\d+/.test(message)) {
     return undefined;
   }
 

@@ -141,7 +141,7 @@ export function generateRuleBasedReply(ctx: RuleContext): string {
 
   // Viewing/appointment intent
   if (intents.includes("visit") || /看車|試駕|預約|賞車|過去看|去你們那/.test(lower)) {
-    return buildAppointmentReply(greeting, customerContact);
+    return buildAppointmentReply(greeting, customerContact, ctx.customerPreferredVisitTime);
   }
 
   // Address/location

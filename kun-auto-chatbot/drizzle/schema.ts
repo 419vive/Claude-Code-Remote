@@ -95,7 +95,7 @@ export type InsertConversation = typeof conversations.$inferInsert;
 export const messages = mysqlTable("messages", {
   id: int("id").autoincrement().primaryKey(),
   conversationId: int("conversationId").notNull(),
-  role: mysqlEnum("role", ["user", "assistant", "system"]).notNull(),
+  role: mysqlEnum("role", ["user", "assistant", "system", "operator"]).notNull(),
   content: text("content").notNull(),
   metadata: text("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

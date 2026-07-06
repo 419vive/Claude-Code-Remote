@@ -14,6 +14,48 @@
 
 ---
 
+## 2026-07-06 — Vehicle detail page brand fix: remove 8891 gold, switch to Kunjia navy design tokens
+
+**Context:**
+Vehicle landing page (`VehicleLanding.tsx`) was wearing 8891's brand identity throughout:
+- Hardcoded gold `#C4A265` accent on prices, badges, buttons, spinners
+- Multi-hue intent buttons (purple #9B59B6 for trade-in, orange #E67E22 for loan)  
+- "8891嚴選" guarantee block + generic 10-item checklist
+- Direct violation of DESIGN.md §2 rule: "navy is the ONLY chromatic accent"
+
+Result: customers saw competitor's brand colors before Kunjia's navy.
+
+**Decision:**
+Complete design system alignment per DESIGN.md (April 2025 spec):
+- Replace ALL `#C4A265` → `bg-primary` / `text-primary` tokens throughout
+- Simplify intent buttons to navy + LINE-green-only (removes purple/orange)
+- Rebrand guarantee section: "8891嚴選" → "崑家認證車況", update tagline + 3-badge row
+- Make checklist data-driven from `vehicle.guarantees` field (with fallback to 10 standard items)
+- Use `rounded-[var(--radius)]` (10px) for buttons
+
+**Why:**
+Early dev used gold as temporary visual anchor; now that primary design tokens are stable, gold is noise. Consistent color signals "this is Kunjia's site, not an 8891 proxy". Single-accent navy = premium, automotive trust per DESIGN.md atmosphere notes.
+
+**Outcome:**
+- `VehicleLanding.tsx` updated (swapped hardcoded colors for tokens)
+- Build successful: 1.29MB frontend bundle, 0 TypeScript errors in touched files
+- Intent buttons now render via `className` (e.g., `bg-primary/10 border-primary/25 text-primary`) instead of inline style objects
+- Guarantee section pulls from DB or fallback; tagline is Kunjia-specific
+
+**Verification (post-deploy):**
+1. Vehicle detail page loads → all gold accents replaced with navy primary
+2. Intent buttons: navy (price/loan/trade) + LINE green (booking)
+3. Guarantee block says "崑家認證車況" with updated 3-badge row ("已認證/無事故/完整文件")
+4. Price badge gradient is navy-based, not gold
+5. Brand header "40年老口碑" is navy, not gold
+
+**Artifacts:**
+- Commit: `3ddaace` (refactor: align VehicleLanding with Kunjia design system)
+- Modified: `kun-auto-chatbot/client/src/pages/VehicleLanding.tsx`
+- Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (same as PR #102 fix branch)
+
+---
+
 ## 2026-07-06 — Rich-menu buttons go dead once a conversation is aiDisabled (regression from #102)
 
 **Context:**

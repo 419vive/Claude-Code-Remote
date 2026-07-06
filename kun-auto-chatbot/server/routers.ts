@@ -1085,7 +1085,12 @@ ${targetVehiclePromptWeb}${intentInstructionsWeb}${phoneAskInstructionWeb}`;
       }),
     
     history: publicProcedure
-      .input(z.object({ sessionId: z.string().min(1).max(128) }))
+      .input(z.object({
+        sessionId: z.string().min(1).max(128),
+        // Optional: ISO timestamp string to fetch only messages created after this time.
+        // Used for polling to get new operator replies. Format: "2024-01-01T12:00:00.000Z"
+        since: z.string().datetime().optional(),
+      }))
       .query(async ({ input }) => {
         // SECURITY: Validate sessionId format to prevent injection
         if (!/^[a-zA-Z0-9_-]+$/.test(input.sessionId)) {
@@ -1093,7 +1098,12 @@ ${targetVehiclePromptWeb}${intentInstructionsWeb}${phoneAskInstructionWeb}`;
         }
         const conversation = await db.getConversationBySessionId(input.sessionId);
         if (!conversation) return { messages: [], conversation: null };
-        const msgs = await db.getMessagesByConversation(conversation.id);
+
+        // If 'since' provided, fetch only new messages; otherwise fetch full history
+        const msgs = input.since
+          ? await db.getMessagesByConversationSince(conversation.id, input.since)
+          : await db.getMessagesByConversation(conversation.id);
+
         // SECURITY: Mask PII in conversation data returned to client
         const maskedConversation = {
           ...conversation,
