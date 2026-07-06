@@ -103,15 +103,18 @@ describe('ruleBasedReply - Customer Memory Re-ask Gating', () => {
       expect(reply).toContain('Toyota');
     });
 
-    it('mentions known brand preference in contextual reply', () => {
+    it('mentions known brand preference when budget also known', () => {
       const ctx: RuleContext = {
         userMessage: '推薦一下',
         ...baseContext,
         intents: [],
+        customerBudget: 3000000,
         customerPreferredBrand: 'Toyota',
       };
       const reply = generateRuleBasedReply(ctx);
+      // With both budget and brand known, should reference both
       expect(reply).toContain('Toyota');
+      expect(reply).toContain('根據');
     });
   });
 

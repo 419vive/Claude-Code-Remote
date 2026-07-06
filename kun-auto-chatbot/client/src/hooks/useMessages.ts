@@ -134,12 +134,12 @@ export function useMessages({
           setMessages(newMessages);
         } else {
           // Avoid duplicates: filter out messages we already have
-          const existingIds = new Set(messages.map((m) => m.createdAt));
+          const existingIds = new Set(messages.map((m: Message) => m.createdAt));
           const freshMessages = newMessages.filter(
-            (m) => !existingIds.has(m.createdAt)
+            (m: Message) => !existingIds.has(m.createdAt)
           );
           if (freshMessages.length > 0) {
-            setMessages((prev) => [...prev, ...freshMessages]);
+            setMessages((prev: Message[]) => [...prev, ...freshMessages]);
           }
         }
 
