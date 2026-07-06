@@ -109,7 +109,7 @@ export default function CarValuation() {
       <div className="container max-w-4xl py-10 px-4">
         <div className="bg-[#1e2a38] rounded-lg p-6 md:p-8 border border-white/10">
           <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
-            <DollarSign className="h-6 w-6 text-primary" />
+            <DollarSign className="h-6 w-6 text-[#C4A265]" />
             車輛資訊
           </h2>
 
@@ -122,7 +122,7 @@ export default function CarValuation() {
               <select
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-[#0A0A0F] text-white border border-white/20 focus:border-primary focus:outline-none transition-colors"
+                className="w-full px-4 py-2 rounded-lg bg-[#0A0A0F] text-white border border-white/20 focus:border-[#C4A265] focus:outline-none transition-colors"
               >
                 {BRANDS.map((b) => (
                   <option key={b} value={b}>
@@ -140,7 +140,7 @@ export default function CarValuation() {
               <select
                 value={year}
                 onChange={(e) => setYear(parseInt(e.target.value))}
-                className="w-full px-4 py-2 rounded-lg bg-[#0A0A0F] text-white border border-white/20 focus:border-primary focus:outline-none transition-colors"
+                className="w-full px-4 py-2 rounded-lg bg-[#0A0A0F] text-white border border-white/20 focus:border-[#C4A265] focus:outline-none transition-colors"
               >
                 {YEARS.map((y) => (
                   <option key={y} value={y}>
@@ -161,7 +161,7 @@ export default function CarValuation() {
                 onChange={(e) => setModel(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="例如: RAV4"
-                className="w-full px-4 py-2 rounded-lg bg-[#0A0A0F] text-white border border-white/20 focus:border-primary focus:outline-none transition-colors placeholder:text-white/40"
+                className="w-full px-4 py-2 rounded-lg bg-[#0A0A0F] text-white border border-white/20 focus:border-[#C4A265] focus:outline-none transition-colors placeholder:text-white/40"
               />
             </div>
 
@@ -176,7 +176,7 @@ export default function CarValuation() {
                 onChange={(e) => setMileage(parseInt(e.target.value) || 0)}
                 onKeyPress={handleKeyPress}
                 min="0"
-                className="w-full px-4 py-2 rounded-lg bg-[#0A0A0F] text-white border border-white/20 focus:border-primary focus:outline-none transition-colors"
+                className="w-full px-4 py-2 rounded-lg bg-[#0A0A0F] text-white border border-white/20 focus:border-[#C4A265] focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -184,7 +184,7 @@ export default function CarValuation() {
           {/* Submit Button */}
           <button
             onClick={calculateValuation}
-            className="w-full mt-8 px-6 py-3 rounded-lg bg-primary text-white font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+            className="w-full mt-8 px-6 py-3 rounded-lg bg-[#C4A265] text-[#0A0A0F] font-semibold hover:bg-[#d4b875] transition-colors flex items-center justify-center gap-2"
           >
             <TrendingUp className="h-5 w-5" />
             立即估價
@@ -195,9 +195,9 @@ export default function CarValuation() {
         {result && (
           <div className="mt-8 grid md:grid-cols-3 gap-6">
             {/* Estimated Price Card */}
-            <div className="bg-[#1e2a38] rounded-lg p-6 border border-primary/30">
+            <div className="bg-[#1e2a38] rounded-lg p-6 border border-[#C4A265]/30">
               <h3 className="text-sm font-medium text-white/60 mb-2">預估收購價</h3>
-              <p className="text-3xl font-bold text-primary mb-2">
+              <p className="text-3xl font-bold text-[#C4A265] mb-2">
                 {result.estimatedPrice.toLocaleString("zh-TW")}
               </p>
               <p className="text-xs text-white/50">新台幣</p>
@@ -230,7 +230,7 @@ export default function CarValuation() {
         {/* Info Box */}
         <div className="mt-8 bg-[#1e2a38]/50 rounded-lg p-6 border border-white/10">
           <p className="text-xs text-white/60 flex items-start gap-2">
-            <HelpCircle className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+            <HelpCircle className="h-4 w-4 shrink-0 mt-0.5 text-[#C4A265]" />
             <span>
               本估價基於台灣二手車市場平均行情。實際收購價格會依據車況、事故紀錄、里程數、內裝品質等因素進行調整。如欲取得最準確的估價，建議與我們聯繫進行現場鑑定。
             </span>
@@ -245,7 +245,7 @@ export default function CarValuation() {
 
           <div className="space-y-6">
             {/* FAQ Item 1 */}
-            <div className="border-l-4 border-primary pl-6">
+            <div className="border-l-4 border-[#C4A265] pl-6">
               <h3 className="font-semibold text-white mb-2">
                 二手車估價的準確度有多高？
               </h3>
@@ -255,7 +255,7 @@ export default function CarValuation() {
             </div>
 
             {/* FAQ Item 2 */}
-            <div className="border-l-4 border-primary pl-6">
+            <div className="border-l-4 border-[#C4A265] pl-6">
               <h3 className="font-semibold text-white mb-2">
                 估價包含哪些因素？
               </h3>
@@ -265,7 +265,7 @@ export default function CarValuation() {
             </div>
 
             {/* FAQ Item 3 */}
-            <div className="border-l-4 border-primary pl-6">
+            <div className="border-l-4 border-[#C4A265] pl-6">
               <h3 className="font-semibold text-white mb-2">
                 如何取得準確的估價？
               </h3>
@@ -275,7 +275,7 @@ export default function CarValuation() {
             </div>
 
             {/* FAQ Item 4 */}
-            <div className="border-l-4 border-primary pl-6">
+            <div className="border-l-4 border-[#C4A265] pl-6">
               <h3 className="font-semibold text-white mb-2">
                 賣車流程需要多久？
               </h3>
@@ -285,7 +285,7 @@ export default function CarValuation() {
             </div>
 
             {/* FAQ Item 5 */}
-            <div className="border-l-4 border-primary pl-6">
+            <div className="border-l-4 border-[#C4A265] pl-6">
               <h3 className="font-semibold text-white mb-2">
                 換車時可以直接折扣嗎？
               </h3>
@@ -307,13 +307,13 @@ export default function CarValuation() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
               href="/blog"
-              className="px-6 py-2 rounded-lg bg-primary text-white font-semibold hover:bg-primary/90 transition-colors"
+              className="px-6 py-2 rounded-lg bg-[#C4A265] text-[#0A0A0F] font-semibold hover:bg-[#d4b875] transition-colors"
             >
               購車攻略
             </a>
             <a
               href="/loan-inquiry"
-              className="px-6 py-2 rounded-lg border border-primary text-primary font-semibold hover:bg-primary/10 transition-colors"
+              className="px-6 py-2 rounded-lg border border-[#C4A265] text-[#C4A265] font-semibold hover:bg-[#C4A265]/10 transition-colors"
             >
               貸款試算
             </a>

@@ -14,6 +14,56 @@
 
 ---
 
+## 2026-07-06 — PR #104 merged; gold `#C4A265` reverted back on 7 pages per Jerry's call
+
+**Context:**
+PR #104 (search fix, vehicle-context fix, streaming-compression fix, operator
+polling fix, handoff redesign, and a gold→navy cleanup on 7 customer-facing
+pages) was squash-merged to `main` (sha `0a67891`, 2026-07-06 19:43 UTC),
+confirmed via AskUserQuestion with Jerry (he chose merge-now over
+pre-review). Jerry then manually tested the live site: search worked, but
+after looking at the wishlist heart icon and the other gold-cleanup pages,
+he decided **he actually prefers gold there — more eye-catching, better
+looking** than the navy the earlier design-compliance pass switched to.
+Confirmed via AskUserQuestion that this applies to **all 7 files** from the
+prior cleanup, not just the one icon he was looking at.
+
+**Decision:**
+Reverted the 7 files back to their original `#C4A265` gold values, exactly
+matching what they were before today's cleanup (not a fresh redesign — the
+literal same hex/opacity/hover values): `WishlistButton.tsx`,
+`WishlistDrawer.tsx`, `VideoShowcaseNudge.tsx`, `ProactiveChatTrigger.tsx`,
+`CarValuation.tsx`, `FaqPage.tsx`, `SmartRedirect.tsx`. `VehicleLanding.tsx`
+and `Home.tsx` (the original, earlier design-compliance fix Jerry didn't
+comment on) were NOT touched — still navy.
+
+**Why this isn't a contradiction of DESIGN.md's "navy is the only chromatic
+accent" rule:** it is a deliberate, informed exception Jerry chose after
+seeing both versions live — not an oversight. Worth a note for whoever reads
+DESIGN.md next: the "single navy accent" rule holds for `VehicleLanding.tsx`/
+`Home.tsx`, but gold is intentionally retained on this specific list of
+secondary UI (wishlist, video nudge, chat trigger, valuation tool, FAQ,
+smart-redirect landing page) per an explicit 2026-07-06 business decision.
+
+**Process note:** this branch (`claude/kunjiia-menu-buttons-issue-nt0re1`)
+had already been merged once (PR #104), so per repo convention it was reset
+fresh off `origin/main` before making this follow-up change — this is a new
+PR, not stacked commits on the merged one.
+
+**Verification:** `npm run build` clean (600.6kb), `tsc --noEmit` 12
+pre-existing errors (unchanged), `vitest run` 892✓/46✗ (unchanged baseline).
+`grep -c "C4A265"` confirms gold restored in all 7 files with zero leftover
+`text-primary`/`border-primary`/`bg-primary` from the reverted lines (the
+handful of remaining `text-primary` hits in `FaqPage.tsx` are pre-existing,
+unrelated usages — accordion active-state color and plain text links — not
+part of this change).
+
+**Artifacts:**
+- Same 7 files as the original cleanup, reverted
+- Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (reset off latest main)
+
+---
+
 ## 2026-07-06 — Web chat "no reply" bug + handoff redesign: redirect hard questions to LINE (PR #104)
 
 **Context:**

@@ -46,15 +46,15 @@ export default function SmartRedirect() {
     <div className="min-h-screen bg-gradient-to-br from-[#1B3A5C] via-[#1B3A5C] to-[#0f2440] flex items-center justify-center p-4">
       {/* Decorative background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[10%] left-[5%] w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-[15%] right-[10%] w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute top-[10%] left-[5%] w-64 h-64 bg-[#C4A265]/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-[15%] right-[10%] w-80 h-80 bg-[#C4A265]/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">
         <div className="bg-white/[0.08] backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
           {/* Header */}
           <div className="px-8 pt-10 pb-6 text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary shadow-lg shadow-primary/20 mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#C4A265] to-[#a8893e] shadow-lg shadow-[#C4A265]/20 mb-6">
               <Car className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">崑家汽車</h1>
@@ -68,7 +68,7 @@ export default function SmartRedirect() {
                   {device === "mobile" ? (
                     <Smartphone className="w-7 h-7 text-[#06C755]" />
                   ) : (
-                    <Monitor className="w-7 h-7 text-primary" />
+                    <Monitor className="w-7 h-7 text-[#C4A265]" />
                   )}
                 </div>
 
@@ -92,7 +92,7 @@ export default function SmartRedirect() {
                       background:
                         device === "mobile"
                           ? "linear-gradient(90deg, #06C755, #00B900)"
-                          : "linear-gradient(90deg, #1B3A5C, #3275B4)",
+                          : "linear-gradient(90deg, #C4A265, #a8893e)",
                       animation: "progressSlide 0.4s ease-out",
                     }}
                   />
@@ -137,16 +137,16 @@ export default function SmartRedirect() {
                 {/* Website chatbot button */}
                 <a
                   href={WEBSITE_URL}
-                  className="flex items-center gap-4 w-full p-4 rounded-2xl bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/40 transition-all group"
+                  className="flex items-center gap-4 w-full p-4 rounded-2xl bg-[#C4A265]/10 border border-[#C4A265]/20 hover:bg-[#C4A265]/20 hover:border-[#C4A265]/40 transition-all group"
                 >
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary shadow-lg shadow-primary/20">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-[#C4A265] to-[#a8893e] shadow-lg shadow-[#C4A265]/20">
                     <MessageCircle className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-medium text-sm">崑家汽車官網</p>
                     <p className="text-white/50 text-xs">桌機用戶推薦，瀏覽車輛與線上諮詢</p>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-white/30 group-hover:text-primary transition-colors" />
+                  <ArrowRight className="w-5 h-5 text-white/30 group-hover:text-[#C4A265] transition-colors" />
                 </a>
 
                 {/* Direct call button */}

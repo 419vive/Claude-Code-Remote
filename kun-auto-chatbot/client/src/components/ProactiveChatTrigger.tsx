@@ -55,7 +55,7 @@ export default function ProactiveChatTrigger({
         {/* Header */}
         <div className="flex items-center justify-between bg-[#1B3A5C] px-3 py-2">
           <div className="flex items-center gap-2 text-white">
-            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-xs">阿</div>
+            <div className="w-7 h-7 rounded-full bg-[#C4A265] flex items-center justify-center text-xs">阿</div>
             <span className="text-xs font-medium">高雄阿家</span>
           </div>
           <button
