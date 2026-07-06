@@ -2046,6 +2046,11 @@ async function processLineEvent(
             intents: customerIntents,
             customerContact: conversation!.customerContact,
             leadScore: conversation!.leadScore ?? undefined,
+            customerBudget: (conversation as any).budget ?? undefined,
+            customerBudgetRange: (conversation as any).budgetRange ?? undefined,
+            customerPreferredBrand: (conversation as any).preferredBrand ?? undefined,
+            customerPreferredBodyType: (conversation as any).preferredBodyType ?? undefined,
+            customerPreferredVisitTime: (conversation as any).preferredVisitTime ?? undefined,
           });
         } else {
           // Non-critical (PII echo, suspicious price) — use sanitized version
@@ -2064,6 +2069,11 @@ async function processLineEvent(
         intents: customerIntents,
         customerContact: conversation!.customerContact,
         leadScore: conversation!.leadScore ?? undefined,
+        customerBudget: (conversation as any).budget ?? undefined,
+        customerBudgetRange: (conversation as any).budgetRange ?? undefined,
+        customerPreferredBrand: (conversation as any).preferredBrand ?? undefined,
+        customerPreferredBodyType: (conversation as any).preferredBodyType ?? undefined,
+        customerPreferredVisitTime: (conversation as any).preferredVisitTime ?? undefined,
       });
     }
   }

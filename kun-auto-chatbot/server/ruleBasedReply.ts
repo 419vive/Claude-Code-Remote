@@ -191,12 +191,39 @@ export function generateRuleBasedReply(ctx: RuleContext): string {
 
   // Price/budget related (no specific vehicle)
   if (intents.includes("budget") || /預算|多少錢|價格|幾萬/.test(lower)) {
+    // Gate: if budget is already known, skip the question and move to brand/body type
+    if (ctx.customerBudget || ctx.customerBudgetRange) {
+      const wan = ctx.customerBudget ? Math.round(ctx.customerBudget / 100000) : ctx.customerBudgetRange;
+      return `${greeting}根據你的預算${wan}萬，我幫你看看有什麼適合的車款！請問有偏好的品牌嗎？`;
+    }
     return `${greeting}請問你的預算大概在多少呢？這樣我比較好幫你推薦適合的車款，或者告訴我想找什麼品牌、用途是通勤還是家庭用車，我能更精準推薦！`;
   }
 
   // "想看車" generic
   if (/想看車|想買車|有什麼車|推薦/.test(lower)) {
-    return `${greeting}歡迎！請問你有偏好的品牌或車型嗎？告訴我預算範圍跟主要用途我幫你推薦最適合的！也可以直接來店裡看實車，地址${STORE_ADDRESS}`;
+    // Build contextual reply based on known preferences
+    const parts: string[] = [greeting];
+    if (ctx.customerBudget || ctx.customerBudgetRange) {
+      const wan = ctx.customerBudget ? Math.round(ctx.customerBudget / 100000) : ctx.customerBudgetRange;
+      parts.push(`根據你的預算${wan}萬`);
+    }
+    if (ctx.customerPreferredBrand) {
+      parts.push(`喜歡${ctx.customerPreferredBrand}`);
+    }
+
+    // If we know multiple preferences, suggest filtering by remaining unknowns
+    const knownCount = (ctx.customerBudget ? 1 : 0) + (ctx.customerPreferredBrand ? 1 : 0) + (ctx.customerPreferredBodyType ? 1 : 0);
+    if (knownCount >= 2) {
+      return `${parts.join('、')}，我幫你精選最適合的車款！也可以直接來店裡看實車，地址${STORE_ADDRESS}`;
+    }
+
+    // Default: ask for missing info
+    const ask: string[] = [];
+    if (!ctx.customerBudget && !ctx.customerBudgetRange) ask.push('預算範圍');
+    if (!ctx.customerPreferredBrand) ask.push('品牌');
+    if (!ctx.customerPreferredBodyType) ask.push('車型');
+
+    return `${greeting}歡迎！${ask.length > 0 ? `請問${ask.join('、')}呢？` : ''}告訴我詳細需求我幫你推薦最適合的！也可以直接來店裡看實車，地址${STORE_ADDRESS}`;
   }
 
   // Fragmented signals (year / budget number / cc)
@@ -286,10 +313,16 @@ function buildVehicleGeneralReply(vehicle: any, greeting: string, customerContac
   return `${greeting}${v.brand} ${v.model}（${specs}）售價${price}是台好車！${phonePrompt}`;
 }
 
-function buildAppointmentReply(greeting: string, customerContact: string | null): string {
+function buildAppointmentReply(greeting: string, customerContact: string | null, preferredVisitTime?: string | null): string {
   const phonePart = customerContact
     ? '你的電話我們有了，賴先生會跟你聯繫確認細節！'
     : '方便留個電話嗎？賴先生直接打給你確認比較快！';
+
+  // Gate: if visit time is already known, use it instead of asking
+  if (preferredVisitTime) {
+    return `${greeting}好的，我幫你安排${preferredVisitTime}來看車！${phonePart}，地址${STORE_ADDRESS}`;
+  }
+
   return `${greeting}想來看車太好了！請問哪個時段方便呢？上午10-11、下午14-15、還是晚上18-19？${phonePart}，地址${STORE_ADDRESS}`;
 }
 

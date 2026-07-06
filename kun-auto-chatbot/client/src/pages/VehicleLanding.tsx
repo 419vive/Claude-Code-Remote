@@ -699,40 +699,43 @@ export default function VehicleLanding() {
               </div>
             </div>
 
-            {/* ─── 8891嚴選 guarantee checklist ─── */}
-            <div className="bg-gradient-to-b from-[#C4A265]/5 to-transparent rounded-xl border border-primary/15 mb-3 overflow-hidden">
+            {/* ─── 崑家認證 guarantee checklist ─── */}
+            <div className="bg-gradient-to-b from-primary/5 to-transparent rounded-xl border border-primary/15 mb-3 overflow-hidden">
               <div className="flex items-center gap-3 px-4 py-2.5 border-b border-primary/10">
-                <span className="text-primary text-xs font-bold">8891嚴選</span>
-                <span className="text-white/40 text-[10px]">堅持3大車輛保障，不實立即賠付！</span>
+                <span className="text-primary text-xs font-bold">崑家認證車況</span>
+                <span className="text-white/40 text-[10px]">真實車況保証，安心購車！</span>
               </div>
               {/* 3 badges */}
               <div className="grid grid-cols-3 divide-x divide-white/[0.06] border-b border-white/[0.06]">
                 <div className="py-2.5 text-center">
-                  <p className="text-white/70 text-xs">售價真實</p>
+                  <p className="text-white/70 text-xs">已認證</p>
                 </div>
                 <div className="py-2.5 text-center">
-                  <p className="text-white/70 text-xs">100% 有車</p>
+                  <p className="text-white/70 text-xs">無事故</p>
                 </div>
                 <div className="py-2.5 text-center">
-                  <p className="text-white/70 text-xs">車況真實</p>
+                  <p className="text-white/70 text-xs">完整文件</p>
                 </div>
               </div>
-              {/* Individual guarantee items */}
+              {/* Individual guarantee items — data-driven or fallback */}
               <div className="divide-y divide-white/[0.04]">
-                {[
-                  "無重大事故或車體銜接",
-                  "無泡水",
-                  "無計程車變造",
-                  "無引擎號碼變造",
-                  "無車身號碼變造",
-                  "引擎本體無異常",
-                  "變速箱換檔無異常",
-                  "方向機本體無異常",
-                  "車輛配備無異常",
-                  "提供保固",
-                ].map((item, i) => (
+                {(vehicle.guarantees && (vehicle.guarantees as string).trim()
+                  ? (vehicle.guarantees as string).split(/[、,，/]/).filter(Boolean)
+                  : [
+                      "無重大事故或車體銜接",
+                      "無泡水",
+                      "無計程車變造",
+                      "無引擎號碼變造",
+                      "無車身號碼變造",
+                      "引擎本體無異常",
+                      "變速箱換檔無異常",
+                      "方向機本體無異常",
+                      "車輛配備無異常",
+                      "提供保固",
+                    ]
+                ).map((item, i) => (
                   <div key={i} className="flex items-center justify-between px-4 py-2">
-                    <span className="text-white/60 text-xs">{item}</span>
+                    <span className="text-white/60 text-xs">{item.trim()}</span>
                     <CheckCircle className="w-4 h-4 text-green-400" />
                   </div>
                 ))}

@@ -176,6 +176,33 @@ async function runMigrations() {
         );
         logger.info("Database", "✅ conversations.aiDisabled column added");
       }
+
+      // 0005: ensure conversations customer memory columns exist (budget, brand, body type, visit time)
+      const [budgetRows]: any = await conn.execute(
+        `SELECT COUNT(*) AS n
+           FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'conversations'
+            AND COLUMN_NAME = 'budget'`
+      );
+      if (Number(budgetRows?.[0]?.n || 0) === 0) {
+        logger.info("Database", "Adding conversations customer memory columns...");
+        await conn.execute(
+          `ALTER TABLE \`conversations\`
+             ADD COLUMN \`budget\` INT,
+             ADD COLUMN \`budgetRange\` VARCHAR(32),
+             ADD COLUMN \`preferredBrand\` VARCHAR(256),
+             ADD COLUMN \`preferredBodyType\` VARCHAR(128),
+             ADD COLUMN \`preferredVisitTime\` VARCHAR(64)`
+        );
+        await conn.execute(
+          `CREATE INDEX idx_budget ON conversations(budget)`
+        );
+        await conn.execute(
+          `CREATE INDEX idx_budgetRange ON conversations(budgetRange)`
+        );
+        logger.info("Database", "✅ conversations customer memory columns added");
+      }
     } catch (alterErr) {
       // Fail open: log but don't block startup. The app has fallbacks for
       // missing columns (reads return undefined → falsy lock check).
