@@ -14,7 +14,7 @@
 
 ---
 
-## 2026-07-06 — PR #104 merged; gold `#C4A265` reverted back on 7 pages per Jerry's call
+## 2026-07-06 — PR #104 + PR #105 both merged; gold `#C4A265` reverted back on 7 pages per Jerry's call
 
 **Context:**
 PR #104 (search fix, vehicle-context fix, streaming-compression fix, operator
@@ -58,9 +58,19 @@ handful of remaining `text-primary` hits in `FaqPage.tsx` are pre-existing,
 unrelated usages — accordion active-state color and plain text links — not
 part of this change).
 
+**PR #105 merged to `main` 2026-07-06 20:01 UTC** (squash merge, sha
+`cc81f53`, confirmed via AskUserQuestion — Jerry chose merge-now again).
+Auto-unsubscribed from PR #105 activity. Both PR #104 (bugs + original gold
+cleanup) and PR #105 (gold revert) are now live in `main`; Railway should
+auto-deploy within ~2-3 min of each merge — not independently verified from
+this sandbox (cannot reach Railway/kuncar.tw by any tool, confirmed via both
+curl and a real Playwright/Chromium browser launch this session).
+
 **Artifacts:**
 - Same 7 files as the original cleanup, reverted
 - Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (reset off latest main)
+- PR #104 (merged): https://github.com/419vive/kunjia-autos-ai-chatbot/pull/104
+- PR #105 (merged): https://github.com/419vive/kunjia-autos-ai-chatbot/pull/105
 
 ---
 

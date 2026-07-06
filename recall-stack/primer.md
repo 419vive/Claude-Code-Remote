@@ -1,8 +1,9 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` — reset fresh off `origin/main`
-2026-07-06 (PR #104 already merged, sha `0a67891`, confirmed live). This is
-follow-up work on a fresh branch instance, not stacked on the merged history.
+Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` — **both PR #104 (sha
+`0a67891`) and PR #105 (sha `cc81f53`) merged to main.** Next session picking
+up work here should reset this branch fresh off origin/main again (same
+convention as before) rather than stacking on merged history.
 
 Latest (2026-07-06): **PR #104 merged.** Contained: search synonym fix,
 vehicle-context-passthrough fix, SSE-compression fix, operator-polling
@@ -24,12 +25,13 @@ errors (unchanged), `vitest run` 892✓/46✗ (unchanged baseline) — confirmed
 again after the revert too.
 
 ## NEXT ACTION
-Commit + push this revert on the reset branch, open a new PR (previous one
-already merged — can't reuse it), merge per Jerry's usual "merge now"
-preference, remind him this needs the same live click-through once deployed.
-No other verification pending from PR #104's original scope — all 7
-checklist items were already confirmed correct (4 real bugs fixed, 2 items
-verified already-correct-by-design).
+Both PRs merged — nothing left on GitHub. Waiting on Jerry to do a live
+click-through once Railway finishes deploying: search 豐田/休旅,
+vehicle-context chat, operator round-trip, a hard question to confirm the
+LINE-redirect message, and a visual check that gold is back on the 7 pages.
+Everything today was verified at the code level only (mock data / direct
+reading) — never against live production, since this sandbox cannot reach
+Railway/kuncar.tw by any means (confirmed with curl AND a real browser).
 
 ## Open Blockers
 
