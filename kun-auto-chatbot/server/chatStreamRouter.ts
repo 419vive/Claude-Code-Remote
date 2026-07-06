@@ -159,9 +159,10 @@ ${allVehiclesForDetection.map((v, i) => `  ${i + 1}. ${v.brand} ${v.model}`).joi
 - 如果客戶表現出強烈購買意向，主動提供聯絡方式並建議預約看車
 
 ## ❗❗❗ 真人接手機制（非常重要！）❗❗❗
-當你確實不知道答案、沒有資料可以回答客人的問題時：
+當你確實不知道答案、沒有資料可以回答客人的問題（例如複雜議價、貸款細節、法律保固問題）時：
 - 你必須在回覆中加入「[HUMAN_HANDOFF]」標記（客人看不到這個標記）
-- 回覆內容要說：「這個問題我幫你轉給專人來回答，真人客服馬上就到！請稍等一下🙏」
+- 回覆內容要引導客人加官方 LINE（${SHOP_LINE_ID}），語氣自然，例如：「這個問題比較複雜，建議您加我們的LINE官方帳號 ${SHOP_LINE_ID}，我們業務會直接為您服務！」
+- 這是網頁聊天，客人離開後不會再回來，所以不要叫他們「稍等」或「等真人回覆」——網頁上沒有真人會即時回覆，一定要主動引導去 LINE
 
 ${targetVehiclePromptWeb}${intentInstructionsWeb}${phoneAskInstructionWeb}`;
 
@@ -177,13 +178,42 @@ ${targetVehiclePromptWeb}${intentInstructionsWeb}${phoneAskInstructionWeb}`;
       let fullResponse = "";
       let isHumanHandoff = false;
 
-      // Stream tokens from LLM
+      // Stream tokens from LLM. The [HUMAN_HANDOFF] marker must never reach the
+      // client raw — it's supposed to be invisible to the customer — but tokens
+      // arrive in arbitrary chunks that can split the marker across writes. Hold
+      // back a small trailing window (shorter than the marker) so a partial
+      // marker never gets flushed, then strip the marker once it's fully seen.
+      const HANDOFF_MARKER = "[HUMAN_HANDOFF]";
+      let pending = "";
       for await (const token of invokeLLMStream({ messages: llmMessages })) {
         fullResponse += token;
-        sendSSE("token", token);
+        pending += token;
+
+        if (pending.includes(HANDOFF_MARKER)) {
+          isHumanHandoff = true;
+          pending = pending.split(HANDOFF_MARKER).join("");
+        }
+
+        let holdBack = 0;
+        const maxHold = Math.min(HANDOFF_MARKER.length - 1, pending.length);
+        for (let len = maxHold; len > 0; len--) {
+          if (pending.slice(pending.length - len) === HANDOFF_MARKER.slice(0, len)) {
+            holdBack = len;
+            break;
+          }
+        }
+        const emitLen = pending.length - holdBack;
+        if (emitLen > 0) {
+          sendSSE("token", pending.slice(0, emitLen));
+          pending = pending.slice(emitLen);
+        }
+      }
+      if (pending) {
+        sendSSE("token", pending);
       }
 
-      // Check for human handoff
+      // Check for human handoff (redundant with the in-loop check above, but
+      // fullResponse also needs the marker stripped before DB storage/guardrail)
       if (fullResponse.includes("[HUMAN_HANDOFF]")) {
         isHumanHandoff = true;
         fullResponse = fullResponse.replace(/\s*\[HUMAN_HANDOFF\]\s*/g, "").trim();
@@ -226,10 +256,24 @@ ${targetVehiclePromptWeb}${intentInstructionsWeb}${phoneAskInstructionWeb}`;
         content: fullResponse,
       });
 
-      // Handle human handoff
+      // Handle human handoff: the reply itself already redirects the customer to
+      // official LINE (see the system prompt), so there's no web operator to wait
+      // for — don't lock aiDisabled (this endpoint doesn't check it on future
+      // messages anyway, so it would only leave misleading state for the admin
+      // dashboard) or emit a "handoff" SSE event (the client has no handler for
+      // it). Just log it for visibility.
       if (isHumanHandoff) {
-        await db.updateConversation(convId, { status: "human_handoff", aiDisabled: 1 });
-        sendSSE("handoff", { message: "真人客服已通知，馬上回覆您！" });
+        try {
+          await db.addAnalyticsEvent({
+            conversationId: convId,
+            eventCategory: "handoff",
+            eventAction: "redirected_to_line",
+            eventLabel: sanitizedMessage.slice(0, 100),
+            channel: "web",
+          });
+        } catch (err) {
+          logger.error("ChatStream", "Failed to log handoff analytics event:", err);
+        }
       }
 
       // Send completion metadata
