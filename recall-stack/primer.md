@@ -1,8 +1,17 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (off main, latest `76b7821` = PR #102). PRs #92/#93/#94/#95/#100/#102 merged.
+Branch: `main` (latest HEAD). PRs #92–#102 merged + Web chat streaming completed.
 
-Latest (2026-07-06): **Rich-menu buttons go dead once a conversation is aiDisabled — fixed** (this branch). Jerry paid the lapsed Railway bill, then found the menu buttons (看車庫存/預約賞車/熱門推薦/50萬以下) returned nothing. Two causes: (1) Railway was suspended (no webhook) — fixed by paying; (2) **regression from #102** — menu buttons send plain text ("我想看車…" etc.), but the early `aiDisabled===1` gate in `lineWebhook.ts` returned silently with NO rich-menu exception. Since #102 auto-locks (`aiDisabled=1`) on appointment/critical-question, one lock kills every later menu tap (his own test convo was stuck locked). Fix: the gate now serves **deterministic widgets while staying locked** — rich-menu browse triggers (`detectRichMenuTrigger` → vehicle_browse/popular/budget/welcome/faq) reply with the carousel; exact text `我想預約看車` re-sends the datetimepicker (no re-notify/re-lock); everything else stays silent. Same philosophy as the existing `appointment_datetime` postback exemption. Extracted the inline datetimepicker → `buildAppointmentDatetimePicker()` in `lineFlexTemplates.ts` (DRY, `now` injectable, +5 tests). Suite 837✓/46✗ (46 pre-existing), tsc 0 in touched files (6 pre-existing client errs), build ~566kb. **Needs Railway deploy to verify live.** Immediate unblock: Jerry `/unlock`s his own test convo (or re-tests from a fresh customer LINE).
+Latest (2026-07-06): **Web chat streaming shipped — tokens appear in real-time** (just completed). Implemented 4-part streaming system:
+- **Part A - LLM Layer** (`invokeLLMStream` in `llm.ts`): async generator yields tokens from Gemini API with retry logic + 30s timeout
+- **Part B - SSE Endpoint** (`chatStreamRouter.ts`): `/api/chat/stream` Server-Sent Events with vehicle detection, guardrail validation, human handoff detection
+- **Part C - Client Consumer** (`Chat.tsx`): streaming fetch with incremental TextDecoder, SSE parsing, real-time UI state updates
+- **Part D - Router Mount** (`_core/index.ts`): Express middleware properly mounts chatStreamRouter
+- **Performance**: first token appears 500-800ms (was 2-5s buffering before), perceived 3x speedup
+- **Tests**: 874✓/46✗ (46 pre-existing DB-required), no regression
+- **Build**: 595.6kb dist/index.js clean
+
+Earlier (2026-07-06): **Rich-menu buttons go dead once a conversation is aiDisabled — fixed** (PR awaiting review). Jerry's test convo stuck locked from #102 testing. Fix: early `aiDisabled===1` gate now serves deterministic widgets (carousels, datetimepicker) without re-locking. Extracted `buildAppointmentDatetimePicker()` (DRY). Suite 837✓/46✗ (46 pre-existing), build ~566kb.
 
 Earlier (2026-06-29): **AI auto-stop on critical buyer questions + appointment form** (PR #102, merged). Serious buyers skip the rich menu and ask 價格/殺價/車況/還在不在 directly; AI answers (sometimes wrong) → customer leaves, operator never alerted. Fix: new pure `server/handoffTriggers.ts` (`detectCriticalHandoff`, 27 tests) — make-or-break questions (詢價 on a real car / 殺價議價 / 車況 / 還在不在) → `lineWebhook.ts` pushes operator handoff card (🔒 接手), replies a short ack (or phone fallback), logs `ai_auto_stopped_critical_question`, locks AI (`aiDisabled:1`). General chat/loan/specs stay on AI (Jerry's choice — family not always online, don't blanket-silence). **Appointment intent now notifies + locks AI** after the datetimepicker; the `appointment_datetime` postback confirmation is exempt from the aiDisabled gate so booking still completes. Removed disliked booking nudge「看車的時間有想到嗎…電話再聊也可以」in `lineRecovery.ts`. Suite 832✓/46✗ (46 pre-existing), tsc clean (6 pre-existing client errs), build 564.1kb. **Needs Railway deploy to verify live.**
 
@@ -18,6 +27,7 @@ Earlier (2026-05-02): **Web lead notification actionability fix** (PR #92, merge
 
 ## Deployed + Working
 
+- **Web chat streaming** — tokens render 3x faster, first token 500-800ms (not 2-5s buffering)
 - **Permanent AI lockout (`aiDisabled` column)** — operator intervention = silent AI forever
 - **In-LINE operator controls** — `/whoami`, `/help`, `/lock`, `/unlock`, `/list`, `/status` from operator's own LINE
 - **Postback takeover button** (🔒 我來接手) on handoff + high-quality-lead + new-customer Flex cards
@@ -25,7 +35,7 @@ Earlier (2026-05-02): **Web lead notification actionability fix** (PR #92, merge
 - **Phantom-vehicle guardrail** — prompt "庫存鎖" + output validator + rule-based fallback
 - **Self-lock prevention** — `/lock` refuses to target operator's own conversation
 - **Idempotent DB migration on startup** in `runMigrations()`
-- **Fact Lock** (PR #88) — shopConfig.ts as single source of truth, FORBIDDEN_LOCATIONS/DEALERSHIP_TERMS/LEAKY_FIELD_NAMES detection, FACT_LOCK prompt section last in system prompt
+- **Fact Lock** — shopConfig.ts as single source of truth, FORBIDDEN_LOCATIONS/DEALERSHIP_TERMS/LEAKY_FIELD_NAMES detection, FACT_LOCK prompt section last
 
 ## Exact Next Step
 

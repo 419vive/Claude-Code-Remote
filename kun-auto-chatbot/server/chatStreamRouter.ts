@@ -59,10 +59,7 @@ chatStreamRouter.post("/api/chat/stream", async (req: express.Request, res: Resp
     // Get or create conversation
     let conversation = await db.getConversationBySessionId(sessionId);
     if (!conversation) {
-      conversation = await db.createConversation({
-        sessionId,
-        channel,
-      });
+      conversation = await db.createConversation(sessionId);
     }
     const convId = conversation.id;
 
@@ -81,13 +78,13 @@ chatStreamRouter.post("/api/chat/stream", async (req: express.Request, res: Resp
     const allVehiclesForDetection = await db.getAllVehicles();
     const detectionWeb = detectVehicleFromMessage(sanitizedMessage, allVehiclesForDetection);
     const customerIntentsWeb = detectCustomerIntents(sanitizedMessage);
-    const targetVehiclePromptWeb = buildTargetVehiclePrompt(detectionWeb, allVehiclesForDetection);
-    const intentInstructionsWeb = buildIntentInstructions(customerIntentsWeb, conversation.customerContact);
+    const targetVehiclePromptWeb = buildTargetVehiclePrompt(detectionWeb, sanitizedMessage, conversation.customerContact);
+    const intentInstructionsWeb = buildIntentInstructions(customerIntentsWeb, sanitizedMessage, "人客", conversation.customerContact, detectionWeb.vehicle);
     const phoneAskInstructionWeb = buildPhoneAskInstruction({
       channel,
       leadScore: conversation.leadScore,
       customerContact: conversation.customerContact,
-      messages: history,
+      recentMessages: history.map(m => ({ role: m.role, content: m.content })),
     });
 
     // Build system prompt
@@ -159,6 +156,12 @@ ${targetVehiclePromptWeb}${intentInstructionsWeb}${phoneAskInstructionWeb}`;
         content: m.content,
       })),
     ];
+
+    if (!conversation) {
+      sendSSE("error", "Failed to create conversation");
+      res.end();
+      return;
+    }
 
     try {
       let fullResponse = "";

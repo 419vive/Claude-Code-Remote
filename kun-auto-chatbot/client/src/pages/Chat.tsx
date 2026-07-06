@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { AIChatBox, type Message } from "@/components/AIChatBox";
+import { useMessages } from "@/hooks/useMessages";
 import { nanoid } from "nanoid";
 import { Car, Phone } from "lucide-react";
 
@@ -17,7 +18,8 @@ export default function Chat() {
     return id;
   });
 
-  const [messages, setMessages] = useState<Message[]>(() => {
+  // Initialize local messages from localStorage (for fast offline load)
+  const [localMessages, setLocalMessages] = useState<Message[]>(() => {
     try {
       const saved = localStorage.getItem("kun-chat-messages");
       if (saved) {
@@ -28,12 +30,29 @@ export default function Chat() {
     return [{ role: "system", content: "你是崑家汽車的AI智能客服助理。" }];
   });
 
-  // Persist messages
+  // Fetch server messages via polling
+  const { messages: serverMessages } = useMessages({
+    sessionId,
+    pollInterval: 3000, // Poll every 3 seconds for new operator replies
+    enabled: true,
+  });
+
+  // Merge local and server messages:
+  // - Use server messages for display (they include operator replies)
+  // - Keep local optimistic updates in sync with server
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  // Sync server messages into display and local storage
   useEffect(() => {
-    if (messages.length > 1) {
-      localStorage.setItem("kun-chat-messages", JSON.stringify(messages));
+    if (serverMessages.length > 0) {
+      // Server has messages, use them as the source of truth
+      setMessages(serverMessages);
+      localStorage.setItem("kun-chat-messages", JSON.stringify(serverMessages));
+    } else if (localMessages.length > 0) {
+      // Server has no messages yet, use local cache
+      setMessages(localMessages);
     }
-  }, [messages]);
+  }, [serverMessages, localMessages]);
 
   const [isLoading, setIsLoading] = useState(false);
   const messageIndexRef = useRef(-1);
