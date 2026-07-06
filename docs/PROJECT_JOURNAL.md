@@ -14,6 +14,246 @@
 
 ---
 
+## 2026-07-06 — Web chat "no reply" bug + handoff redesign: redirect hard questions to LINE (PR #104)
+
+**Context:**
+Jerry tested the site mid-review and reported the chatbot sometimes not
+replying to certain questions at all. He also asked for a specific behavior:
+(1) answer directly when the info is 8891-sourced inventory data (already
+true — no change needed), (2) when a question is too hard/uncertain, use
+judgment and guide the customer to add the official LINE account, mentioning
+a sales rep will help — because he wants the actual business conversation to
+happen on LINE (where operator tooling already works), not stall out on the
+anonymous web widget where nobody may ever see it.
+
+**Root cause of "no reply":**
+`server/chatStreamRouter.ts`'s system prompt instructs the AI to emit an
+internal `[HUMAN_HANDOFF]` marker when it can't answer, "invisible to the
+customer" per the prompt's own claim. But the SSE loop streamed every RAW
+token to the client immediately as generated (`sendSSE("token", token)`),
+and the marker-stripping (`fullResponse.replace(/\[HUMAN_HANDOFF\]/g, "")`)
+only ran on the server's tracked copy AFTER the full loop finished — it never
+touched what the client had already rendered live. If the model's entire
+output was mostly just the marker (LLMs don't always perfectly follow the
+"also write a reassuring sentence" instruction), the customer saw literal
+`[HUMAN_HANDOFF]` text or near-nothing, reading exactly like "the bot didn't
+reply."
+
+Separately found while investigating: this endpoint's handoff path claimed
+"真人客服已通知" (a human has been notified) via an SSE `"handoff"` event, but
+(a) no actual LINE push notification is ever sent on this endpoint (the
+LEGACY tRPC `routers.ts` path does send one via `LINE_OWNER_USER_ID` +
+`notifyOwner()`, but `Chat.tsx` doesn't call that endpoint anymore), and (b)
+`Chat.tsx`'s SSE parser has no case for `"handoff"` events at all, so that
+reassurance message was silently dropped client-side regardless. It also set
+`aiDisabled: 1`, which this endpoint never checks on subsequent messages
+anyway — so the flag was pure misleading state for anyone looking at the
+admin dashboard, not an actual functional lock.
+
+**Decision:**
+1. **Streaming-safe marker filter**: replaced the naive per-token forward
+   with a sliding-window buffer that holds back only the last
+   `HANDOFF_MARKER.length - 1` characters (shorter than the marker itself),
+   so a partial marker can never be flushed to the client. Once the full
+   marker appears in the buffer it's stripped before anything downstream of
+   it is ever sent. Verified against 6 simulated token-split scenarios
+   (character-by-character split, marker-only response, marker split
+   mid-word alongside natural language, normal answers with no marker, and a
+   deliberate false-alarm case — bracket text that merely starts with
+   "[HUMAN" but isn't the real marker — confirmed it passes through
+   untouched and does NOT trigger a false handoff).
+2. **Behavior change**: rewrote the web-channel handoff prompt instruction.
+   Was: "回覆內容要說：這個問題我幫你轉給專人來回答，真人客服馬上就到！請稍等一下"
+   (implies waiting on the web page for a reply that structurally can't
+   arrive there). Now: guide the customer to add the official LINE account
+   (`${SHOP_LINE_ID}`) with a natural sentence, explicitly telling the model
+   this is a web chat with no real-time human available, so never say "please
+   wait."
+3. **Dropped the `aiDisabled` lock + dead `"handoff"` SSE event** for this
+   endpoint specifically — since the new fallback already redirects the
+   customer off-platform to LINE (which has its own working operator/AI
+   flow), there's no web-side operator to lock the conversation for.
+   Replaced with a simple `addAnalyticsEvent` log (`eventCategory: "handoff"`,
+   `eventAction: "redirected_to_line"`) for visibility without the misleading
+   DB state.
+
+**Why not also fix the legacy `routers.ts` chat.send mutation with the same
+change?** `Chat.tsx` (the only client currently calling into the web chat)
+exclusively uses `/api/chat/stream` — confirmed earlier this session while
+investigating the vehicle-context-passthrough bug. The tRPC `chat.send`
+mutation isn't reachable from the live UI, so it's dead code for this
+purpose; not worth the risk of touching it in the same PR.
+
+**Verification:**
+`npm run build` clean (600.6kb), `tsc --noEmit` 12 pre-existing errors
+(unchanged, `git stash`-verified), `vitest run` 892✓/46✗ (unchanged
+baseline). Marker-leak fix verified via a standalone simulation script
+against the 6 scenarios above — all clean.
+
+**Still needs Jerry (or a future session with prod access):** a live
+click-through asking a genuinely hard/ambiguous question, to confirm the new
+LINE-redirect message reads naturally in production (verified at the code/
+logic level only, not against the real Gemini model's actual phrasing).
+
+**Artifacts:**
+- `kun-auto-chatbot/server/chatStreamRouter.ts` (streaming marker filter,
+  handoff prompt rewrite, dropped aiDisabled lock + dead SSE event)
+- PR: https://github.com/419vive/kunjia-autos-ai-chatbot/pull/104
+
+---
+
+## 2026-07-06 — 4 bugs + gold cleanup on 7 pages, verifying the Railway deploy checklist (PR #104)
+
+**Context:**
+Jerry was told to manually verify the Phase 2+3 Railway deployment, starting with
+"search 豐田, check it shows Toyota cars." Sandbox can't reach Railway/kuncar.tw
+(same firewall block as the 2026-04-22 journal entry — confirmed still true via
+curl, 403 CONNECT tunnel failed), so instead of asking Jerry to click through
+manually, the filter logic in `client/src/pages/Home.tsx` was extracted verbatim
+into a standalone Node script and run against mock vehicle data (no DB/live site
+needed — the filtering is pure client-side over already-fetched data).
+
+**Bug found:**
+`synonyms[searchQuery] || q` resolves 豐田/豐坦 → `"Toyota"` and 休旅/越野/軍用 →
+`"SUV"` (capitalized, per the literal map), but the result was never lowercased
+before the case-sensitive `.includes()` check against already-`.toLowerCase()`'d
+vehicle fields. `"toyota".includes("Toyota")` is `false` in JS. Synonyms whose
+value happened to already be lowercase (`sedan`, `hatchback`, `pickup`, `van`,
+`hybrid`) worked fine, which is why this shipped unnoticed — only the two most
+commonly-searched terms (Toyota, SUV) were silently broken.
+
+**Fix:** `const normalizedQuery = (synonyms[searchQuery] || q).toLowerCase();`
+One-line change, `client/src/pages/Home.tsx`.
+
+**Verification:**
+5 test cases run against mock inventory (Toyota RAV4/Altis, Honda CR-V, Mazda
+CX-5, BMW 320i) before and after the fix — 豐田 and 休旅 went from 0 matches to
+correct matches; 油電→hybrid and plain-English search were already passing
+(coincidentally lowercase synonym value). `npm run build` clean, 598.8kb (matches
+prior baseline).
+
+Continued through the remaining checklist items the same way (code-level
+verification instead of asking Jerry to click through, since the sandbox
+cannot reach the live site at all). Three more real bugs surfaced:
+
+**Bug 2 — Vehicle context passthrough silently dead** (`server/chatStreamRouter.ts`):
+`Chat.tsx` sends `vehicleContext` (the car a visitor was viewing on the detail
+page) to `/api/chat/stream` on every message. That endpoint destructured
+`vehicleContext` from the request body but never referenced it again — the
+legacy tRPC `chat.send` mutation in `routers.ts` does this correctly
+(`[當前查看的車：...]` prefix before vehicle detection), but `Chat.tsx` only
+calls the streaming endpoint, so the AI never actually knew which car the
+visitor came from. Fix: build the same `[當前查看的車：...]` prefix before
+calling `detectVehicleFromMessage`, guarded with a `typeof === "string"` check
+since this endpoint has no zod validation layer.
+
+**Bug 3 — SSE streaming silently buffered by gzip** (`server/_core/index.ts`):
+Global `compression` middleware had no exemption for `/api/chat/stream`.
+Confirmed via the `compressible` package directly: `text/event-stream` is
+compressible by mime-db default. Since `sendSSE` never calls `res.flush()`,
+gzip buffers internally until its window fills or the stream ends — meaning
+every token could arrive in bursts instead of one at a time, quietly
+defeating the entire "500-800ms first token" goal from the streaming feature
+shipped earlier this session. Fixed with the same path-based exemption
+pattern already used for `/api/line/webhook`.
+
+**Bug 4 — Operator polling latency compounds after every message**
+(`client/src/hooks/useMessages.ts` + `client/src/pages/Chat.tsx`):
+`fetchMessages`'s `useCallback` depended on `messages`, and the polling
+`useEffect` depends on `fetchMessages` — so every time a new message arrived,
+`fetchMessages` got a new identity, tearing down and rebuilding the
+`setInterval` from scratch. Net effect: instead of a steady 3s cadence, every
+new message added a fresh `pollInterval` delay before the next poll, roughly
+doubling effective latency each time messages were actively flowing (exactly
+when it matters most — an operator mid-conversation). Fixed by reading current
+messages via the functional `setState` form instead of closing over the
+`messages` state, so `fetchMessages`'s identity — and the interval it backs —
+stays stable. Separately, `Chat.tsx`'s own merge step deduped its first pass
+on `content.slice(0, 20)` while its second pass used full content — a mismatch
+that could silently drop a genuinely new operator message sharing a 20-char
+prefix with an earlier one (plausible with similar Chinese openers). Fixed to
+use full content on both passes.
+
+**Verification (all 4 fixes together):**
+- `npm run build`: clean, 599.1kb (~0.3kb over baseline, no errors).
+- `tsc --noEmit`: 12 pre-existing errors, confirmed identical count before/after
+  via `git stash` (none of the 4 fixes touch already-broken files/lines).
+- `npx vitest run`: 892 passed / 46 failed — unchanged from baseline (46 are
+  pre-existing DB-dependent failures, no live DB in this sandbox).
+- Rich-menu-while-locked and trade-in-photo-context items were verified by
+  direct code reading (no bugs found — both matched documented behavior
+  exactly, confirmed against `lineWebhook.ts`'s `isTradeInContext` and the
+  aiDisabled early-gate).
+
+**Design compliance follow-up — gold cleanup extended to 7 more customer-facing pages:**
+"Design compliance" (no gold, navy + LINE green only) was verified true for
+`VehicleLanding.tsx` and `Home.tsx` specifically (the two pages the original
+fix documented) — both were clean. But `#C4A265` gold was still pervasive
+across 12 other files site-wide. Flagged this to Jerry via AskUserQuestion
+(options: replace everywhere / replace only customer-commonly-seen pages /
+defer) — he chose **customer-commonly-seen pages only**.
+
+Fixed (swapped to `bg-primary`/`text-primary`/`border-primary`, matching the
+token combinations already established in the reviewed `VehicleLanding.tsx`
+fix): `WishlistButton.tsx`, `WishlistDrawer.tsx`, `VideoShowcaseNudge.tsx`,
+`ProactiveChatTrigger.tsx`, `CarValuation.tsx` (trade-in tool), `FaqPage.tsx`,
+`SmartRedirect.tsx` (device-detection landing page every ad/QR-code visitor
+hits before reaching LINE or the website — confirmed genuinely high-traffic
+by reading its redirect logic, not just guessing from the filename).
+
+One real subtlety caught mid-fix: several of these components render on a
+hardcoded dark navy background (`#1B3A5C`), and `--primary` in light mode
+(`oklch(0.35 0.08 250)` → RGB 20,60,98) computes to nearly the same color as
+that background (RGB 27,58,92) — verified numerically via an OKLab→sRGB
+conversion script, not eyeballed. Naively swapping `text-[#C4A265]` →
+`text-primary` on those backgrounds would have made text nearly invisible.
+Resolved by matching the exact precedent already shipped in `VehicleLanding.tsx`
+(line ~500: `text-primary` + `border-primary/30` on `bg-[#1B3A5C]/80`) for
+consistency, and using DESIGN.md's documented dark-mode-primary value
+(`oklch(0.55 0.12 250)` → `#3275B4`, "lighter, more luminous... for dark
+surfaces") for the one case needing a literal inline-CSS gradient
+(`SmartRedirect.tsx`'s progress bar, which can't use a Tailwind token).
+
+Left untouched (out of scope per Jerry's answer): `MediaKit.tsx` (explicitly
+documents `#C4A265` as an intentional brand-kit swatch for press use),
+`AboutUs.tsx`, `BlogIndex.tsx`, `blogPosts.ts`, `remotion/` (video-generation
+config, not a customer-facing page).
+
+Verified: `grep -c "C4A265"` = 0 across all 7 fixed files. Full re-run of
+build/tsc/tests after this batch — all unchanged from the post-bug-fix
+baseline (599.1kb build, 12 pre-existing tsc errors, 892✓/46✗ tests).
+
+**Outcome:**
+- Branch `claude/kunjiia-menu-buttons-issue-nt0re1` reset off latest `origin/main`
+  (previous PR for this branch, #102/#103 lineage, was already merged — per repo
+  convention this is treated as fresh follow-up work, not a stacked commit).
+- PR #104 opened (draft) against `main`, later updated with all 4 fixes. No CI
+  configured to run on PRs in this repo (only scheduled/push-triggered workflows
+  exist) — 0 check runs, expected, not a blocker.
+- Subscribed to PR activity; scheduled a ~1hr self check-in since webhooks don't
+  deliver CI success or new-push events.
+
+**Still needs Jerry (or a future session with prod access):**
+- Manual click-through on the live site once #104 merges + deploys: search
+  豐田/休旅, chat from a vehicle detail page and confirm context awareness, an
+  operator round-trip in the web widget, and a visual pass on the 7
+  gold-cleanup pages. All fixes were verified at the code level against mock
+  data / by direct reading — not against live production data.
+
+**Artifacts:**
+- `kun-auto-chatbot/client/src/pages/Home.tsx` (synonym lowercase fix)
+- `kun-auto-chatbot/server/chatStreamRouter.ts` (vehicleContext wiring)
+- `kun-auto-chatbot/server/_core/index.ts` (compression exemption)
+- `kun-auto-chatbot/client/src/hooks/useMessages.ts` + `client/src/pages/Chat.tsx`
+  (poll interval stability + dedup key fix)
+- `kun-auto-chatbot/client/src/components/{WishlistButton,WishlistDrawer,
+  VideoShowcaseNudge,ProactiveChatTrigger}.tsx` + `client/src/pages/
+  {CarValuation,FaqPage,SmartRedirect}.tsx` (gold → primary token swap)
+- PR: https://github.com/419vive/kunjia-autos-ai-chatbot/pull/104
+- Branch: `claude/kunjiia-menu-buttons-issue-nt0re1`
+
+---
+
 ## 2026-07-06 — Real-time operator replies in web chat (polling architecture, MVP shipped)
 
 **Context:**

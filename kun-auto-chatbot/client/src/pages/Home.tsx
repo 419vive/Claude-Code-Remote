@@ -423,7 +423,7 @@ export default function Home() {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         // Translate Chinese synonyms to English equivalents
-        const normalizedQuery = synonyms[searchQuery] || q;
+        const normalizedQuery = (synonyms[searchQuery] || q).toLowerCase();
         const match =
           v.brand.toLowerCase().includes(normalizedQuery) ||
           v.model.toLowerCase().includes(normalizedQuery) ||

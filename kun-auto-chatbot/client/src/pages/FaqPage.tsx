@@ -222,7 +222,7 @@ export default function FaqPage() {
             ← 回到首頁
           </a>
           <div className="flex items-center gap-3 mb-2">
-            <HelpCircle className="h-6 w-6 text-[#C4A265]" />
+            <HelpCircle className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">常見問題 FAQ｜崑家汽車</h1>
           </div>
           <p className="text-sm text-white/70 max-w-2xl">

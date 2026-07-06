@@ -256,6 +256,10 @@ async function startServer() {
     filter: (req, _res) => {
       // Don't compress LINE webhook responses (they're small and latency-sensitive)
       if (req.path === "/api/line/webhook") return false;
+      // Don't compress SSE chat streaming: text/event-stream is compressible by
+      // mime-db default, but gzip buffers internally until its window fills,
+      // which delays every token and defeats the whole point of streaming.
+      if (req.path === "/api/chat/stream") return false;
       return compression.filter(req, _res);
     },
   }));
