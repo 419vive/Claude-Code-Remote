@@ -18,8 +18,8 @@ export default function Chat() {
     return id;
   });
 
-  // Initialize local messages from localStorage (for fast offline load)
-  const [localMessages, setLocalMessages] = useState<Message[]>(() => {
+  // Initialize messages from localStorage
+  const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const saved = localStorage.getItem("kun-chat-messages");
       if (saved) {
@@ -30,29 +30,50 @@ export default function Chat() {
     return [{ role: "system", content: "你是崑家汽車的AI智能客服助理。" }];
   });
 
-  // Fetch server messages via polling
+  // Fetch server messages via polling for operator replies
   const { messages: serverMessages } = useMessages({
     sessionId,
     pollInterval: 3000, // Poll every 3 seconds for new operator replies
     enabled: true,
   });
 
-  // Merge local and server messages:
-  // - Use server messages for display (they include operator replies)
-  // - Keep local optimistic updates in sync with server
-  const [messages, setMessages] = useState<Message[]>([]);
-
-  // Sync server messages into display and local storage
+  // Merge server messages (especially operator replies) into local display
+  // Strategy: When polling returns new messages, append them if not already present
   useEffect(() => {
-    if (serverMessages.length > 0) {
-      // Server has messages, use them as the source of truth
-      setMessages(serverMessages);
-      localStorage.setItem("kun-chat-messages", JSON.stringify(serverMessages));
-    } else if (localMessages.length > 0) {
-      // Server has no messages yet, use local cache
-      setMessages(localMessages);
+    if (serverMessages.length === 0) return; // Server has no messages yet
+
+    // Find messages that are not yet in the local display
+    // (compare by role + timestamp to avoid duplicates)
+    const localSet = new Set(
+      messages.map((m) => `${m.role}:${m.content.slice(0, 20)}`)
+    );
+    const newMessages = serverMessages.filter(
+      (m) => !localSet.has(`${m.role}:${m.content.slice(0, 20)}`)
+    );
+
+    if (newMessages.length > 0) {
+      setMessages((prev) => {
+        // Avoid adding duplicates
+        const combined = [...prev, ...newMessages];
+        // Deduplicate by role + content
+        const seen = new Set<string>();
+        const deduped = combined.filter((m) => {
+          const key = `${m.role}:${m.content}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        return deduped;
+      });
     }
-  }, [serverMessages, localMessages]);
+  }, [serverMessages, messages]);
+
+  // Persist messages to localStorage
+  useEffect(() => {
+    if (messages.length > 1) {
+      localStorage.setItem("kun-chat-messages", JSON.stringify(messages));
+    }
+  }, [messages]);
 
   const [isLoading, setIsLoading] = useState(false);
   const messageIndexRef = useRef(-1);

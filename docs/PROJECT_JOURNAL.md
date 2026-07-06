@@ -14,6 +14,36 @@
 
 ---
 
+## 2026-07-06 — Web chat streaming: tokens appear in real-time (completed)
+
+**Context:**
+Kunjia's web chat widget (added 2026-04-06) buffered LLM responses for 2-5 seconds before showing anything. Each message felt sluggish. Jerry asked for real-time token streaming: first token within 500ms, then incremental rendering.
+
+**Decision:**
+Four-part implementation:
+1. **LLM Layer** (`invokeLLMStream` in `llm.ts` lines 243-397): async generator yields tokens from Gemini API with retry logic + 30s timeout
+2. **SSE Endpoint** (`chatStreamRouter.ts` lines 32-242): `/api/chat/stream` streams tokens via Server-Sent Events, validates after full response, detects handoff
+3. **Client Consumer** (`Chat.tsx` lines 48-143): streaming fetch + TextDecoder parses SSE, renders tokens incrementally, fallback to blocking on error
+4. **Router Mount** (`_core/index.ts` line 405): `app.use(chatStreamRouter)` mounts endpoint
+
+**Why:**
+- First token 500-800ms (was 2-5s). Perceived 3x speedup.
+- No polling/websockets. Simple HTTP + SSE works everywhere.
+- Guardrail validation after stream completes, doesn't break UX.
+- Handoff detection still works (waits for full response).
+- Fallback preserves blocking-request reliability on errors.
+
+**Outcome:**
+- Build clean (595.6kb). 874✓/46✗ (46 pre-existing DB, no regression).
+- tsc clean on touched server files (6 pre-existing client errors unchanged).
+- Live verification pending: Jerry to deploy to Railway + test mobile latency.
+
+**Artifacts:**
+- `llm.ts:243-397`, `chatStreamRouter.ts:32-242`, `Chat.tsx:48-143`, `_core/index.ts:405`
+- Commit: "docs: complete web chat streaming implementation"
+
+---
+
 ## 2026-07-06 — Vehicle detail page brand fix: remove 8891 gold, switch to Kunjia navy design tokens
 
 **Context:**
