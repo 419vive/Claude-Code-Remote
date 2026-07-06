@@ -61,6 +61,39 @@ export interface PromptContext {
 // ============ PROMPT SECTIONS ============
 
 /**
+ * Build a summary of known customer information
+ * Prevents re-asking questions that were already answered earlier in the conversation
+ */
+function buildCustomerKnownInfo(ctx: PromptContext): string {
+  const info: string[] = [];
+
+  if (ctx.customerBudget) {
+    const wan = Math.round(ctx.customerBudget / 100000);
+    info.push(`- 預算：${wan}萬`);
+  } else if (ctx.customerBudgetRange) {
+    info.push(`- 預算範圍：${ctx.customerBudgetRange}萬`);
+  }
+
+  if (ctx.customerPreferredBrand) {
+    info.push(`- 喜歡的品牌：${ctx.customerPreferredBrand}`);
+  }
+
+  if (ctx.customerPreferredBodyType) {
+    info.push(`- 車型偏好：${ctx.customerPreferredBodyType}`);
+  }
+
+  if (ctx.customerPreferredVisitTime) {
+    info.push(`- 看車時間偏好：${ctx.customerPreferredVisitTime}`);
+  }
+
+  if (info.length === 0) {
+    return '尚未了解（等待客人進一步提供資訊）';
+  }
+
+  return info.join('\n');
+}
+
+/**
  * BREAD TOP: Core identity + THE MOST IMPORTANT RULE
  * This is the first thing the LLM reads
  */

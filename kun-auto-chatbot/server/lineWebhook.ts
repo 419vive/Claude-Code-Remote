@@ -1939,6 +1939,11 @@ async function processLineEvent(
       intents: customerIntents,
       customerContact: conversation!.customerContact,
       leadScore: conversation!.leadScore ?? undefined,
+      customerBudget: (conversation as any).budget ?? undefined,
+      customerBudgetRange: (conversation as any).budgetRange ?? undefined,
+      customerPreferredBrand: (conversation as any).preferredBrand ?? undefined,
+      customerPreferredBodyType: (conversation as any).preferredBodyType ?? undefined,
+      customerPreferredVisitTime: (conversation as any).preferredVisitTime ?? undefined,
     });
     console.log("[LINE] Rule-based response:", replyText.substring(0, 100));
   } else {
@@ -1965,6 +1970,12 @@ async function processLineEvent(
       // Hard inventory list: brand + model only, used by the "庫存鎖" prompt section
       // to prevent the LLM from inventing cars (RAV4, CR-V, Kicks etc. were leaking through).
       inventoryList: allVehicles.map(v => `${v.brand} ${v.model}`),
+      // Customer preferences extracted from conversation history (prevent re-asking)
+      customerBudget: (conversation as any).budget ?? undefined,
+      customerBudgetRange: (conversation as any).budgetRange ?? undefined,
+      customerPreferredBrand: (conversation as any).preferredBrand ?? undefined,
+      customerPreferredBodyType: (conversation as any).preferredBodyType ?? undefined,
+      customerPreferredVisitTime: (conversation as any).preferredVisitTime ?? undefined,
     };
 
     const llmMessages = buildLLMMessages(promptContext, history.map(m => ({ role: m.role, content: m.content })));
@@ -1985,6 +1996,11 @@ async function processLineEvent(
           intents: customerIntents,
           customerContact: conversation!.customerContact,
           leadScore: conversation!.leadScore ?? undefined,
+          customerBudget: (conversation as any).budget ?? undefined,
+          customerBudgetRange: (conversation as any).budgetRange ?? undefined,
+          customerPreferredBrand: (conversation as any).preferredBrand ?? undefined,
+          customerPreferredBodyType: (conversation as any).preferredBodyType ?? undefined,
+          customerPreferredVisitTime: (conversation as any).preferredVisitTime ?? undefined,
         });
       }
 

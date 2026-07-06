@@ -17,6 +17,7 @@ import { RATE_LIMIT_CONFIG, logSecurityEvent } from "../security";
 import { trackingRouter } from "../trackingApi";
 import { pixelEventsRouter } from "../pixelEventsRelay";
 import { imageProxyRouter } from "../imageProxy";
+import { chatStreamRouter } from "../chatStreamRouter";
 import { registerAdminAuthRoutes, seedAdminUser } from "./adminAuth";
 import { createSeoRouter } from "../seo";
 import mysql from "mysql2/promise";
@@ -372,6 +373,9 @@ async function startServer() {
   // so they render in Flex cards instead of the anti-hotlink watermark.
   // Mounted outside /api/ so image responses stay cacheable.
   app.use(imageProxyRouter);
+
+  // Chat streaming endpoint (Server-Sent Events)
+  app.use(chatStreamRouter);
 
   // tRPC API
   app.use(

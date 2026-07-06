@@ -55,6 +55,12 @@ type RuleContext = {
   intents: string[];
   customerContact: string | null;
   leadScore?: number;
+  // Customer preferences (prevent re-asking)
+  customerBudget?: number | null;
+  customerBudgetRange?: string | null;
+  customerPreferredBrand?: string | null;
+  customerPreferredBodyType?: string | null;
+  customerPreferredVisitTime?: string | null;
 };
 
 /**

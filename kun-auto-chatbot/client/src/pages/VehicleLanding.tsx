@@ -353,7 +353,7 @@ export default function VehicleLanding() {
           <div className="text-center">
             <a
               href="/"
-              className="inline-block px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-[#a8893e] transition-colors mb-4"
+              className="inline-block px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors mb-4"
             >
               瀏覽所有在售車輛
             </a>
@@ -400,7 +400,7 @@ export default function VehicleLanding() {
                 onClick={() => setActiveMediaTab("photos")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                   activeMediaTab === "photos"
-                    ? "bg-primary/20 text-[#C4A265] border border-[#C4A265]/30"
+                    ? "bg-primary/20 text-primary border border-primary/30"
                     : "bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/[0.1]"
                 }`}
               >
@@ -412,7 +412,7 @@ export default function VehicleLanding() {
                   onClick={() => setActiveMediaTab("video")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     activeMediaTab === "video"
-                      ? "bg-primary/20 text-[#C4A265] border border-[#C4A265]/30"
+                      ? "bg-primary/20 text-primary border border-primary/30"
                       : "bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/[0.1]"
                   }`}
                 >
@@ -425,7 +425,7 @@ export default function VehicleLanding() {
                   onClick={() => setActiveMediaTab("360")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     activeMediaTab === "360"
-                      ? "bg-primary/20 text-[#C4A265] border border-[#C4A265]/30"
+                      ? "bg-primary/20 text-primary border border-primary/30"
                       : "bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/[0.1]"
                   }`}
                 >
@@ -438,7 +438,7 @@ export default function VehicleLanding() {
                   onClick={() => setActiveMediaTab("showcase")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     activeMediaTab === "showcase"
-                      ? "bg-primary/20 text-[#C4A265] border border-[#C4A265]/30"
+                      ? "bg-primary/20 text-primary border border-primary/30"
                       : "bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/[0.1]"
                   }`}
                 >
@@ -492,14 +492,14 @@ export default function VehicleLanding() {
               )}
 
               {/* Price badge */}
-              <div className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#C4A265] to-[#a8893e] text-white font-bold text-lg shadow-lg">
+              <div className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-lg shadow-lg">
                 {price}
               </div>
 
               {/* Certification badge */}
-              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-[#1B3A5C]/80 backdrop-blur border border-[#C4A265]/30 flex items-center gap-1">
-                <Shield className="w-3.5 h-3.5 text-[#C4A265]" />
-                <span className="text-[#C4A265] text-xs font-medium">第三方認證</span>
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-[#1B3A5C]/80 backdrop-blur border border-primary/30 flex items-center gap-1">
+                <Shield className="w-3.5 h-3.5 text-primary" />
+                <span className="text-primary text-xs font-medium">第三方認證</span>
               </div>
 
               {/* Wishlist button */}
@@ -556,7 +556,7 @@ export default function VehicleLanding() {
                 );
               })()}
               {/* Price badge */}
-              <div className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#C4A265] to-[#a8893e] text-white font-bold text-lg shadow-lg pointer-events-none">
+              <div className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-lg shadow-lg pointer-events-none">
                 {price}
               </div>
             </div>
@@ -567,7 +567,7 @@ export default function VehicleLanding() {
             <Suspense
               fallback={
                 <div className="aspect-[16/10] bg-black/30 flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-[#C4A265] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
               }
             >
@@ -580,7 +580,7 @@ export default function VehicleLanding() {
             <Suspense
               fallback={
                 <div className="aspect-video bg-black/30 flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-[#C4A265] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
               }
             >
@@ -598,7 +598,7 @@ export default function VehicleLanding() {
 
             {/* Price + new car price comparison */}
             <div className="flex items-baseline gap-3 mb-2">
-              <span className="text-[#C4A265] text-2xl font-bold tabular-nums">{price}</span>
+              <span className="text-primary text-2xl font-bold tabular-nums">{price}</span>
               {vehicle.newCarPrice && (vehicle.newCarPrice as string).trim() && (
                 <span className="text-white/35 text-xs tabular-nums">新車價：<span className="line-through">{vehicle.newCarPrice as string}</span></span>
               )}
@@ -676,7 +676,7 @@ export default function VehicleLanding() {
                   {(vehicle.features as string).split(/[、,，/]/).filter(Boolean).map((feat, i) => (
                     <span
                       key={i}
-                      className="inline-block px-2.5 py-1 rounded-lg bg-primary/10 border border-[#C4A265]/20 text-[#C4A265] text-xs"
+                      className="inline-block px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs"
                     >
                       {feat.trim()}
                     </span>
@@ -700,9 +700,9 @@ export default function VehicleLanding() {
             </div>
 
             {/* ─── 8891嚴選 guarantee checklist ─── */}
-            <div className="bg-gradient-to-b from-[#C4A265]/5 to-transparent rounded-xl border border-[#C4A265]/15 mb-3 overflow-hidden">
-              <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#C4A265]/10">
-                <span className="text-[#C4A265] text-xs font-bold">8891嚴選</span>
+            <div className="bg-gradient-to-b from-[#C4A265]/5 to-transparent rounded-xl border border-primary/15 mb-3 overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-2.5 border-b border-primary/10">
+                <span className="text-primary text-xs font-bold">8891嚴選</span>
                 <span className="text-white/40 text-[10px]">堅持3大車輛保障，不實立即賠付！</span>
               </div>
               {/* 3 badges */}
@@ -762,17 +762,13 @@ export default function VehicleLanding() {
                 <button
                   key={q.id}
                   onClick={() => handleQuestionClick(q)}
-                  className="flex items-center gap-3 w-full p-3.5 rounded-2xl border transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  style={{
-                    backgroundColor: q.bgColor,
-                    borderColor: q.borderColor,
-                  }}
+                  className={`flex items-center gap-3 w-full p-3.5 rounded-[var(--radius)] border transition-all hover:scale-[1.02] active:scale-[0.98] ${q.className}`}
                 >
                   <span className="text-2xl flex-shrink-0">{q.icon}</span>
                   <span className="text-white font-medium text-sm text-left flex-1">
                     {q.label}
                   </span>
-                  <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: q.color }} />
+                  <ArrowRight className="w-4 h-4 flex-shrink-0" />
                 </button>
               ))}
             </div>
@@ -819,7 +815,7 @@ export default function VehicleLanding() {
               <a
                 key={a.href}
                 href={a.href}
-                className="text-[#C4A265]/60 text-xs hover:text-[#C4A265] transition-colors"
+                className="text-primary/60 text-xs hover:text-primary transition-colors"
               >
                 {a.label}二手車
               </a>
@@ -869,7 +865,7 @@ export default function VehicleLanding() {
                         <p className="text-white font-medium text-sm truncate">{v.brand} {v.model}</p>
                         <p className="text-white/40 text-xs">{v.modelYear ? `${v.modelYear}年` : ""} · {v.mileage || ""}</p>
                       </div>
-                      <div className="text-[#C4A265] font-bold text-sm flex-shrink-0">{vPrice}</div>
+                      <div className="text-primary font-bold text-sm flex-shrink-0">{vPrice}</div>
                     </a>
                   );
                 })}
@@ -883,7 +879,7 @@ export default function VehicleLanding() {
           <p className="text-white/25 text-xs">
             崑家汽車 · 高雄市三民區大順二路269號
           </p>
-          <a href="/" className="text-[#C4A265]/60 text-xs hover:text-[#C4A265] transition-colors">
+          <a href="/" className="text-primary/60 text-xs hover:text-primary transition-colors">
             ← 瀏覽所有車輛
           </a>
         </div>
