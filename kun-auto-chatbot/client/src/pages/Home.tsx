@@ -342,7 +342,7 @@ export default function Home() {
   const chatMutation = trpc.chat.send.useMutation({
     onSuccess: (data) => {
       setChatMessages((prev) => {
-        const updated = [...prev, { role: "assistant" as const, content: data.response }];
+        const updated = [...prev, { role: "assistant" as const, content: data.response ?? data.reply }];
         // After 3 user exchanges, append LINE CTA message
         const userCount = updated.filter(m => m.role === "user").length;
         if (userCount === 3 && !prev.some(m => m.content.includes("@825oftez"))) {

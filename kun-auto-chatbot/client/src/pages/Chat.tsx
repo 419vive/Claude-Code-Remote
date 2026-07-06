@@ -40,7 +40,7 @@ export default function Chat() {
     onSuccess: (data) => {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.response },
+        { role: "assistant", content: data.response ?? data.reply },
       ]);
     },
     onError: () => {
