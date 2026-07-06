@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
-import { trpc } from "@/lib/trpc";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { AIChatBox, type Message } from "@/components/AIChatBox";
+import { useMessages } from "@/hooks/useMessages";
 import { nanoid } from "nanoid";
 import { Car, Phone } from "lucide-react";
 
@@ -18,6 +18,7 @@ export default function Chat() {
     return id;
   });
 
+  // Initialize messages from localStorage
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const saved = localStorage.getItem("kun-chat-messages");
@@ -29,21 +30,145 @@ export default function Chat() {
     return [{ role: "system", content: "你是崑家汽車的AI智能客服助理。" }];
   });
 
-  // Persist messages
+  // Fetch server messages via polling for operator replies
+  const { messages: serverMessages } = useMessages({
+    sessionId,
+    pollInterval: 3000, // Poll every 3 seconds for new operator replies
+    enabled: true,
+  });
+
+  // Merge server messages (especially operator replies) into local display
+  // Strategy: When polling returns new messages, append them if not already present
+  useEffect(() => {
+    if (serverMessages.length === 0) return; // Server has no messages yet
+
+    // Find messages that are not yet in the local display
+    // (compare by role + timestamp to avoid duplicates)
+    const localSet = new Set(
+      messages.map((m) => `${m.role}:${m.content.slice(0, 20)}`)
+    );
+    const newMessages = serverMessages.filter(
+      (m) => !localSet.has(`${m.role}:${m.content.slice(0, 20)}`)
+    );
+
+    if (newMessages.length > 0) {
+      setMessages((prev) => {
+        // Avoid adding duplicates
+        const combined = [...prev, ...newMessages];
+        // Deduplicate by role + content
+        const seen = new Set<string>();
+        const deduped = combined.filter((m) => {
+          const key = `${m.role}:${m.content}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        return deduped;
+      });
+    }
+  }, [serverMessages, messages]);
+
+  // Persist messages to localStorage
   useEffect(() => {
     if (messages.length > 1) {
       localStorage.setItem("kun-chat-messages", JSON.stringify(messages));
     }
   }, [messages]);
 
-  const chatMutation = trpc.chat.send.useMutation({
-    onSuccess: (data) => {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.response ?? data.reply },
-      ]);
-    },
-    onError: () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const messageIndexRef = useRef(-1);
+  const assistantMessageRef = useRef("");
+
+  const handleSend = async (content: string) => {
+    setMessages((prev) => [...prev, { role: "user", content }]);
+    setIsLoading(true);
+    messageIndexRef.current = -1;
+    assistantMessageRef.current = "";
+
+    try {
+      // Start streaming from the new endpoint
+      const response = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          message: content,
+          channel: "web",
+          vehicleContext: vehicleContext ? vehicleContext : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      // Get the ReadableStream from the response body
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let currentEvent: string | null = null;
+      let currentData: string | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE messages (event\ndata\n\n format)
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+
+          if (line === "") {
+            // Empty line signals end of message
+            if (currentEvent && currentData !== null) {
+              if (currentEvent === "token") {
+                assistantMessageRef.current += currentData;
+
+                setMessages((prev) => {
+                  if (messageIndexRef.current === -1) {
+                    // First token: add new assistant message
+                    messageIndexRef.current = prev.length;
+                    return [
+                      ...prev,
+                      {
+                        role: "assistant",
+                        content: assistantMessageRef.current,
+                      },
+                    ];
+                  } else {
+                    // Subsequent tokens: update existing message
+                    const updated = [...prev];
+                    updated[messageIndexRef.current] = {
+                      ...updated[messageIndexRef.current],
+                      content: assistantMessageRef.current,
+                    };
+                    return updated;
+                  }
+                });
+              } else if (currentEvent === "done") {
+                // Stream finished successfully
+                break;
+              } else if (currentEvent === "error") {
+                throw new Error(currentData || "Stream error from server");
+              }
+            }
+            currentEvent = null;
+            currentData = null;
+          } else if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7);
+          } else if (line.startsWith("data: ")) {
+            currentData = line.slice(6);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Chat stream error:", err);
       setMessages((prev) => [
         ...prev,
         {
@@ -52,16 +177,9 @@ export default function Chat() {
             "抱歉，系統暫時忙碌中。您可以直接撥打 0936-812-818 聯繫賴先生。",
         },
       ]);
-    },
-  });
-
-  const handleSend = (content: string) => {
-    setMessages((prev) => [...prev, { role: "user", content }]);
-    chatMutation.mutate({
-      sessionId,
-      message: content,
-      channel: "web",
-    });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Auto-send prefilled message from VehicleLanding (once)
@@ -127,7 +245,7 @@ export default function Chat() {
           <AIChatBox
             messages={messages}
             onSendMessage={handleSend}
-            isLoading={chatMutation.isPending}
+            isLoading={isLoading}
             placeholder={vehicleContext ? `詢問 ${vehicleContext} 的問題...` : "請輸入您想詢問的車輛問題..."}
             height="calc(100vh - 8rem)"
             emptyStateMessage={vehicleContext ? `想了解 ${vehicleContext} 嗎？選個問題或直接打字！` : "歡迎來到崑家汽車！有什麼我可以幫您的嗎？"}

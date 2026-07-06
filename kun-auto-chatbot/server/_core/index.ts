@@ -17,6 +17,8 @@ import { RATE_LIMIT_CONFIG, logSecurityEvent } from "../security";
 import { trackingRouter } from "../trackingApi";
 import { pixelEventsRouter } from "../pixelEventsRelay";
 import { imageProxyRouter } from "../imageProxy";
+import { chatStreamRouter } from "../chatStreamRouter";
+import { chatHistoryRouter } from "../chatHistoryRouter";
 import { registerAdminAuthRoutes, seedAdminUser } from "./adminAuth";
 import { createSeoRouter } from "../seo";
 import mysql from "mysql2/promise";
@@ -174,6 +176,50 @@ async function runMigrations() {
           `ALTER TABLE \`conversations\` ADD COLUMN \`aiDisabled\` int NOT NULL DEFAULT 0`
         );
         logger.info("Database", "✅ conversations.aiDisabled column added");
+      }
+
+      // 0005: ensure conversations customer memory columns exist (budget, brand, body type, visit time)
+      const [budgetRows]: any = await conn.execute(
+        `SELECT COUNT(*) AS n
+           FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'conversations'
+            AND COLUMN_NAME = 'budget'`
+      );
+      if (Number(budgetRows?.[0]?.n || 0) === 0) {
+        logger.info("Database", "Adding conversations customer memory columns...");
+        await conn.execute(
+          `ALTER TABLE \`conversations\`
+             ADD COLUMN \`budget\` INT,
+             ADD COLUMN \`budgetRange\` VARCHAR(32),
+             ADD COLUMN \`preferredBrand\` VARCHAR(256),
+             ADD COLUMN \`preferredBodyType\` VARCHAR(128),
+             ADD COLUMN \`preferredVisitTime\` VARCHAR(64)`
+        );
+        await conn.execute(
+          `CREATE INDEX idx_budget ON conversations(budget)`
+        );
+        await conn.execute(
+          `CREATE INDEX idx_budgetRange ON conversations(budgetRange)`
+        );
+        logger.info("Database", "✅ conversations customer memory columns added");
+      }
+
+      // 0006: ensure messages.role enum includes 'operator' (for operator replies via web polling)
+      const [roleRows]: any = await conn.execute(
+        `SELECT COLUMN_TYPE
+           FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'messages'
+            AND COLUMN_NAME = 'role'`
+      );
+      const roleType = String(roleRows?.[0]?.COLUMN_TYPE || '');
+      if (roleType && !roleType.includes('operator')) {
+        logger.info("Database", "Upgrading messages.role enum to include 'operator'...");
+        await conn.execute(
+          `ALTER TABLE \`messages\` MODIFY COLUMN \`role\` enum('user','assistant','system','operator') NOT NULL`
+        );
+        logger.info("Database", "✅ messages.role enum upgraded");
       }
     } catch (alterErr) {
       // Fail open: log but don't block startup. The app has fallbacks for
@@ -372,6 +418,12 @@ async function startServer() {
   // so they render in Flex cards instead of the anti-hotlink watermark.
   // Mounted outside /api/ so image responses stay cacheable.
   app.use(imageProxyRouter);
+
+  // Chat streaming endpoint (Server-Sent Events)
+  app.use(chatStreamRouter);
+
+  // Chat history polling endpoint (for operator replies)
+  app.use(chatHistoryRouter);
 
   // tRPC API
   app.use(

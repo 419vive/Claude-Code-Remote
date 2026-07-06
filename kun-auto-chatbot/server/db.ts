@@ -228,6 +228,27 @@ export async function getMessagesByConversation(conversationId: number, limit = 
     .limit(limit);
 }
 
+/**
+ * Get messages added since a specific timestamp.
+ * Used for polling UI updates when new operator replies arrive.
+ * @param conversationId - The conversation ID
+ * @param since - ISO timestamp string or Date object (e.g., "2024-01-01T12:00:00.000Z")
+ * @returns Messages created after the since timestamp, ordered by creation time
+ */
+export async function getMessagesByConversationSince(conversationId: number, since: Date | string) {
+  const db = await getDb();
+  if (!db) return [];
+  const sinceDate = typeof since === "string" ? new Date(since) : since;
+  return db.select().from(messages)
+    .where(
+      and(
+        eq(messages.conversationId, conversationId),
+        gte(messages.createdAt, sinceDate)
+      )
+    )
+    .orderBy(asc(messages.createdAt));
+}
+
 // ============ LEAD EVENTS ============
 
 export async function addLeadEvent(data: InsertLeadEvent) {

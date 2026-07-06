@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Loader2, Send, User, Sparkles } from "lucide-react";
+import { Loader2, Send, User, Sparkles, HeadsetIcon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Streamdown } from "streamdown";
 
@@ -10,7 +10,7 @@ import { Streamdown } from "streamdown";
  * Message type matching server-side LLM Message interface
  */
 export type Message = {
-  role: "system" | "user" | "assistant";
+  role: "system" | "user" | "assistant" | "operator";
   content: string;
 };
 
@@ -283,9 +283,18 @@ export function AIChatBox({
                         : undefined
                     }
                   >
-                    {message.role === "assistant" && (
-                      <div className="size-8 shrink-0 mt-1 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="size-4 text-primary" />
+                    {(message.role === "assistant" || message.role === "operator") && (
+                      <div className={cn(
+                        "size-8 shrink-0 mt-1 rounded-full flex items-center justify-center",
+                        message.role === "operator"
+                          ? "bg-amber-500/10"
+                          : "bg-primary/10"
+                      )}>
+                        {message.role === "operator" ? (
+                          <HeadsetIcon className="size-4 text-amber-600 dark:text-amber-400" />
+                        ) : (
+                          <Sparkles className="size-4 text-primary" />
+                        )}
                       </div>
                     )}
 

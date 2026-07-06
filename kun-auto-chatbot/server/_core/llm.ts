@@ -234,3 +234,164 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   throw lastError || new Error("LLM invocation failed after retries");
 }
+
+/**
+ * Invoke Google AI Gemini LLM with streaming support.
+ * Yields text tokens as they arrive from the API.
+ * Includes same timeout and retry logic as invokeLLM.
+ */
+export async function* invokeLLMStream(
+  params: InvokeParams
+): AsyncGenerator<string, void, unknown> {
+  console.log("[LLM Stream] API key configured:", !!ENV.googleAiApiKey);
+  if (!ENV.googleAiApiKey) {
+    throw new Error("GOOGLE_AI_API_KEY is not configured");
+  }
+
+  const maxTokens = params.maxTokens || params.max_tokens || 4096;
+  const openaiMessages = convertMessages(params.messages);
+
+  if (openaiMessages.length === 0) {
+    openaiMessages.push({ role: "user", content: "(empty)" });
+  }
+
+  const body: Record<string, unknown> = {
+    model: GEMINI_MODEL,
+    max_tokens: maxTokens,
+    messages: openaiMessages,
+    temperature: 0.3,
+    stream: true, // Enable streaming
+  };
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= LLM_MAX_RETRIES; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
+
+      const response = await fetch(`${GOOGLE_AI_BASE_URL}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ENV.googleAiApiKey}`,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        // Retry on rate limit (429) or server errors (5xx)
+        if (
+          (response.status === 429 || response.status >= 500) &&
+          attempt < LLM_MAX_RETRIES
+        ) {
+          const backoff = (attempt + 1) * 1000;
+          logger.warn(
+            "LLM Stream",
+            `Retrying (attempt ${attempt + 1}) after ${response.status}, backoff ${backoff}ms`
+          );
+          await new Promise((r) => setTimeout(r, backoff));
+          lastError = new Error(
+            `Google AI API error (${response.status}): ${errorText}`
+          );
+          continue;
+        }
+        logger.error(
+          "LLM Stream",
+          `API error: ${response.status} ${errorText.substring(0, 500)}`
+        );
+        throw new Error(`Google AI API error (${response.status}): ${errorText}`);
+      }
+
+      // Process the streaming response
+      if (!response.body) {
+        throw new Error("No response body for streaming");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // Process complete SSE messages
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine === "data: [DONE]") continue;
+
+            if (trimmedLine.startsWith("data: ")) {
+              try {
+                const json = JSON.parse(trimmedLine.slice(6));
+                const chunk = json.choices?.[0]?.delta?.content;
+                if (chunk) {
+                  yield chunk;
+                }
+              } catch (e) {
+                // Skip malformed JSON
+                logger.warn("LLM Stream", `Malformed SSE JSON: ${trimmedLine}`);
+              }
+            }
+          }
+        }
+
+        // Process any remaining buffer
+        if (buffer.trim() && buffer.trim() !== "data: [DONE]") {
+          if (buffer.trim().startsWith("data: ")) {
+            try {
+              const json = JSON.parse(buffer.trim().slice(6));
+              const chunk = json.choices?.[0]?.delta?.content;
+              if (chunk) {
+                yield chunk;
+              }
+            } catch (e) {
+              logger.warn("LLM Stream", `Malformed SSE JSON in buffer: ${buffer}`);
+            }
+          }
+        }
+
+        return; // Success
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        lastError = new Error(`LLM request timed out after ${LLM_TIMEOUT_MS}ms`);
+        if (attempt < LLM_MAX_RETRIES) {
+          logger.warn("LLM Stream", `Timeout, retrying (attempt ${attempt + 1})`);
+          continue;
+        }
+      }
+      // Don't retry non-transient errors
+      if (
+        err.message?.includes("not configured") ||
+        err.message?.includes("(4")
+      ) {
+        throw err;
+      }
+      lastError = err;
+      if (attempt < LLM_MAX_RETRIES) {
+        const backoff = (attempt + 1) * 1000;
+        logger.warn(
+          "LLM Stream",
+          `Error, retrying (attempt ${attempt + 1}), backoff ${backoff}ms: ${err.message}`
+        );
+        await new Promise((r) => setTimeout(r, backoff));
+        continue;
+      }
+    }
+  }
+
+  throw lastError || new Error("LLM streaming failed after retries");
+}

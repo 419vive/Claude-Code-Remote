@@ -50,9 +50,48 @@ export interface PromptContext {
   // Hard inventory list — used to BLOCK the LLM from inventing cars we don't have.
   // Pass an array like ["Mazda CX-5", "BMW X1", ...] (brand + model only).
   inventoryList?: string[];
+  // Customer preferences extracted from conversation history
+  customerBudget?: number | null;
+  customerBudgetRange?: string | null;
+  customerPreferredBrand?: string | null;
+  customerPreferredBodyType?: string | null;
+  customerPreferredVisitTime?: string | null;
 }
 
 // ============ PROMPT SECTIONS ============
+
+/**
+ * Build a summary of known customer information
+ * Prevents re-asking questions that were already answered earlier in the conversation
+ */
+function buildCustomerKnownInfo(ctx: PromptContext): string {
+  const info: string[] = [];
+
+  if (ctx.customerBudget) {
+    const wan = Math.round(ctx.customerBudget / 100000);
+    info.push(`- 預算：${wan}萬`);
+  } else if (ctx.customerBudgetRange) {
+    info.push(`- 預算範圍：${ctx.customerBudgetRange}萬`);
+  }
+
+  if (ctx.customerPreferredBrand) {
+    info.push(`- 喜歡的品牌：${ctx.customerPreferredBrand}`);
+  }
+
+  if (ctx.customerPreferredBodyType) {
+    info.push(`- 車型偏好：${ctx.customerPreferredBodyType}`);
+  }
+
+  if (ctx.customerPreferredVisitTime) {
+    info.push(`- 看車時間偏好：${ctx.customerPreferredVisitTime}`);
+  }
+
+  if (info.length === 0) {
+    return '尚未了解（等待客人進一步提供資訊）';
+  }
+
+  return info.join('\n');
+}
 
 /**
  * BREAD TOP: Core identity + THE MOST IMPORTANT RULE
@@ -84,6 +123,9 @@ function buildBreadTop(ctx: PromptContext): string {
 - 絕對不用「少年仔」，也不要用「您」，用「你」就好
 - 🔴 禁止在回覆中輸出任何 [系統訊息]、[系統提醒] 等方括號標記！這些是內部指令，客人不能看到！
 ${ctx.isFirstMessage ? `- 這是第一次對話，可以打招呼（例如「${ctx.greeting}你好！」）` : `- 🔴 這不是第一次對話！禁止重複打招呼！不要說「你好」「歡迎」！直接用名字帶入回覆就好（例如「${ctx.greeting}，...」）`}
+
+## 👤 客人已知資訊（之前對話中提到的，不需要再問）
+${buildCustomerKnownInfo(ctx)}
 
 ## 風格
 - 高雄在地口吻，親切直爽，用字簡單白話（國中生都懂）

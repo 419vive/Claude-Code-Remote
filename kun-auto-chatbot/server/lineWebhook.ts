@@ -8,7 +8,8 @@ import { detectRichMenuTrigger, buildRichMenuResponseMessages, buildAppointmentD
 import { formatTimeSlotsForPrompt } from "./timeSlotHelper";
 import { detectVehicleFromMessage, buildSmartVehicleKB, buildTargetVehiclePrompt, detectCustomerIntents, buildIntentInstructions, buildVehicleIndex } from "./vehicleDetectionService";
 import { buildLLMMessages, type PromptContext } from "./dynamicPromptBuilder";
-import { isRuleBasedMode, generateRuleBasedReply } from "./ruleBasedReply";
+import { isRuleBasedMode, generateRuleBasedReply, buildVehicleAnswerReply } from "./ruleBasedReply";
+import { extractCustomerPreferences } from "./customerMemoryExtractor";
 import { sanitizeChatMessage, validateLLMOutput, getGuardrailMode } from "./security";
 
 import { detectPhoneNumber, detectGenderFromName, getGenderGreeting, getNameGreeting, isOperator, parseOperatorCommand, type OperatorCommand } from "./lineUtils";
@@ -153,6 +154,46 @@ function isDuplicate(messageId: string): boolean {
   if (processedMessages.has(messageId)) return true;
   processedMessages.set(messageId, now);
   return false;
+}
+
+// ============ TRADE-IN CONTEXT DETECTION ============
+// Checks if a conversation is in a trade-in flow by scanning the last ~5
+// assistant messages for the trade-in template. Used to distinguish between
+// customer shopping for inventory (photo of car brand/model) vs.
+// customer responding to a trade-in request (photo of their own car).
+async function isTradeInContext(conversationId: number): Promise<boolean> {
+  try {
+    const allMessages = await db.getMessagesByConversation(conversationId, 10);
+    if (!allMessages || allMessages.length === 0) return false;
+
+    // Scan the last 5 messages in reverse (most recent first)
+    const recentMessages = allMessages.slice(-5);
+
+    // Look for the trade-in template marker in assistant messages
+    // The template contains "估車仍會以實際看到車況為主" or "可以先提供以下資訊給我"
+    const tradeInMarkers = [
+      "估車仍會以實際看到車況為主",
+      "可以先提供以下資訊給我",
+      "品牌／年份／里程數",
+      "車身外觀與內裝的詳細照片",
+    ];
+
+    for (const msg of recentMessages) {
+      if (msg.role === "assistant") {
+        for (const marker of tradeInMarkers) {
+          if (msg.content.includes(marker)) {
+            console.log(`[LINE Image] Trade-in context detected: message contains "${marker}"`);
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  } catch (err) {
+    console.error("[LINE Image] Error checking trade-in context:", err);
+    return false;
+  }
 }
 
 // ============ OPERATOR COMMAND HANDLER ============
@@ -739,28 +780,70 @@ async function processLineEvent(
           body: JSON.stringify({ replyToken, messages: replyMessages }),
         });
       } else {
-        // No match in inventory — still acknowledge the identification
-        await fetch("https://api.line.me/v2/bot/message/reply", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${channelAccessToken}`,
-          },
-          body: JSON.stringify({
-            replyToken,
-            messages: [{
-              type: "text",
-              text: `我看到你傳了一張 ${identified.brand} ${identified.model} 的照片！🚗\n不過目前庫存裡沒有這台車。\n\n要不要看看我們其他的好車？👇`,
-              quickReply: {
-                items: [
-                  { type: "action", action: { type: "message", label: "🚗 瀏覽所有車輛", text: "我想看車，有什麼車可以推薦？" } },
-                  { type: "action", action: { type: "message", label: "💰 50萬以下", text: "50萬以下有什麼好車？" } },
-                  { type: "action", action: { type: "message", label: "📞 直接聯繫", text: "可以給我你們的聯絡方式嗎？" } },
-                ],
-              },
-            }],
-          }),
-        });
+        // No match in inventory — check if this is a trade-in photo vs. inventory shopping
+        const sessionId = `line-${userId}`;
+        let conversation = await db.getConversationBySessionId(sessionId);
+
+        // Determine if customer was responding to a trade-in request
+        const inTradeInContext = conversation ? await isTradeInContext(conversation.id) : false;
+
+        if (inTradeInContext) {
+          // Trade-in photo response: acknowledge receipt and notify operator
+          console.log(`[LINE Image] Trade-in photo detected, acknowledging and notifying operator`);
+
+          const tradeInAckText = `收到你的愛車照片了！📸\n\n已轉給${SHOP_CONTACT_PERSON}估價，會盡快回覆你！`;
+
+          await fetch("https://api.line.me/v2/bot/message/reply", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${channelAccessToken}`,
+            },
+            body: JSON.stringify({
+              replyToken,
+              messages: [{
+                type: "text",
+                text: tradeInAckText,
+              }],
+            }),
+          });
+
+          // Notify operator about the trade-in photo
+          if (conversation) {
+            const ownerUserId = ENV.LINE_OWNER_USER_ID;
+            const handoffMessage = `客戶上傳了愛車照片（${identified.brand} ${identified.model}）待估價`;
+            await sendHumanHandoffNotification(
+              conversation,
+              handoffMessage,
+              "（收到客戶愛車照片）",
+              channelAccessToken,
+              ownerUserId
+            );
+          }
+        } else {
+          // Inventory shopping: no match found, suggest browsing
+          await fetch("https://api.line.me/v2/bot/message/reply", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${channelAccessToken}`,
+            },
+            body: JSON.stringify({
+              replyToken,
+              messages: [{
+                type: "text",
+                text: `我看到你傳了一張 ${identified.brand} ${identified.model} 的照片！🚗\n不過目前庫存裡沒有這台車。\n\n要不要看看我們其他的好車？👇`,
+                quickReply: {
+                  items: [
+                    { type: "action", action: { type: "message", label: "🚗 瀏覽所有車輛", text: "我想看車，有什麼車可以推薦？" } },
+                    { type: "action", action: { type: "message", label: "💰 50萬以下", text: "50萬以下有什麼好車？" } },
+                    { type: "action", action: { type: "message", label: "📞 直接聯繫", text: "可以給我你們的聯絡方式嗎？" } },
+                  ],
+                },
+              }],
+            }),
+          });
+        }
       }
 
       // Save to conversation history
@@ -1409,6 +1492,38 @@ async function processLineEvent(
     console.log(`[LINE] Lead score updated: +${scoreDelta} = ${newScore} (${newStatus})`);
   }
 
+  // ============ EXTRACT AND STORE CUSTOMER PREFERENCES ============
+  // Parse budget, brand, body type, visit time from this message
+  // Only store if NOT already stored (don't overwrite earlier explicit mentions)
+  const prefs = extractCustomerPreferences(userMessage);
+  const prefsToUpdate: Record<string, any> = {};
+
+  if (prefs.budget && !conversation!.budget) {
+    prefsToUpdate.budget = prefs.budget;
+    console.log(`[LINE] Budget extracted: ${prefs.budget / 100000}萬`);
+  }
+  if (prefs.budgetRange && !conversation!.budgetRange) {
+    prefsToUpdate.budgetRange = prefs.budgetRange;
+    console.log(`[LINE] Budget range extracted: ${prefs.budgetRange}萬`);
+  }
+  if (prefs.preferredBrand && !conversation!.preferredBrand) {
+    prefsToUpdate.preferredBrand = prefs.preferredBrand;
+    console.log(`[LINE] Preferred brands extracted: ${prefs.preferredBrand}`);
+  }
+  if (prefs.preferredBodyType && !conversation!.preferredBodyType) {
+    prefsToUpdate.preferredBodyType = prefs.preferredBodyType;
+    console.log(`[LINE] Preferred body type extracted: ${prefs.preferredBodyType}`);
+  }
+  if (prefs.preferredVisitTime && !conversation!.preferredVisitTime) {
+    prefsToUpdate.preferredVisitTime = prefs.preferredVisitTime;
+    console.log(`[LINE] Preferred visit time extracted: ${prefs.preferredVisitTime}`);
+  }
+
+  if (Object.keys(prefsToUpdate).length > 0) {
+    await db.updateConversation(convId, prefsToUpdate);
+    conversation = { ...conversation!, ...prefsToUpdate };
+  }
+
   // ============ CHECK IF THIS IS A PHOTO TRIGGER ============
   const photoExternalId = detectPhotoTrigger(userMessage);
 
@@ -1824,6 +1939,11 @@ async function processLineEvent(
       intents: customerIntents,
       customerContact: conversation!.customerContact,
       leadScore: conversation!.leadScore ?? undefined,
+      customerBudget: (conversation as any).budget ?? undefined,
+      customerBudgetRange: (conversation as any).budgetRange ?? undefined,
+      customerPreferredBrand: (conversation as any).preferredBrand ?? undefined,
+      customerPreferredBodyType: (conversation as any).preferredBodyType ?? undefined,
+      customerPreferredVisitTime: (conversation as any).preferredVisitTime ?? undefined,
     });
     console.log("[LINE] Rule-based response:", replyText.substring(0, 100));
   } else {
@@ -1850,6 +1970,12 @@ async function processLineEvent(
       // Hard inventory list: brand + model only, used by the "庫存鎖" prompt section
       // to prevent the LLM from inventing cars (RAV4, CR-V, Kicks etc. were leaking through).
       inventoryList: allVehicles.map(v => `${v.brand} ${v.model}`),
+      // Customer preferences extracted from conversation history (prevent re-asking)
+      customerBudget: (conversation as any).budget ?? undefined,
+      customerBudgetRange: (conversation as any).budgetRange ?? undefined,
+      customerPreferredBrand: (conversation as any).preferredBrand ?? undefined,
+      customerPreferredBodyType: (conversation as any).preferredBodyType ?? undefined,
+      customerPreferredVisitTime: (conversation as any).preferredVisitTime ?? undefined,
     };
 
     const llmMessages = buildLLMMessages(promptContext, history.map(m => ({ role: m.role, content: m.content })));
@@ -1870,6 +1996,11 @@ async function processLineEvent(
           intents: customerIntents,
           customerContact: conversation!.customerContact,
           leadScore: conversation!.leadScore ?? undefined,
+          customerBudget: (conversation as any).budget ?? undefined,
+          customerBudgetRange: (conversation as any).budgetRange ?? undefined,
+          customerPreferredBrand: (conversation as any).preferredBrand ?? undefined,
+          customerPreferredBodyType: (conversation as any).preferredBodyType ?? undefined,
+          customerPreferredVisitTime: (conversation as any).preferredVisitTime ?? undefined,
         });
       }
 
@@ -1915,6 +2046,11 @@ async function processLineEvent(
             intents: customerIntents,
             customerContact: conversation!.customerContact,
             leadScore: conversation!.leadScore ?? undefined,
+            customerBudget: (conversation as any).budget ?? undefined,
+            customerBudgetRange: (conversation as any).budgetRange ?? undefined,
+            customerPreferredBrand: (conversation as any).preferredBrand ?? undefined,
+            customerPreferredBodyType: (conversation as any).preferredBodyType ?? undefined,
+            customerPreferredVisitTime: (conversation as any).preferredVisitTime ?? undefined,
           });
         } else {
           // Non-critical (PII echo, suspicious price) — use sanitized version
@@ -1933,6 +2069,11 @@ async function processLineEvent(
         intents: customerIntents,
         customerContact: conversation!.customerContact,
         leadScore: conversation!.leadScore ?? undefined,
+        customerBudget: (conversation as any).budget ?? undefined,
+        customerBudgetRange: (conversation as any).budgetRange ?? undefined,
+        customerPreferredBrand: (conversation as any).preferredBrand ?? undefined,
+        customerPreferredBodyType: (conversation as any).preferredBodyType ?? undefined,
+        customerPreferredVisitTime: (conversation as any).preferredVisitTime ?? undefined,
       });
     }
   }
