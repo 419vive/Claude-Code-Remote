@@ -14,7 +14,7 @@
 
 ---
 
-## 2026-07-06 — 4 bugs found + fixed verifying the Railway deploy checklist (PR #104)
+## 2026-07-06 — 4 bugs + gold cleanup on 7 pages, verifying the Railway deploy checklist (PR #104)
 
 **Context:**
 Jerry was told to manually verify the Phase 2+3 Railway deployment, starting with
@@ -97,18 +97,43 @@ use full content on both passes.
   exactly, confirmed against `lineWebhook.ts`'s `isTradeInContext` and the
   aiDisabled early-gate).
 
-**Also found, NOT fixed — flagged for Jerry's call:**
+**Design compliance follow-up — gold cleanup extended to 7 more customer-facing pages:**
 "Design compliance" (no gold, navy + LINE green only) was verified true for
 `VehicleLanding.tsx` and `Home.tsx` specifically (the two pages the original
-fix documented) — both are clean. But `#C4A265` gold is still pervasive across
-12 other files site-wide: `WishlistButton.tsx`, `WishlistDrawer.tsx`,
-`VideoShowcaseNudge.tsx`, `ProactiveChatTrigger.tsx`, `MediaKit.tsx`,
-`SmartRedirect.tsx`, `BlogIndex.tsx`, `FaqPage.tsx`, `AboutUs.tsx`,
-`CarValuation.tsx`, `blogPosts.ts`, `remotion/types.ts`. That was never in
-scope for the documented fix. `MediaKit.tsx` even labels `#C4A265` as an
-intentional brand-kit swatch for press purposes — so this needs a design/business
-decision (which pages should follow the new navy-only system vs. keep gold
-intentionally), not a unilateral 12-file rewrite. Did not touch.
+fix documented) — both were clean. But `#C4A265` gold was still pervasive
+across 12 other files site-wide. Flagged this to Jerry via AskUserQuestion
+(options: replace everywhere / replace only customer-commonly-seen pages /
+defer) — he chose **customer-commonly-seen pages only**.
+
+Fixed (swapped to `bg-primary`/`text-primary`/`border-primary`, matching the
+token combinations already established in the reviewed `VehicleLanding.tsx`
+fix): `WishlistButton.tsx`, `WishlistDrawer.tsx`, `VideoShowcaseNudge.tsx`,
+`ProactiveChatTrigger.tsx`, `CarValuation.tsx` (trade-in tool), `FaqPage.tsx`,
+`SmartRedirect.tsx` (device-detection landing page every ad/QR-code visitor
+hits before reaching LINE or the website — confirmed genuinely high-traffic
+by reading its redirect logic, not just guessing from the filename).
+
+One real subtlety caught mid-fix: several of these components render on a
+hardcoded dark navy background (`#1B3A5C`), and `--primary` in light mode
+(`oklch(0.35 0.08 250)` → RGB 20,60,98) computes to nearly the same color as
+that background (RGB 27,58,92) — verified numerically via an OKLab→sRGB
+conversion script, not eyeballed. Naively swapping `text-[#C4A265]` →
+`text-primary` on those backgrounds would have made text nearly invisible.
+Resolved by matching the exact precedent already shipped in `VehicleLanding.tsx`
+(line ~500: `text-primary` + `border-primary/30` on `bg-[#1B3A5C]/80`) for
+consistency, and using DESIGN.md's documented dark-mode-primary value
+(`oklch(0.55 0.12 250)` → `#3275B4`, "lighter, more luminous... for dark
+surfaces") for the one case needing a literal inline-CSS gradient
+(`SmartRedirect.tsx`'s progress bar, which can't use a Tailwind token).
+
+Left untouched (out of scope per Jerry's answer): `MediaKit.tsx` (explicitly
+documents `#C4A265` as an intentional brand-kit swatch for press use),
+`AboutUs.tsx`, `BlogIndex.tsx`, `blogPosts.ts`, `remotion/` (video-generation
+config, not a customer-facing page).
+
+Verified: `grep -c "C4A265"` = 0 across all 7 fixed files. Full re-run of
+build/tsc/tests after this batch — all unchanged from the post-bug-fix
+baseline (599.1kb build, 12 pre-existing tsc errors, 892✓/46✗ tests).
 
 **Outcome:**
 - Branch `claude/kunjiia-menu-buttons-issue-nt0re1` reset off latest `origin/main`
@@ -123,10 +148,9 @@ intentionally), not a unilateral 12-file rewrite. Did not touch.
 **Still needs Jerry (or a future session with prod access):**
 - Manual click-through on the live site once #104 merges + deploys: search
   豐田/休旅, chat from a vehicle detail page and confirm context awareness, an
-  operator round-trip in the web widget. All 4 fixes were verified at the code
-  level against mock data / by direct reading — not against live production data.
-- A decision on the site-wide `#C4A265` gold usage (12 files) — separate scope
-  from this PR, intentionally not touched.
+  operator round-trip in the web widget, and a visual pass on the 7
+  gold-cleanup pages. All fixes were verified at the code level against mock
+  data / by direct reading — not against live production data.
 
 **Artifacts:**
 - `kun-auto-chatbot/client/src/pages/Home.tsx` (synonym lowercase fix)
@@ -134,6 +158,9 @@ intentionally), not a unilateral 12-file rewrite. Did not touch.
 - `kun-auto-chatbot/server/_core/index.ts` (compression exemption)
 - `kun-auto-chatbot/client/src/hooks/useMessages.ts` + `client/src/pages/Chat.tsx`
   (poll interval stability + dedup key fix)
+- `kun-auto-chatbot/client/src/components/{WishlistButton,WishlistDrawer,
+  VideoShowcaseNudge,ProactiveChatTrigger}.tsx` + `client/src/pages/
+  {CarValuation,FaqPage,SmartRedirect}.tsx` (gold → primary token swap)
 - PR: https://github.com/419vive/kunjia-autos-ai-chatbot/pull/104
 - Branch: `claude/kunjiia-menu-buttons-issue-nt0re1`
 
