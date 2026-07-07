@@ -187,9 +187,12 @@ describe("CoV Step 4: PII Encryption at Rest", () => {
 // ============================================================
 describe("CoV Step 5: PII Masking in Logs", () => {
   it("should mask phone numbers in log text", () => {
-    const logLine = "Customer phone: 0936812818";
+    // Note: uses a customer number distinct from the shop's own SHOP_PHONE
+    // (0936-812-818), which is deliberately exempt from masking so AI
+    // replies quoting our own contact number stay readable.
+    const logLine = "Customer phone: 0987654321";
     const masked = maskPIIInText(logLine);
-    expect(masked).not.toContain("0936812818");
+    expect(masked).not.toContain("0987654321");
     expect(masked).toContain("***");
   });
 

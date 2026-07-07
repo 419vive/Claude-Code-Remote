@@ -21,6 +21,7 @@ import {
   getGuardrailMode,
 } from "./security";
 import crypto from "crypto";
+import { SHOP_PHONE } from "../shared/shopConfig";
 
 // ============================================================
 // PII ENCRYPTION TESTS (AES-256-GCM)
@@ -196,9 +197,13 @@ describe("PII Masking", () => {
     });
 
     it("should mask multiple PII types in one text", () => {
-      const text = "客戶 0936812818 email: test@gmail.com LINE: U5591c54539693c8b5d815e179e6f300d";
+      // Note: uses a customer number distinct from SHOP_PHONE (0936-812-818)
+      // on purpose — the shop's own number is deliberately exempt from
+      // masking (see "maskPIIInText — shop phone exemption" below), so a
+      // coincidental match here would no longer get masked.
+      const text = "客戶 0987654321 email: test@gmail.com LINE: U5591c54539693c8b5d815e179e6f300d";
       const masked = maskPIIInText(text);
-      expect(masked).not.toContain("0936812818");
+      expect(masked).not.toContain("0987654321");
       expect(masked).not.toContain("test@gmail.com");
       expect(masked).not.toContain("U5591c54539693c8b5d815e179e6f300d");
     });
@@ -211,6 +216,55 @@ describe("PII Masking", () => {
       const text = "這台Honda很不錯，價格52萬";
       expect(maskPIIInText(text)).toBe(text);
     });
+  });
+});
+
+// ============================================================
+// PII MASKING — SHOP PHONE EXEMPTION
+// ============================================================
+// The dealership's own contact number must survive maskPIIInText so
+// dashboard/log copies of AI replies quoting it (e.g. "電洽 0936-812-818")
+// stay usable — masking it produces an unreadable "0936-***-818". Customer
+// phone numbers must still be masked normally.
+describe("maskPIIInText — shop phone exemption", () => {
+  it("does NOT mask the shop's own phone number, as written in shopConfig", () => {
+    const text = `有問題歡迎電洽 ${SHOP_PHONE} 賴先生`;
+    const masked = maskPIIInText(text);
+    expect(masked).toContain(SHOP_PHONE);
+    expect(masked).not.toContain("***");
+  });
+
+  it("does NOT mask the shop's own phone number written digits-only", () => {
+    const digitsOnly = SHOP_PHONE.replace(/-/g, "");
+    const text = `賴先生電話 ${digitsOnly}`;
+    const masked = maskPIIInText(text);
+    expect(masked).toContain(digitsOnly);
+    expect(masked).not.toContain("***");
+  });
+
+  it("does NOT mask the shop's own phone number with a +886 country code", () => {
+    const digitsOnly = SHOP_PHONE.replace(/-/g, "").replace(/^0/, "");
+    const text = `international: +886${digitsOnly}`;
+    const masked = maskPIIInText(text);
+    expect(masked).toContain(`+886${digitsOnly}`);
+    expect(masked).not.toContain("***");
+  });
+
+  it("still masks a customer's phone number even alongside the shop's own", () => {
+    const text = `賴先生電話 ${SHOP_PHONE}，客戶電話 0912-345-678`;
+    const masked = maskPIIInText(text);
+    // Shop number preserved
+    expect(masked).toContain(SHOP_PHONE);
+    // Customer number still masked
+    expect(masked).not.toContain("0912-345-678");
+    expect(masked).toContain("0912-***-678");
+  });
+
+  it("still masks a customer phone number that is NOT the shop's number", () => {
+    const text = "客戶電話 0955123456 請盡快聯繫";
+    const masked = maskPIIInText(text);
+    expect(masked).not.toContain("0955123456");
+    expect(masked).toContain("0955-***-456");
   });
 });
 
@@ -554,6 +608,72 @@ describe("LLM Output Guardrail (validateLLMOutput)", () => {
     const out = "大約 50 萬左右";
     const result = validateLLMOutput(out);
     expect(result.violations.some(v => v.startsWith("price_not_in_inventory:"))).toBe(false);
+  });
+
+  // ----------------------------------------------------------
+  // 2026-07-07 false-positive fix: mileage/loan/budget "N萬" mentions
+  // must NOT be treated as sale-price claims. See isNonSalePriceContext
+  // in security.ts. Real replies constantly contain these alongside a
+  // genuine (and possibly wrong) price, so the fix must not weaken
+  // detection of an actual mismatched price claim.
+  // ----------------------------------------------------------
+  it("does NOT flag a mileage figure immediately followed by 公里", () => {
+    const out = "這台里程12萬公里，車況很不錯";
+    const result = validateLLMOutput(out, { allowedPrices: ["80.9萬"] });
+    expect(result.violations.some(v => v.startsWith("price_not_in_inventory:"))).toBe(false);
+    expect(result.safe).toBe(true);
+  });
+
+  it("does NOT flag a mileage figure followed by km/KM", () => {
+    const out = "跑了8萬km而已";
+    const result = validateLLMOutput(out, { allowedPrices: ["80.9萬"] });
+    expect(result.violations.some(v => v.startsWith("price_not_in_inventory:"))).toBe(false);
+  });
+
+  it("does NOT flag a down-payment (頭期款) figure", () => {
+    const out = "頭期款5萬就可以開走";
+    const result = validateLLMOutput(out, { allowedPrices: ["80.9萬"] });
+    expect(result.violations.some(v => v.startsWith("price_not_in_inventory:"))).toBe(false);
+    expect(result.safe).toBe(true);
+  });
+
+  it("does NOT flag a monthly-payment (月付) loan figure", () => {
+    const out = "月付大概1.2萬左右";
+    const result = validateLLMOutput(out, { allowedPrices: ["80.9萬"] });
+    expect(result.violations.some(v => v.startsWith("price_not_in_inventory:"))).toBe(false);
+  });
+
+  it("does NOT flag budget talk phrased as '預算...以內'", () => {
+    const out = "了解，預算50萬以內我幫您找找看";
+    const result = validateLLMOutput(out, { allowedPrices: ["80.9萬"] });
+    expect(result.violations.some(v => v.startsWith("price_not_in_inventory:"))).toBe(false);
+    expect(result.safe).toBe(true);
+  });
+
+  it("does NOT flag budget talk phrased as 'N萬以下'", () => {
+    const out = "50萬以下的話這幾台可以參考";
+    const result = validateLLMOutput(out, { allowedPrices: ["80.9萬"] });
+    expect(result.violations.some(v => v.startsWith("price_not_in_inventory:"))).toBe(false);
+  });
+
+  it("STILL flags a genuine wrong sale-price claim with no mileage/loan/budget context", () => {
+    // Regression guard — the context exemptions above must not swallow a
+    // real hallucinated price like the 98.9萬 vs 80.9萬 incident.
+    const out = "老闆這台售價65.9萬，很划算喔";
+    const result = validateLLMOutput(out, { allowedPrices: ["80.9萬"] });
+    expect(result.safe).toBe(false);
+    expect(result.violations.some(v => v.startsWith("price_not_in_inventory:65.9萬"))).toBe(true);
+  });
+
+  it("STILL flags a genuine wrong sale-price claim even in the same reply as mileage/budget talk", () => {
+    const out = "這台跑了12萬公里，售價65.9萬，預算50萬以內的話可以再聊";
+    const result = validateLLMOutput(out, { allowedPrices: ["80.9萬"] });
+    expect(result.safe).toBe(false);
+    // The mileage (12萬) and budget (50萬) mentions are exempt...
+    expect(result.violations.some(v => v.startsWith("price_not_in_inventory:12萬"))).toBe(false);
+    expect(result.violations.some(v => v.startsWith("price_not_in_inventory:50萬"))).toBe(false);
+    // ...but the actual (wrong) sale price is still caught.
+    expect(result.violations.some(v => v.startsWith("price_not_in_inventory:65.9萬"))).toBe(true);
   });
 
   it("should mark unsafe promise as critical (safe=false)", () => {

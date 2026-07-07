@@ -1,84 +1,78 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` — reset fresh off `origin/main`
-2026-07-06 (PR #104 already merged, sha `0a67891`, confirmed live). This is
-follow-up work on a fresh branch instance, not stacked on the merged history.
+Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (reset off origin/main after
+PR #105 merged, per convention). **PR #106 open (draft)** — the deep web-chat
+audit fixes. Subscribed to PR activity; ~1hr self check-in armed.
 
-Latest (2026-07-06): **PR #104 merged.** Contained: search synonym fix,
-vehicle-context-passthrough fix, SSE-compression fix, operator-polling
-latency fix, web-chat handoff redesign (redirect hard questions to LINE
-instead of "wait for a human"), and a gold→navy cleanup on 7 customer-facing
-pages. Jerry manually verified search works.
+Latest (2026-07-07): Jerry reported web-chat replies "still very problematic"
+after #104/#105 deployed. Deep audit (8 scanners → hand-verified by Fable after
+the 62-agent verify phase hit a rate limit) confirmed **8 defect classes**, all
+fixed in PR #106 by 5 parallel single-file agents (Opus/Sonnet×3/Haiku):
 
-**Then reverted: gold `#C4A265` restored on 7 files.** Jerry looked at the
-gold-cleanup pages live and decided he prefers gold there (more eye-catching)
-— reverted `WishlistButton.tsx`, `WishlistDrawer.tsx`, `VideoShowcaseNudge.tsx`,
-`ProactiveChatTrigger.tsx`, `CarValuation.tsx`, `FaqPage.tsx`,
-`SmartRedirect.tsx` back to their exact pre-cleanup gold values. This is a
-deliberate, informed exception to DESIGN.md's "navy only" rule — not an
-oversight. `VehicleLanding.tsx`/`Home.tsx` (the original design-compliance
-fix) were NOT touched, still navy — Jerry didn't ask to revert those.
+1. **THE root cause:** `sanitizeChatMessage(message, {channel})` passed an
+   object into the numeric maxLength param → `slice(0,0)` → **every customer
+   message became "" before the AI saw it**. AI answered blanks all day.
+   TS error (77,59) flagged it the whole time — buried in the "12 pre-existing
+   errors" baseline. Baseline is now 11. LESSON: a "pre-existing" tsc error
+   in a NEW file is a contradiction — investigate, never baseline it.
+2. Guardrail corrections never reached the browser (unhandled
+   `guardrail-fallback` SSE event) — client now replaces the bubble.
+3. PRICE_QUOTE_PATTERN flagged 里程/頭期款/月付/預算 "N萬" as fake prices →
+   whole replies nuked. Context exclusions added (+13 tests, 905✓ total).
+4. Ghost/duplicate bubbles: stored ≠ streamed copies (shop phone masked by
+   maskPIIInText, marker trim) re-appended by polling. Polling now merges
+   ONLY operator messages; SHOP_PHONE whitelisted from masking.
+5. 3s polling died at ~5min on generalLimiter 100/15min → dedicated
+   900/15min limiter for /api/chat/history.
+6. Marker-only output → silence → now falls back to LINE-redirect reply.
+7. llm.ts mid-stream retry duplicated replies; no timeout during body read →
+   no-retry-after-first-yield + rolling 30s idle timeout.
+8. Web ignored aiDisabled + dropped operator history → gate added, operator
+   turns fed to model as [真人客服回覆] assistant turns. Prompt gains
+   FACT_LOCK + multi-question rule + no-re-greet.
 
-Verification: `npm run build` clean (600.6kb), `tsc --noEmit` 12 pre-existing
-errors (unchanged), `vitest run` 892✓/46✗ (unchanged baseline) — confirmed
-again after the revert too.
+Verification: build 606.4kb clean; tsc 12→11; vitest 905✓/46✗ (46 = same
+pre-existing DB-dependent set, count unchanged).
+
+Gold heart: deployed code verified correct. Card hearts are white UNTIL saved
+(by design); the always-gold reference is the floating drawer button
+(bottom-left). Jerry should hard-refresh/incognito if still navy.
 
 ## NEXT ACTION
-Commit + push this revert on the reset branch, open a new PR (previous one
-already merged — can't reuse it), merge per Jerry's usual "merge now"
-preference, remind him this needs the same live click-through once deployed.
-No other verification pending from PR #104's original scope — all 7
-checklist items were already confirmed correct (4 real bugs fixed, 2 items
-verified already-correct-by-design).
+PR #106 awaiting Jerry's merge call (his pattern: merge-now via
+AskUserQuestion). After merge + Railway deploy, live re-test: ask a real
+question (bot should finally address it), price/mileage/loan question (no
+generic-card replacement), >5min session with operator reply, impossible
+question (LINE redirect, not silence).
 
 ## Open Blockers
-
-- Railway auto-deploy unreliable (manual redeploy needed sometimes — not our code)
-- Dashboard UI for admin mutations not built (backend ready; LINE coverage OK for MVP)
-- Legacy `routers.ts` chat.send mutation still has the old "wait for web
-  handoff" prompt — not fixed (dead code, `Chat.tsx` doesn't call it), but
-  flagged in case anything switches back to it
-- Sandbox firewall confirmed (again) to block ALL outbound to Railway/kuncar.tw
-  regardless of tool — tested via curl AND a real Playwright/Chromium browser
-  launch, both hit the identical block (`ERR_TUNNEL_CONNECTION_FAILED` /
-  403 CONNECT). Not a curl-specific limitation — genuinely cannot browse the
-  live site from this environment, by any means.
+- Railway auto-deploy unreliable (manual redeploy sometimes needed)
+- Dashboard UI for admin mutations not built (backend ready)
+- Deferred audit items (documented, not fixed): vehicleKB not abbreviated
+  around target vehicle (lost-in-middle dilution), customer-memory
+  【客人已知資訊】 not injected on web, error-path UX (partial bubble +
+  apology bubble), operator same-second timestamp edge in polling `since`
+- Sandbox firewall: cannot reach Railway/kuncar.tw by ANY tool (curl +
+  real Chromium both blocked) — live verification is always Jerry's
 
 ## Key Knowledge
+- **tsc baseline is 11 now.** Never dismiss "pre-existing" errors in new files.
+- **GitHub Actions "Deploy to Production" is a dead scaffold** (deploy steps
+  commented out; its Type-check failures do NOT mean Railway didn't deploy —
+  Railway deploys via its own GitHub integration)
+- **Web handoff philosophy:** hard questions redirect to official LINE
+- **Gold vs navy exception list:** VehicleLanding/Home = navy;
+  Wishlist*/VideoNudge/ChatTrigger/CarValuation/FaqPage/SmartRedirect = gold
+  (Jerry's explicit call); MediaKit/AboutUs/Blog/remotion untouched
+- **Polling channel contract:** web polling merges operator messages ONLY;
+  local streamed copies are authoritative for user/assistant
+- **Family context:** Jerry's father (70) uses phone; Megan onboarding
+- **Stack:** Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE + 8891 sync
 
-- **GitHub Actions "Deploy to Production" workflow is a dead scaffold** —
-  its actual Railway/Render/VPS deploy steps are all commented out (just
-  prints "uncomment a deploy step above to go live"). It only runs build +
-  tsc as a validation gate. It has been failing on "Type check" since at
-  least 2026-06-28 (pre-existing tsc errors, unrelated to any of today's
-  work) — **this failure does NOT mean Railway didn't deploy**; Railway's
-  actual deploy is a separate mechanism (its own GitHub integration/webhook)
-  not represented anywhere in this repo's Actions workflows.
-- **Web handoff philosophy**: web chat has no reliable human-in-the-loop, so
-  hard questions redirect to official LINE rather than waiting for a web
-  operator that may never see it.
-- **Gold vs navy — the exception list**: `VehicleLanding.tsx`/`Home.tsx` =
-  navy only (original design-compliance fix). Wishlist/VideoNudge/ChatTrigger/
-  CarValuation/FAQ/SmartRedirect = gold is fine, Jerry's explicit call.
-  MediaKit.tsx/AboutUs.tsx/BlogIndex.tsx/blogPosts.ts/remotion/ = never
-  touched either direction.
-- **aiDisabled gate exemptions**: Deterministic widgets (FAQ, photos,
-  rich-menu, datetimepicker) bypass the gate on LINE; only LLM output is
-  locked. `/api/chat/stream` (web) doesn't check aiDisabled at all.
-- **Cloud sandbox firewall**: Blocks Railway, 8891, non-GitHub SaaS. Cannot
-  test deploy status or browse the live site from here, by any tool.
-- **Family context**: Jerry's father (70) uses phone, Megan (second operator)
-  onboarding in progress
-- **Stack**: Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE + 8891 sync
-
-## Deployed + Working
-
-- Permanent AI lockout (`aiDisabled` column, LINE channel only)
-- In-LINE operator controls (/lock, /unlock, /list, /whoami, /help, /status)
-- Postback takeover buttons on notification cards
-- Phantom-vehicle guardrail (prompt + output validator + fallback)
-- Fact Lock (shopConfig single source of truth)
-- Real-time polling (useMessages.ts, 3s interval) + SSE token streaming, both
-  latency-fixed 2026-07-06
-- Web chat hard-question fallback: redirect to official LINE (no web-side
-  human handoff)
+## Deployed + Working (after #106 merges)
+- Permanent AI lockout (`aiDisabled`) — now honored on web too
+- In-LINE operator controls; postback takeover buttons
+- Phantom-vehicle guardrail + Fact Lock — now also in the web prompt
+- SSE token streaming + 3s operator polling — both now actually correct
+  end-to-end (input no longer blanked, corrections displayed, no duplicate
+  bubbles, no 5-minute polling death)
