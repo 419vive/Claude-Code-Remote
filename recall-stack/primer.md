@@ -4,6 +4,15 @@ Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (reset off origin/main after
 PR #105 merged, per convention). **PR #106 open (draft)** — the deep web-chat
 audit fixes. Subscribed to PR activity; ~1hr self check-in armed.
 
+**Parallel thread (2026-07-07): PR #107 open (draft)** on branch
+`claude/esl-clip-lesson-prep-tyo8el` — new `/esl-clip-lesson-prep` skill
+(injection-hardened yt-dlp YouTube→ESL fetcher; subtitles-only, URL allowlist,
+nonce-guarded `<untrusted_transcript>` envelope). Built via Haiku QA / Sonnet
+pedagogy / Opus security audit (Opus caught a HIGH delimiter-breakout — fixed).
+Subscribed to #107 activity; ~1hr self check-in armed. NOTE: this sandbox's
+gateway blocks youtube.com:443, so live auto-fetch is local-only; manual-paste
+fallback covers the blocked case. See journal 2026-07-07 top entry.
+
 Latest (2026-07-07): Jerry reported web-chat replies "still very problematic"
 after #104/#105 deployed. Deep audit (8 scanners → hand-verified by Fable after
 the 62-agent verify phase hit a rate limit) confirmed **8 defect classes**, all
