@@ -1,10 +1,15 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
 Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (reset off origin/main after
-PR #105 merged, per convention). **PR #106 MERGED** (SHA c5b030552, 2026-07-07 ~18:45 UTC).
+PR #105 merged, per convention). **PR #106 MERGED + LIVE + PARTIALLY VERIFIED**
+(SHA c5b030552, deployed, Jerry confirmed booking/appointment flow works).
 
-Latest (2026-07-07): PR #106 merged to main; Railway auto-deploy should fire within ~2-3 min.
-Deep audit fixed **8 defect classes** that prevented customers from receiving AI replies on web chat:
+Latest (2026-07-07 night): Railway deploy confirmed ACTIVE via dashboard
+screenshot. Jerry manually tested live site: **「預約的問題終於解決了！」**
+(appointment/booking flow works). This is the first live confirmation PR #106's
+fixes work in production. 3 more items on the test checklist still unconfirmed
+(see NEXT ACTION). Deep audit fixed **8 defect classes** that prevented
+customers from receiving AI replies on web chat:
 
 1. **THE root cause:** `sanitizeChatMessage(message, {channel})` passed an
    object into the numeric maxLength param → `slice(0,0)` → **every customer
@@ -36,8 +41,8 @@ Gold heart: deployed code verified correct. Card hearts are white UNTIL saved
 (bottom-left). Jerry should hard-refresh/incognito if still navy.
 
 ## NEXT ACTION
-Railway auto-deploy pending (usually 2-3 min). Once live (~18:50 UTC):
-- Ask a real question (bot should finally address it, not return blank)
+Live + confirmed working: appointment/booking flow (Jerry, 2026-07-07 night).
+Still unconfirmed on kuncar.tw (Jerry to test when convenient, no rush):
 - Price/mileage/loan question (should not generic-card-replace)
 - >5min session with operator reply (polling should work reliably)
 - Impossible question (should redirect to LINE, not silence)

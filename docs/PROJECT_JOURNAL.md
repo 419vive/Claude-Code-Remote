@@ -14,6 +14,34 @@
 
 ---
 
+## 2026-07-07 (night) — PR #106 confirmed live: Jerry verified booking/appointment flow works
+
+**Context:**
+Railway auto-deploy confirmed successful (screenshot: "ACTIVE", commit
+"fix: web chat audit — 8 verified defect classes (#106)", deployed ~4hrs
+prior). Jerry manually tested the live site and confirmed: **「預約的問題終於
+解決了！」** (the appointment/booking issue is finally resolved).
+
+**Outcome:**
+First live confirmation that PR #106's fixes work in production, not just
+in the sandbox's hand-verification. Specifically validates the booking/
+appointment flow — likely touches bug #8 (aiDisabled gate + operator
+history on web) and/or the underlying blank-message root cause (bug #1),
+since a broken appointment flow would have been symptomatic of either.
+
+**Still to confirm (from the 4-item test list given to Jerry):**
+1. General question → real reply (not blank) — implicitly likely fixed
+   since booking flow (which depends on the AI seeing messages) now works
+2. Price/mileage/loan question → direct answer, no generic-card fallback
+3. >5min session with operator reply → polling still works
+4. Hard/impossible question → LINE redirect, not silence
+
+**Artifacts:**
+- PR #106: https://github.com/419vive/kunjia-autos-ai-chatbot/pull/106 (merged, live)
+- Railway deployment: claude-code-remote-production.up.railway.app, ACTIVE
+
+---
+
 ## 2026-07-07 (evening) — PR #106 merged; awaiting Railway auto-deploy + live re-test
 
 **Context:**
