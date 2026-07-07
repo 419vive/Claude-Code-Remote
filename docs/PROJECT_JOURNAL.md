@@ -14,6 +14,83 @@
 
 ---
 
+## 2026-07-07 — Deep web-chat audit: the AI never saw a single customer message (PR #106)
+
+**Context:**
+After PR #104/#105 deployed, Jerry live-tested again: search fixed, but the
+chatbot's replies were "still very problematic" overall, and the gold heart
+looked unchanged. He asked for a rigorous Fable-led audit with Sonnet/Opus/
+Haiku doing the execution. Ran an 8-scanner audit workflow (35 raw findings);
+the 62-verifier adversarial phase all died on a session-rate-limit, so every
+load-bearing finding was verified BY HAND against the code instead. 8 defect
+classes confirmed real; several finder claims corrected/refuted in the
+process (e.g. "chatHistoryRouter masks messages" — wrong layer; masking
+actually happens in validateLLMOutput's sanitized copy).
+
+**The headline root cause (bug #1):**
+`chatStreamRouter.ts:77` called `sanitizeChatMessage(message, { channel })`
+— but the second parameter is `maxLength: number`. The object coerces to 0
+in `message.slice(0, maxLength)` → **every web customer message became an
+empty string before detection/LLM/storage**. The AI answered every turn as
+if the customer had said nothing. This shipped with the streaming feature
+(2026-07-06) and explains virtually all of "replies are very problematic."
+**Painful lesson:** TypeScript flagged this exact line all along —
+`(77,59) TS2345` — but it sat in the "12 pre-existing tsc errors" baseline
+that everyone (including me) had learned to ignore. A "pre-existing error"
+in a NEW file is a contradiction that should have been investigated.
+After the fix the baseline is 11.
+
+**The other 7 confirmed classes (all fixed in PR #106):**
+2. Guardrail enforcement was theater on web: raw tokens streamed BEFORE
+   validation; the corrected replacement went out as a `guardrail-fallback`
+   SSE event the client had NO handler for. Client now replaces the bubble.
+3. Guardrail false positives: PRICE_QUOTE_PATTERN treated every "N萬" as a
+   sale price — 里程12萬公里 / 頭期款5萬 / 預算50萬以內 all nuked whole
+   replies into generic cards. Context-aware exclusions added; genuine
+   wrong prices still hard-fail. +13 tests.
+4. Ghost/duplicate bubbles: stored copies diverge from streamed copies
+   (maskPIIInText masked the SHOP's OWN phone; marker trim; sanitization),
+   so the 3s poll re-appended them at the bottom. Fix: polling merge now
+   ingests ONLY role==="operator" messages; SHOP_PHONE whitelisted from
+   masking (customer numbers still masked).
+5. generalLimiter (100/15min) silently killed the 3s polling (300/15min)
+   after ~5 min — operator replies never arrived, zero feedback. Dedicated
+   900/15min limiter for /api/chat/history.
+6. Marker-only model output → total silence (the original "bot doesn't
+   reply"). Empty output now falls back to the LINE-redirect reply.
+7. llm.ts retried mid-stream errors after partial yield → whole reply
+   duplicated inside one bubble; abort timer cleared at headers → stalled
+   streams hung forever. No-retry-after-yield + rolling 30s idle timeout.
+8. Operator incoherence on web: /api/chat/stream ignored aiDisabled (AI
+   talked over the human) and convertMessages silently DROPPED
+   role="operator" history. Gate added; operator turns mapped to
+   `[真人客服回覆]`-prefixed assistant turns.
+Plus prompt hardening: FACT_LOCK section (the 2026-04-23 incident class
+protection LINE had but web lacked), multi-question rule (lost in the
+legacy→streaming migration), no-re-greet rule.
+
+**Gold heart mystery resolved as likely non-bug:** deployed main verified
+to contain the gold values; the card heart is white-by-design until saved
+(tap it first), and the always-gold reference is the floating drawer button
+bottom-left. Told Jerry: incognito/hard-refresh to bust stale bundle.
+
+**Execution split per Jerry's directive:** Fable audited + verified + planned;
+implementation ran as 5 parallel agents each owning one file (Opus:
+chatStreamRouter; Sonnet: Chat.tsx, security.ts, llm.ts; Haiku: index.ts
+rate limiter) — zero file conflicts by construction.
+
+**Verification:** build clean 606.4kb; tsc 12→11 (the disappearing error IS
+the fixed bug); vitest 905 passed (892 baseline + 13 new) / 46 pre-existing
+DB failures, count unchanged.
+
+**Artifacts:**
+- `server/chatStreamRouter.ts`, `client/src/pages/Chat.tsx`,
+  `server/security.ts` (+tests), `server/_core/llm.ts`, `server/_core/index.ts`
+- PR #106 (draft): https://github.com/419vive/kunjia-autos-ai-chatbot/pull/106
+- Audit workflow journal: 35 findings, 8 confirmed, mechanisms hand-verified
+
+---
+
 ## 2026-07-06 — PR #104 + PR #105 both merged; gold `#C4A265` reverted back on 7 pages per Jerry's call
 
 **Context:**
