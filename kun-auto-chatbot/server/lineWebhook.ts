@@ -1193,18 +1193,35 @@ async function processLineEvent(
       return;
     }
 
-    // 2) 預約賞車 button (exact text) → re-send the datetimepicker so booking stays
-    //    possible during a takeover. Exact-match (not the broad appointment intent
-    //    regex) so the bot never injects a picker into an operator's live free-text
-    //    conversation. No re-notify / re-lock — already locked.
-    if (userMessage.trim() === "我想預約看車") {
-      console.log(`[LINE] Conv ${conversation.id} aiDisabled — serving appointment datetimepicker, AI stays locked`);
-      await db.addMessage({ conversationId: conversation.id, role: "assistant", content: "預約看車 — 已發送日期選擇器（AI 已鎖定，真人接手中）" });
+    // 2) Booking buttons → re-send the datetimepicker so booking stays possible
+    //    during a takeover. Matches ONLY the two deterministic button payloads —
+    //    the rich-menu 預約賞車 button ("我想預約看車") and the vehicle-card
+    //    預約看車 button ("我想預約去看 <brand> <model>", see lineFlexTemplates) —
+    //    not the broad appointment-intent regex, so the bot never injects a
+    //    picker into an operator's live free-text conversation. Without the
+    //    card-button match, any customer whose conversation locked after their
+    //    first booking got dead silence when tapping 預約看車 on another car.
+    //    No re-notify / re-lock — already locked.
+    const trimmedMessage = userMessage.trim();
+    const isCardBookingTap = /^我想預約去看\s+\S/.test(trimmedMessage);
+    if (trimmedMessage === "我想預約看車" || isCardBookingTap) {
+      let pickerVehicleName = "";
+      let pickerVehicleId = "";
+      if (isCardBookingTap) {
+        const allVehiclesForPicker = await db.getAllVehicles();
+        const pickerDetection = detectVehicleFromMessage(userMessage, allVehiclesForPicker);
+        if (pickerDetection.vehicle) {
+          pickerVehicleName = `${(pickerDetection.vehicle as any).brand} ${(pickerDetection.vehicle as any).model}`;
+          pickerVehicleId = (pickerDetection.vehicle as any)?.id ? String((pickerDetection.vehicle as any).id) : "";
+        }
+      }
+      console.log(`[LINE] Conv ${conversation.id} aiDisabled — serving appointment datetimepicker${pickerVehicleName ? ` (${pickerVehicleName})` : ""}, AI stays locked`);
+      await db.addMessage({ conversationId: conversation.id, role: "assistant", content: `預約看車${pickerVehicleName ? `（${pickerVehicleName}）` : ""} — 已發送日期選擇器（AI 已鎖定，真人接手中）` });
       try {
         await fetch("https://api.line.me/v2/bot/message/reply", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${channelAccessToken}` },
-          body: JSON.stringify({ replyToken, messages: [buildAppointmentDatetimePicker()] }),
+          body: JSON.stringify({ replyToken, messages: [buildAppointmentDatetimePicker({ vehicleName: pickerVehicleName, vehicleId: pickerVehicleId })] }),
         });
       } catch (err) { console.error("[LINE] aiDisabled appointment reply failed:", err); }
       return;
