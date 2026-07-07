@@ -264,11 +264,22 @@ export async function* invokeLLMStream(
   };
 
   let lastError: Error | null = null;
+  // Tracks whether any token has already been yielded to the caller (and
+  // therefore already streamed to the customer's screen). Once true, we must
+  // never retry — refetching and replaying the whole response would
+  // duplicate the reply inside the customer's chat bubble.
+  let hasYielded = false;
 
   for (let attempt = 0; attempt <= LLM_MAX_RETRIES; attempt++) {
+    // Idle timer for this attempt. Intentionally NOT cleared right after
+    // headers arrive — it keeps running into the body-read loop below, where
+    // it is reset on every chunk. This turns it into a rolling "no bytes for
+    // LLM_TIMEOUT_MS" idle timeout instead of a one-shot "response never
+    // starts" timeout, so a stalled body can't hang the customer forever.
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
+      timeout = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
 
       const response = await fetch(`${GOOGLE_AI_BASE_URL}/chat/completions`, {
         method: "POST",
@@ -280,8 +291,6 @@ export async function* invokeLLMStream(
         signal: controller.signal,
       });
 
-      clearTimeout(timeout);
-
       if (!response.ok) {
         const errorText = await response.text();
         // Retry on rate limit (429) or server errors (5xx)
@@ -289,6 +298,7 @@ export async function* invokeLLMStream(
           (response.status === 429 || response.status >= 500) &&
           attempt < LLM_MAX_RETRIES
         ) {
+          clearTimeout(timeout);
           const backoff = (attempt + 1) * 1000;
           logger.warn(
             "LLM Stream",
@@ -300,6 +310,7 @@ export async function* invokeLLMStream(
           );
           continue;
         }
+        clearTimeout(timeout);
         logger.error(
           "LLM Stream",
           `API error: ${response.status} ${errorText.substring(0, 500)}`
@@ -309,6 +320,7 @@ export async function* invokeLLMStream(
 
       // Process the streaming response
       if (!response.body) {
+        clearTimeout(timeout);
         throw new Error("No response body for streaming");
       }
 
@@ -319,7 +331,14 @@ export async function* invokeLLMStream(
       try {
         while (true) {
           const { done, value } = await reader.read();
+
+          // Reset the idle timer: we just heard from the stream (a chunk
+          // arrived, or it ended). A body that goes silent for
+          // LLM_TIMEOUT_MS with no further bytes will now abort instead of
+          // hanging the customer forever with no "done"/"error" ever sent.
+          clearTimeout(timeout);
           if (done) break;
+          timeout = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
 
           buffer += decoder.decode(value, { stream: true });
 
@@ -334,8 +353,12 @@ export async function* invokeLLMStream(
             if (trimmedLine.startsWith("data: ")) {
               try {
                 const json = JSON.parse(trimmedLine.slice(6));
+                if (json.choices?.[0]?.finish_reason === "length") {
+                  logger.warn("LLM Stream", "response truncated by max_tokens");
+                }
                 const chunk = json.choices?.[0]?.delta?.content;
                 if (chunk) {
+                  hasYielded = true;
                   yield chunk;
                 }
               } catch (e) {
@@ -351,8 +374,12 @@ export async function* invokeLLMStream(
           if (buffer.trim().startsWith("data: ")) {
             try {
               const json = JSON.parse(buffer.trim().slice(6));
+              if (json.choices?.[0]?.finish_reason === "length") {
+                logger.warn("LLM Stream", "response truncated by max_tokens");
+              }
               const chunk = json.choices?.[0]?.delta?.content;
               if (chunk) {
+                hasYielded = true;
                 yield chunk;
               }
             } catch (e) {
@@ -363,9 +390,25 @@ export async function* invokeLLMStream(
 
         return; // Success
       } finally {
+        clearTimeout(timeout);
         reader.releaseLock();
       }
     } catch (err: any) {
+      clearTimeout(timeout);
+
+      // Never retry once any token has already been streamed to the caller.
+      // Refetching and replaying the whole response would duplicate the
+      // reply inside the customer's chat bubble. Rethrow so the caller's
+      // existing error handling (e.g. the SSE "error" event) can inform the
+      // user instead.
+      if (hasYielded) {
+        logger.warn(
+          "LLM Stream",
+          `Stream failed after partial output, not retrying: ${err.message}`
+        );
+        throw err;
+      }
+
       if (err.name === "AbortError") {
         lastError = new Error(`LLM request timed out after ${LLM_TIMEOUT_MS}ms`);
         if (attempt < LLM_MAX_RETRIES) {
