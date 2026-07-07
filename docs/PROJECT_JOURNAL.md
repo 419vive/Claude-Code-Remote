@@ -14,6 +14,34 @@
 
 ---
 
+## 2026-07-07 — Appointment lock downgraded to a 30-minute pause (Jerry's call)
+
+**Context:**
+While diagnosing the dead booking button (entry below), Jerry pointed out he
+had already /unlock'ed himself — surfacing that the appointment flow re-locks
+the conversation permanently on EVERY booking (the 2026-06-29 design). Asked
+him directly whether to keep the permanent lock or switch to the auto-expiring
+30-min handoff he'd reserved as the fallback option in the 6/29 trade-off
+note. **He chose the 30-minute pause.**
+
+**Change:**
+- Appointment flow now sets only `status:'human_handoff'` (no `aiDisabled:1`).
+  The existing gate auto-reactivates after 30 min. Operator card wording says
+  「AI 已暫停30分鐘」 so operators know it resumes on its own.
+- The human_handoff gate's reactivation list now also includes the two
+  booking-button payloads (exact 我想預約看車 / `^我想預約去看\s`) so a second
+  booking within the 30-min pause serves the picker instead of silence.
+- Unchanged & still permanent: /lock, operator-takeover postback button,
+  想跟真人, flexible-time silent handoff, critical-question locks.
+
+**Verification:** build 607.4kb clean; tsc 11 (baseline); vitest 905✓/46✗
+(unchanged).
+
+**Artifacts:** `kun-auto-chatbot/server/lineWebhook.ts` (appointment block +
+human_handoff gate), same branch/PR as the entry below.
+
+---
+
 ## 2026-07-07 — Vehicle-card 預約看車 button dead on locked conversations
 
 **Context:**
