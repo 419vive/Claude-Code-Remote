@@ -1,13 +1,10 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
 Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (reset off origin/main after
-PR #105 merged, per convention). **PR #106 open (draft)** — the deep web-chat
-audit fixes. Subscribed to PR activity; ~1hr self check-in armed.
+PR #105 merged, per convention). **PR #106 MERGED** (SHA c5b030552, 2026-07-07 ~18:45 UTC).
 
-Latest (2026-07-07): Jerry reported web-chat replies "still very problematic"
-after #104/#105 deployed. Deep audit (8 scanners → hand-verified by Fable after
-the 62-agent verify phase hit a rate limit) confirmed **8 defect classes**, all
-fixed in PR #106 by 5 parallel single-file agents (Opus/Sonnet×3/Haiku):
+Latest (2026-07-07): PR #106 merged to main; Railway auto-deploy should fire within ~2-3 min.
+Deep audit fixed **8 defect classes** that prevented customers from receiving AI replies on web chat:
 
 1. **THE root cause:** `sanitizeChatMessage(message, {channel})` passed an
    object into the numeric maxLength param → `slice(0,0)` → **every customer
@@ -39,11 +36,12 @@ Gold heart: deployed code verified correct. Card hearts are white UNTIL saved
 (bottom-left). Jerry should hard-refresh/incognito if still navy.
 
 ## NEXT ACTION
-PR #106 awaiting Jerry's merge call (his pattern: merge-now via
-AskUserQuestion). After merge + Railway deploy, live re-test: ask a real
-question (bot should finally address it), price/mileage/loan question (no
-generic-card replacement), >5min session with operator reply, impossible
-question (LINE redirect, not silence).
+Railway auto-deploy pending (usually 2-3 min). Once live (~18:50 UTC):
+- Ask a real question (bot should finally address it, not return blank)
+- Price/mileage/loan question (should not generic-card-replace)
+- >5min session with operator reply (polling should work reliably)
+- Impossible question (should redirect to LINE, not silence)
+Sandbox cannot reach Railway to verify; Jerry to manual test on kuncar.tw
 
 ## Open Blockers
 - Railway auto-deploy unreliable (manual redeploy sometimes needed)

@@ -14,6 +14,40 @@
 
 ---
 
+## 2026-07-07 (evening) — PR #106 merged; awaiting Railway auto-deploy + live re-test
+
+**Context:**
+After fixing all 8 defect classes in PR #106 (the root cause being `sanitizeChatMessage`
+coercing an object to 0 in slice, blanking every customer message), Jerry confirmed
+via AskUserQuestion: "merge-now". PR #106 merged to main (SHA c5b030552) via squash
+merge at ~18:45 UTC.
+
+**Decision:**
+Merge confirmed. No changes to code or env vars — Railway GitHub integration should
+auto-deploy the commit within ~2-3 min (per Railway docs). Unsubscribed from PR
+activity; no further CI/review events expected.
+
+**Outcome:**
+- PR #106 merged successfully (squash merge, clean history)
+- Build verified: 606.4kb, tsc 12→11, vitest 905✓
+- Waiting for Railway auto-deploy (sandbox cannot verify — firewall blocks Railway)
+- **Next step:** Jerry to manual test kuncar.tw once live:
+  1. Real question → bot replies (not blank)
+  2. Price/mileage/loan → direct answer (not generic-card fallback)
+  3. >5min operator session → polling works (no death at ~5min)
+  4. Hard question → redirects to LINE (not silence)
+
+**Why deploy confidence is high:**
+All 8 bugs were verified as real via hand-reading code (Fable audit + subagent
+review). Fixes are minimal, single-concern, no new dependencies or schema changes.
+tsc baseline went from 12 errors (including the slack input-type mismatch) to 11.
+
+**Artifacts:**
+- PR #106: https://github.com/419vive/kunjia-autos-ai-chatbot/pull/106 (merged)
+- Commit: c5b030552fedd7dc4cb3903540cd18b04658f66c
+
+---
+
 ## 2026-07-07 — Deep web-chat audit: the AI never saw a single customer message (PR #106)
 
 **Context:**
