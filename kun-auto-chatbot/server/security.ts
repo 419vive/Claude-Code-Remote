@@ -25,6 +25,7 @@ import {
   FORBIDDEN_DEALERSHIP_TERMS,
   LEAKY_FIELD_NAMES,
   SHOP_CITY,
+  SHOP_PHONE,
 } from "../shared/shopConfig";
 
 // ============================================================
@@ -156,28 +157,72 @@ export function maskUserId(userId: string): string {
   return `${userId.slice(0, 4)}...${userId.slice(-4)}`;
 }
 
+// The shop's own phone number, digits-only, for exact-match comparison
+// regardless of how it's written in the text (with hyphens, spaces, or
+// a leading +886/886 country code).
+const SHOP_PHONE_DIGITS = SHOP_PHONE.replace(/\D/g, "");
+
+// Placeholder token used to temporarily shield the shop's own phone
+// number from the masking passes below, then restore it verbatim
+// afterwards. Not a valid phone-number shape, so it can't collide with
+// (or be re-matched by) any of the masking regexes.
+const SHOP_PHONE_PLACEHOLDER = "SHOP_PHONE_SENTINEL";
+
 /**
  * Mask PII in a message string (for safe logging)
  * Detects and masks: phone numbers, email addresses, LINE IDs
+ *
+ * Exception: the dealership's OWN phone number (SHOP_PHONE) is never
+ * masked. AI replies legitimately quote it (e.g. "電洽 0936-812-818"), and
+ * naively masking it produces an unusable "0936-***-818" in stored
+ * transcripts / the admin dashboard. Customer-provided phone numbers are
+ * unaffected — only an exact digit-for-digit match of SHOP_PHONE is
+ * protected, in any of its common written forms (as configured with
+ * hyphens, digits-only, spaced, or with a +886/886 prefix).
  */
 export function maskPIIInText(text: string): string {
   if (!text) return text;
-  
+
   let masked = text;
-  
+
+  // Shield the shop's own number before masking, in whatever shape it's
+  // written. Any match whose digits equal SHOP_PHONE's digits is replaced
+  // with a placeholder; matches with different digits (e.g. a customer's
+  // number) are left untouched here and get masked normally below.
+  const protectedMatches: string[] = [];
+  if (SHOP_PHONE_DIGITS) {
+    masked = masked.replace(
+      /(?:\+886|886)?[\s-]?0?9\d{2}[\s-]?\d{3}[\s-]?\d{3}/g,
+      (match) => {
+        const digits = match.replace(/\D/g, "").replace(/^886/, "0");
+        if (digits === SHOP_PHONE_DIGITS) {
+          protectedMatches.push(match);
+          return SHOP_PHONE_PLACEHOLDER;
+        }
+        return match;
+      }
+    );
+  }
+
   // Mask Taiwan phone numbers
   masked = masked.replace(/09\d{2}[\s-]?\d{3}[\s-]?\d{3}/g, (match) => maskPhone(match));
   masked = masked.replace(/(?:\+886|886)[\s-]?0?9\d{2}[\s-]?\d{3}[\s-]?\d{3}/g, (match) => maskPhone(match));
-  
+
   // Mask landline numbers
   masked = masked.replace(/0[2-9][\s-]?\d{3,4}[\s-]?\d{4}/g, (match) => maskPhone(match));
-  
+
   // Mask email addresses
   masked = masked.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, (match) => maskEmail(match));
-  
+
   // Mask LINE User IDs (U followed by 32 hex chars)
   masked = masked.replace(/U[0-9a-f]{32}/g, (match) => maskUserId(match));
-  
+
+  // Restore the shop's own phone number(s), verbatim as originally written.
+  if (protectedMatches.length > 0) {
+    let i = 0;
+    masked = masked.replace(new RegExp(SHOP_PHONE_PLACEHOLDER, "g"), () => protectedMatches[i++]);
+  }
+
   return masked;
 }
 
@@ -445,6 +490,49 @@ const UNSAFE_PROMISE_PATTERNS: RegExp[] = [
 // Patterns that look like a hallucinated price quote (NT$ amounts).
 // We don't block — we flag for the caller to cross-check against inventory.
 const PRICE_QUOTE_PATTERN = /(?:NT\$|新台幣|\$)\s*[\d,]+(?:\.\d+)?\s*(?:萬|元|k|K)?|\d+(?:\.\d+)?\s*萬/g;
+
+// ------------------------------------------------------------
+// Price-context exemptions — 2026-07-07 false-positive fix.
+//
+// PRICE_QUOTE_PATTERN matches ANY "N萬" in the reply, but replies
+// constantly contain non-sale-price 萬 numbers: mileage ("里程12萬公里"),
+// loan figures ("頭期款5萬" / "月付1.2萬"), and budget talk ("預算50萬以內" /
+// "50萬以下"). Before this fix, any such number not in allowedPrices was
+// flagged CRITICAL and the entire (otherwise safe) reply was discarded.
+//
+// These checks only SKIP the price-mismatch check for a given match — they
+// never weaken PRICE_QUOTE_PATTERN itself, and a genuine sale-price claim
+// (e.g. "這台65.9萬" / "售價80.9萬") with no such context is still checked
+// against allowedPrices exactly as before.
+// ------------------------------------------------------------
+const MILEAGE_UNIT_RE = /^\s{0,2}(?:公里|km|KM|公裏)/i;
+const LOAN_TERM_RE = /頭期款|頭期|自備款|首付|月付|月繳|月供|貸款額度/;
+const BUDGET_SUFFIX_RE = /^\s{0,2}(?:以下|以內|上下|以上|左右的預算)/;
+const BUDGET_PREFIX_RE = /預算/;
+
+/**
+ * Determine whether a PRICE_QUOTE_PATTERN match at [matchIndex, matchIndex+matchLength)
+ * in `text` is clearly NOT a sale-price claim (mileage / loan / budget context),
+ * and should therefore be skipped by the price-mismatch check.
+ */
+function isNonSalePriceContext(text: string, matchIndex: number, matchLength: number): boolean {
+  const matchEnd = matchIndex + matchLength;
+  const before = text.slice(Math.max(0, matchIndex - 6), matchIndex);
+  const afterMileage = text.slice(matchEnd, matchEnd + 3);
+  const afterBudget = text.slice(matchEnd, matchEnd + 6);
+
+  // (a) mileage: "12萬公里" / "跑了8萬km"
+  if (MILEAGE_UNIT_RE.test(afterMileage)) return true;
+
+  // (b) loan figures: "頭期款5萬" / "月付1.2萬"
+  if (LOAN_TERM_RE.test(before)) return true;
+
+  // (c) budget talk: "50萬以下" / "50萬左右的預算" / "預算50萬以內"
+  if (BUDGET_SUFFIX_RE.test(afterBudget)) return true;
+  if (BUDGET_PREFIX_RE.test(before)) return true;
+
+  return false;
+}
 
 // Prompt/system-rule leakage indicators (signs injection succeeded).
 const SYSTEM_LEAK_PATTERNS: RegExp[] = [
@@ -718,11 +806,20 @@ export function validateLLMOutput(
   //    Was advisory — upgraded to hard-fail after the "98.9萬 vs 80.9萬"
   //    incident on the Mufasa 2.0 GLC旗艦版 conversation. Wrong prices are
   //    direct customer fraud and cannot be sent.
+  //
+  //    2026-07-07: skip matches that are clearly mileage/loan/budget talk
+  //    (not a sale-price claim) via isNonSalePriceContext — see that
+  //    function's comment for the false-positive incidents this fixes.
   if (options.allowedPrices && options.allowedPrices.length > 0) {
     const normalize = (s: string) => s.replace(/[\s,NT$新台幣元]/g, "").toLowerCase();
     const allowedSet = new Set(options.allowedPrices.map(normalize));
-    const matches = sanitized.match(PRICE_QUOTE_PATTERN) ?? [];
-    for (const quote of matches) {
+    // Array.from(...) rather than a direct for-of over the iterator —
+    // this codebase's tsconfig target doesn't enable downlevelIteration,
+    // so iterating a RegExpStringIterator directly fails to compile.
+    for (const m of Array.from(sanitized.matchAll(PRICE_QUOTE_PATTERN))) {
+      const quote = m[0];
+      const idx = m.index ?? 0;
+      if (isNonSalePriceContext(sanitized, idx, quote.length)) continue;
       if (!allowedSet.has(normalize(quote))) {
         violations.push(`price_not_in_inventory:${quote}`);
       }
