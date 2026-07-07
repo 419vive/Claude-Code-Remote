@@ -1380,13 +1380,19 @@ async function processLineEvent(
   if (conversation && conversation.status === 'human_handoff') {
     const isRichMenuAction = !!detectRichMenuTrigger(userMessage);
     const isNewInquiry = /我想詢問這台車|我想了解/.test(userMessage);
+    // Booking-button payloads (rich-menu 我想預約看車 / vehicle-card
+    // 我想預約去看 <brand> <model>) also count as a new interaction — since
+    // appointments now only pause the AI 30 min (2026-07-07), a customer
+    // booking a second car within that window must still get the picker.
+    const handoffTrimmed = userMessage.trim();
+    const isBookingTap = handoffTrimmed === "我想預約看車" || /^我想預約去看\s+\S/.test(handoffTrimmed);
 
     // C5: Auto-reactivate if handoff has been active for more than 30 minutes
     const handoffAge = Date.now() - new Date(conversation.updatedAt).getTime();
     const HANDOFF_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
     const isHandoffExpired = handoffAge > HANDOFF_TIMEOUT_MS;
 
-    if (isRichMenuAction || isNewInquiry || isHandoffExpired) {
+    if (isRichMenuAction || isNewInquiry || isBookingTap || isHandoffExpired) {
       if (isHandoffExpired) {
         console.log(`[LINE] Conversation ${convId} handoff expired after 30min, reactivating AI`);
       } else {
@@ -1835,15 +1841,18 @@ async function processLineEvent(
       });
     } catch (err) { console.error("[LINE] Reply failed:", err); }
 
-    // ============ APPOINTMENT → NOTIFY OPERATOR + STOP AI ============
+    // ============ APPOINTMENT → NOTIFY OPERATOR + PAUSE AI (30 min) ============
     // Jerry (2026-06-29): when the booking form pops up, alert the operator and
     // hand the customer over so a real person discusses their needs. The
     // datetimepicker → confirmation → booking-form flow is deterministic (not the
-    // LLM), so it still completes — the appointment_datetime postback handler is
-    // exempt from the aiDisabled gate. Only the free-text AI chat is stopped.
+    // LLM), so it still completes regardless of the pause.
+    // Jerry (2026-07-07): downgraded from the permanent aiDisabled lock to the
+    // auto-expiring human_handoff status — every booking customer was staying
+    // locked forever and needed a manual /unlock to use the AI again. The AI now
+    // pauses 30 minutes for the operator to step in, then resumes on its own.
     await sendHumanHandoffNotification(
       conversation!,
-      `${headerText}（客人想預約看車，AI 已暫停等待真人介入）`,
+      `${headerText}（客人想預約看車，AI 已暫停30分鐘等待真人介入）`,
       "（AI 已發送日期選擇器，改由真人接手需求討論）",
       channelAccessToken,
       ownerUserId,
@@ -1856,7 +1865,7 @@ async function processLineEvent(
       eventLabel: vehicleName || 'no-vehicle',
       channel: 'line',
     });
-    await db.updateConversation(convId, { status: 'human_handoff', aiDisabled: 1 });
+    await db.updateConversation(convId, { status: 'human_handoff' });
     return;
   }
 
