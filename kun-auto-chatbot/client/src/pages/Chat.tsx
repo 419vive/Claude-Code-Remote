@@ -37,10 +37,17 @@ export default function Chat() {
     enabled: true,
   });
 
-  // Merge server messages (especially operator replies) into local display
-  // Strategy: When polling returns new messages, append them if not already present
+  // Merge operator replies from polling into local display.
+  // Only "operator" messages are merged here — the server's stored copies of
+  // user/assistant messages can legitimately differ from what was streamed/
+  // typed locally (PII masking, guardrail sanitization, the [HUMAN_HANDOFF]
+  // marker trim), so merging those too would duplicate the same reply as a
+  // second bubble or surface blank rows for masked/empty user messages.
+  // Polling exists for exactly one purpose: delivering human-operator
+  // replies, which never originate locally.
   useEffect(() => {
-    if (serverMessages.length === 0) return; // Server has no messages yet
+    const operatorMessages = serverMessages.filter((m) => m.role === "operator");
+    if (operatorMessages.length === 0) return; // No operator replies yet
 
     // Find messages that are not yet in the local display
     // (compare by role + full content — a truncated key risks two distinct
@@ -49,7 +56,7 @@ export default function Chat() {
     const localSet = new Set(
       messages.map((m) => `${m.role}:${m.content}`)
     );
-    const newMessages = serverMessages.filter(
+    const newMessages = operatorMessages.filter(
       (m) => !localSet.has(`${m.role}:${m.content}`)
     );
 
@@ -153,6 +160,37 @@ export default function Chat() {
                     return updated;
                   }
                 });
+              } else if (currentEvent === "guardrail-fallback") {
+                // Guardrail rejected the streamed reply and sent a corrected
+                // replacement. Replace the current assistant bubble (or
+                // append one if zero tokens streamed yet) so the customer
+                // never sees the rejected raw text, instead of silently
+                // dropping the correction and letting it re-arrive ~3s later
+                // via polling as a confusing second bubble.
+                try {
+                  const parsed = JSON.parse(currentData) as { message?: string };
+                  const replacement = parsed.message ?? "";
+                  assistantMessageRef.current = replacement;
+
+                  setMessages((prev) => {
+                    if (messageIndexRef.current === -1) {
+                      messageIndexRef.current = prev.length;
+                      return [
+                        ...prev,
+                        { role: "assistant", content: replacement },
+                      ];
+                    } else {
+                      const updated = [...prev];
+                      updated[messageIndexRef.current] = {
+                        ...updated[messageIndexRef.current],
+                        content: replacement,
+                      };
+                      return updated;
+                    }
+                  });
+                } catch (parseErr) {
+                  console.error("Failed to parse guardrail-fallback data:", parseErr);
+                }
               } else if (currentEvent === "done") {
                 // Stream finished successfully
                 break;
@@ -184,15 +222,24 @@ export default function Chat() {
     }
   };
 
-  // Auto-send prefilled message from VehicleLanding (once)
+  // Auto-send prefilled message from VehicleLanding (once per message +
+  // vehicle, persisted across reloads/back-navigation via sessionStorage —
+  // otherwise every reload/back-nav on the same ?message= URL re-sends the
+  // same canned question).
   const [autoSent, setAutoSent] = useState(false);
   useEffect(() => {
     if (prefilledMessage && !autoSent) {
+      const autoSentKey = `kun-chat-autosent-${vehicleContext}-${prefilledMessage}`;
+      if (sessionStorage.getItem(autoSentKey)) {
+        setAutoSent(true);
+        return;
+      }
       setAutoSent(true);
+      sessionStorage.setItem(autoSentKey, "1");
       // Small delay so the UI renders first
       setTimeout(() => handleSend(prefilledMessage), 300);
     }
-  }, [prefilledMessage, autoSent]);
+  }, [prefilledMessage, autoSent, vehicleContext]);
 
   const suggestedPrompts = useMemo(
     () =>

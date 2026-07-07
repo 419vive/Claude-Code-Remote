@@ -315,6 +315,7 @@ async function startServer() {
     ...RATE_LIMIT_CONFIG.general,
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.originalUrl.startsWith("/api/chat/history"),
     handler: (req, res) => {
       logSecurityEvent({
         eventType: "rate_limit_hit",
@@ -370,10 +371,30 @@ async function startServer() {
     },
   });
 
+  // Chat history polling rate limit (permissive for 3-second polling)
+  // Supports 300 polls per 15 min (3s interval) + 3x headroom = 900 max
+  const chatHistoryLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 900,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      logSecurityEvent({
+        eventType: "rate_limit_hit",
+        severity: "medium",
+        source: "chat_history_api",
+        details: `Chat history polling rate limit exceeded from IP: ${req.ip}`,
+        ip: req.ip,
+      });
+      res.status(429).json({ error: "輪詢過於頻繁，請稍後再試。" });
+    },
+  });
+
   // Apply rate limiters
   app.use("/api/auth/login", loginLimiter);
   app.use("/api/trpc/chat", chatLimiter);
   app.use("/api/line/webhook", lineWebhookLimiter);
+  app.use("/api/chat/history", chatHistoryLimiter);
   app.use("/api/", generalLimiter);
 
   // ============================================================

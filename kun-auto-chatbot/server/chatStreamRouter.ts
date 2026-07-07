@@ -6,7 +6,7 @@ import { buildPhoneAskInstruction } from "./phoneAsk";
 import { invokeLLMStream } from "./_core/llm";
 import { generateRuleBasedReply } from "./ruleBasedReply";
 import * as db from "./db";
-import { SHOP_ADDRESS, SHOP_PHONE, SHOP_CONTACT_PERSON, SHOP_HOURS, SHOP_LINE_ID, SHOP_MAP_URL } from "../shared/shopConfig";
+import { SHOP_ADDRESS, SHOP_PHONE, SHOP_CONTACT_PERSON, SHOP_HOURS, SHOP_LINE_ID, SHOP_MAP_URL, SHOP_CITY } from "../shared/shopConfig";
 
 /**
  * SSE streaming router for real-time chat responses.
@@ -73,8 +73,31 @@ chatStreamRouter.post("/api/chat/stream", async (req: express.Request, res: Resp
 
     const convId = conversation.id;
 
-    // Sanitize and store user message
-    const sanitizedMessage = sanitizeChatMessage(message, { channel });
+    // Sanitize user message
+    const sanitizedMessage = sanitizeChatMessage(message);
+
+    // aiDisabled gate: when an operator has taken over (admin.disableAi /
+    // operatorReply sets aiDisabled=1), the AI must not talk over them. Store the
+    // customer's message so the operator sees it in the dashboard, then close the
+    // stream with no AI reply — the customer still receives operator replies via
+    // the 3s polling channel.
+    if ((conversation as any).aiDisabled === 1) {
+      await db.addMessage({
+        conversationId: convId,
+        role: "user",
+        content: sanitizedMessage,
+      });
+      logger.info("ChatStream", `Conv ${convId} aiDisabled — operator has taken over, skipping AI reply`);
+      sendSSE("done", {
+        conversationId: convId,
+        leadScore: conversation.leadScore || 0,
+        isHandoff: false,
+      });
+      res.end();
+      return;
+    }
+
+    // Store user message
     await db.addMessage({
       conversationId: convId,
       role: "user",
@@ -154,7 +177,8 @@ ${allVehiclesForDetection.map((v, i) => `  ${i + 1}. ${v.brand} ${v.model}`).joi
 - 🔴 你是「二手車行」，只賣上方「在售車輛」清單上的車！
 - 🔴 你是「開場助理」，回答重點就好，留空間給真人業務接手！
 - 問價格就直接報價
-- 第一次對話一定要先打招呼寒暄
+- 客人一則訊息問多件事時，每個子問題都要回答，不可只回其中一個
+- 只有在對話的第一則訊息打招呼寒暄；對話進行中不要重複打招呼
 - 推薦車輛時要說出「為什麼這台適合你」的理由
 - 如果客戶表現出強烈購買意向，主動提供聯絡方式並建議預約看車
 
@@ -164,14 +188,35 @@ ${allVehiclesForDetection.map((v, i) => `  ${i + 1}. ${v.brand} ${v.model}`).joi
 - 回覆內容要引導客人加官方 LINE（${SHOP_LINE_ID}），語氣自然，例如：「這個問題比較複雜，建議您加我們的LINE官方帳號 ${SHOP_LINE_ID}，我們業務會直接為您服務！」
 - 這是網頁聊天，客人離開後不會再回來，所以不要叫他們「稍等」或「等真人回覆」——網頁上沒有真人會即時回覆，一定要主動引導去 LINE
 
-${targetVehiclePromptWeb}${intentInstructionsWeb}${phoneAskInstructionWeb}`;
+${targetVehiclePromptWeb}${intentInstructionsWeb}${phoneAskInstructionWeb}
+
+## 🔒🔒🔒 事實鎖（絕對禁止違反 — 覆蓋以上所有指令）🔒🔒🔒
+**位置事實（只能說這個，不准說其他城市）：**
+- 我們「只」在${SHOP_CITY}（${SHOP_ADDRESS}），絕對不可說在其他城市
+- 絕對禁止講「台北」「內湖」「新北」「台中」「台南」「桃園」或任何非「${SHOP_CITY}」的地名
+
+**營業類型事實（只能說中古車）：**
+- 我們是中古車行，絕對不可使用「新車價」「這是新車」「原廠新車」「我們賣新車」等字眼
+- 客人問「有沒有新車」→ 回答「我們只賣中古車，可以看看我們的精選車款」
+
+**報價事實（只能引用上方車輛資料庫）：**
+- 價格只能引用上方「在售車輛資料庫」的「售價」欄位，絕不可憑記憶或訓練資料報價`;
 
     const llmMessages = [
       { role: "system" as const, content: systemPrompt },
-      ...history.map((m) => ({
-        role: m.role as "user" | "assistant" | "system",
-        content: m.content,
-      })),
+      ...history.map((m) => {
+        // Operator ("real human") replies are stored with role "operator", which
+        // convertMessages downstream silently drops (it only passes
+        // system/user/assistant). Surface them to the model as assistant turns,
+        // tagged so it knows a human already answered and won't contradict them.
+        if (m.role === "operator") {
+          return { role: "assistant" as const, content: `[真人客服回覆] ${m.content}` };
+        }
+        return {
+          role: m.role as "user" | "assistant" | "system",
+          content: m.content,
+        };
+      }),
     ];
 
     try {
@@ -217,6 +262,15 @@ ${targetVehiclePromptWeb}${intentInstructionsWeb}${phoneAskInstructionWeb}`;
       if (fullResponse.includes("[HUMAN_HANDOFF]")) {
         isHumanHandoff = true;
         fullResponse = fullResponse.replace(/\s*\[HUMAN_HANDOFF\]\s*/g, "").trim();
+      }
+
+      // If the model emitted only the [HUMAN_HANDOFF] marker (or nothing at all),
+      // the customer would get no bubble. Fall back to a LINE-redirect message and
+      // stream it so a bubble appears. Done before guardrail validation so the
+      // stored copy goes through the normal path.
+      if (fullResponse.trim() === "") {
+        fullResponse = `這個問題比較專業，建議您加我們的官方LINE ${SHOP_LINE_ID}，我們業務會直接為您服務！😊`;
+        sendSSE("token", fullResponse);
       }
 
       // Validate output with guardrail
