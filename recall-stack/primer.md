@@ -1,9 +1,13 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` — **PR #106 MERGED to main
-2026-07-07 ~00:57 UTC** (squash, sha `c5b0305`; auto-unsubscribed, stale
-check-in trigger deleted). Next work on this project: reset the branch fresh
-off origin/main again, per convention.
+Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` — reset off main post-#106,
+now carries ONE unmerged fix: **vehicle-card 預約看車 button dead on locked
+conversations** (card sends 我想預約去看 <brand> <model>; the aiDisabled
+gate's exemption only matched exact 我想預約看車 → silence for anyone who
+ever booked once). Fixed + pushed (commit 1f271d8); **PR NOT yet created —
+GitHub connector disconnected, needs Jerry to re-auth the GitHub connector
+in claude.ai settings, or create the PR from the branch on github.com.**
+PR #106 (web-chat audit, 8 defect classes) merged earlier: sha `c5b0305`.
 
 Latest (2026-07-07): Jerry reported web-chat replies "still very problematic"
 after #104/#105 deployed. Deep audit (8 scanners → hand-verified by Fable after

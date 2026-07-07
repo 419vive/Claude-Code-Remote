@@ -14,6 +14,46 @@
 
 ---
 
+## 2026-07-07 — Vehicle-card 預約看車 button dead on locked conversations
+
+**Context:**
+Right after PR #106 merged, Jerry reported: tapping 預約看車 on a vehicle
+card in the LINE chatbot no longer brings up the datetimepicker interface.
+
+**Root cause (code-verified):**
+Vehicle carousel cards send `我想預約去看 <brand> <model>`
+(lineFlexTemplates.ts:69, :512) — NOT the exact string `我想預約看車` that
+the rich-menu button sends. The aiDisabled early-gate's booking exemption
+(added 2026-07-06) matched ONLY the exact rich-menu payload, so on a locked
+conversation the card tap fell through to "everything else → stay silent."
+And conversations lock automatically on the FIRST booking (the 2026-06-29
+appointment-lock decision) — so every customer who ever booked once got
+dead silence from every subsequent vehicle-card booking tap. Jerry's own
+test conversation was locked from earlier appointment testing, which is
+why he hit it immediately. On UNLOCKED conversations the card button works
+fine (the broad appointment-intent regex at vehicleDetectionService.ts:826
+matches 預約, so the main flow at lineWebhook.ts:1802 serves the picker).
+
+**Fix:**
+The locked-path exemption now matches both deterministic button payloads:
+exact `我想預約看車` OR `^我想預約去看\s+\S` (strict prefix — still
+button-shaped text only, deliberately NOT the broad intent regex, so an
+operator's live free-text conversation never gets a surprise picker from
+phrases like 什麼時候可以去看車). For card taps the vehicle is resolved via
+detectVehicleFromMessage and passed to buildAppointmentDatetimePicker so
+the picker header + postback carry the right car, same as the unlocked flow.
+
+**Verification:** predicate tested against 6 payload/free-text cases (all
+correct); build clean 607.2kb; tsc 11 (baseline unchanged); vitest 905✓/46✗
+(unchanged). Live LINE verification is Jerry's after deploy.
+
+**Artifacts:**
+- `kun-auto-chatbot/server/lineWebhook.ts` (locked-path exemption #2)
+- Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (reset off main post-#106)
+- PR: pending — GitHub connector disconnected mid-session; create on reconnect
+
+---
+
 ## 2026-07-07 — Deep web-chat audit: the AI never saw a single customer message (PR #106)
 
 **Context:**
