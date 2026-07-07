@@ -83,10 +83,15 @@ rate limiter) — zero file conflicts by construction.
 the fixed bug); vitest 905 passed (892 baseline + 13 new) / 46 pre-existing
 DB failures, count unchanged.
 
+**PR #106 merged to `main` 2026-07-07 ~00:57 UTC** (squash, sha `c5b0305`,
+Jerry chose merge-now via AskUserQuestion, same as #104/#105). Railway
+should auto-deploy within ~2-3 min; live verification is Jerry's (sandbox
+cannot reach the site).
+
 **Artifacts:**
 - `server/chatStreamRouter.ts`, `client/src/pages/Chat.tsx`,
   `server/security.ts` (+tests), `server/_core/llm.ts`, `server/_core/index.ts`
-- PR #106 (draft): https://github.com/419vive/kunjia-autos-ai-chatbot/pull/106
+- PR #106 (merged): https://github.com/419vive/kunjia-autos-ai-chatbot/pull/106
 - Audit workflow journal: 35 findings, 8 confirmed, mechanisms hand-verified
 
 ---
