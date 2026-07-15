@@ -14,6 +14,58 @@
 
 ---
 
+## 2026-07-07 — New `/esl-clip-lesson-prep` skill: injection-hardened YouTube→ESL (PR #107)
+
+**Context:**
+Jerry shared a YouTube URL and invoked `/esl-clip-lesson-prep`, but (a) that
+skill didn't actually exist anywhere on disk — only the branch name
+`claude/esl-clip-lesson-prep-tyo8el` matched — and (b) Claude Code can't fetch
+YouTube URLs directly. He asked to find a repo to fix the access issue and
+"update my skill accordingly," explicitly flagging **prompt injection** as the
+thing to guard against. His injection instinct was correct and load-bearing.
+
+**Decision:**
+Built a real skill at `.claude/skills/esl-clip-lesson-prep/` (SKILL.md +
+`scripts/fetch_transcript.py`). Fetch tool = **yt-dlp** (industry standard, not
+a niche repo), subtitles-only. Produces all four ESL outputs (comprehension /
+vocab / grammar / full staged lesson plan), CEFR-scoped. Manual-paste fallback
+for when the network blocks YouTube.
+
+**Prompt-injection defense (defense-in-depth), all tested:**
+- URL allowlist: canonical youtube.com/youtu.be + regex 11-char id only;
+  user@host and trailing-dot hosts rejected; refused before yt-dlp runs.
+- Only the validated id reaches yt-dlp (canonical URL rebuilt from id) → kills
+  the parser-differential / SSRF surface.
+- yt-dlp as a Python **module, no shell**, `skip_download` → no command
+  injection, no media/arbitrary files; temp files cleaned in `finally`.
+- **Nonce-guarded `<untrusted_transcript nonce=…>` envelope** with
+  entity-decode-THEN-tag-strip + zero-width-space token neutralization →
+  caption content cannot forge a closing delimiter to break out.
+
+**Multi-model build (Jerry asked to use a range):** Haiku = mechanical QA (all
+URL-rejection exit codes, id extraction → PASS); Sonnet = ESL pedagogy review
+(applied: per-CEFR-level scoping, focus-emphasis weighting); **Opus = adversarial
+security audit → found a HIGH-severity delimiter-breakout** (entity-encoded
+`</untrusted_transcript>` survived because tags were stripped before entities
+were decoded) + a URL parser-differential + hygiene gaps. All fixed; regression
+test confirms no forgeable boundary survives. LESSON: the injection hole was
+real and would have shipped without the Opus pass — adversarial review earned
+its keep.
+
+**Env note:** this remote sandbox's gateway denies `youtube.com:443` (confirmed
+via `$HTTPS_PROXY/__agentproxy/status` → `connect_rejected 403`), so live
+auto-fetch only works where the network policy allows YouTube (local, or an
+open-network web session). Fallback covers the blocked case. Same firewall
+class as the Railway/8891 limitation.
+
+**Artifacts:**
+- `.claude/skills/esl-clip-lesson-prep/SKILL.md`
+- `.claude/skills/esl-clip-lesson-prep/scripts/fetch_transcript.py`
+- PR #107 (draft): https://github.com/419vive/kunjia-autos-ai-chatbot/pull/107
+- Branch: `claude/esl-clip-lesson-prep-tyo8el`
+
+---
+
 ## 2026-07-07 — Deep web-chat audit: the AI never saw a single customer message (PR #106)
 
 **Context:**
