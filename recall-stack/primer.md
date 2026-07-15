@@ -1,78 +1,61 @@
 # Active Project: 崑家汽車 (Kunjia Autos) — LINE chatbot + admin dashboard
 
-Branch: `claude/kunjiia-menu-buttons-issue-nt0re1` (reset off origin/main after
-PR #105 merged, per convention). **PR #106 open (draft)** — the deep web-chat
-audit fixes. Subscribed to PR activity; ~1hr self check-in armed.
+Latest (2026-07-15): Ran the SEO content loop (`kun-auto-chatbot/docs/SEO_LOOP.md`).
+Two PRs merged to main + a full-auto weekly Routine now runs the loop hands-off.
 
-Latest (2026-07-07): Jerry reported web-chat replies "still very problematic"
-after #104/#105 deployed. Deep audit (8 scanners → hand-verified by Fable after
-the 62-agent verify phase hit a rate limit) confirmed **8 defect classes**, all
-fixed in PR #106 by 5 parallel single-file agents (Opus/Sonnet×3/Haiku):
+**Merged today:**
+- **PR #109 → main `b936a80`:** `server/seo.ts` now derives ALL blog SEO from
+  `client/src/data/blogPosts.ts` (single source of truth). Was hardcoded:
+  sitemap listed 6 posts, `blogMeta` covered ~12/47 → ~35 posts had no
+  server meta + weren't in sitemap. Now every post auto-gets meta + Article +
+  Person + Breadcrumb + **FAQPage** (extracted from its own `<h3>Q：…</h3>`
+  blocks) JSON-LD, `og:type=article`, and a sitemap `<url>` (deduped by slug,
+  updatedAt as lastmod). **New articles are covered automatically — no seo.ts
+  edits ever again.** Verified: tsc 11 baseline (none in seo.ts); build clean;
+  47/47 posts render Article+desc, 26/47 FAQPage, sitemap 47 deduped URLs.
+- **PR #108 → main `e6a816c`:** first loop article 二手 Altis 買哪一代
+  (`used-altis-which-generation`) + `docs/SEO_LOOP.md`. Merged AFTER #109 so
+  Altis auto-got its meta/sitemap. Queue row #1 = ✅; next is #2 泡水車怎麼看.
 
-1. **THE root cause:** `sanitizeChatMessage(message, {channel})` passed an
-   object into the numeric maxLength param → `slice(0,0)` → **every customer
-   message became "" before the AI saw it**. AI answered blanks all day.
-   TS error (77,59) flagged it the whole time — buried in the "12 pre-existing
-   errors" baseline. Baseline is now 11. LESSON: a "pre-existing" tsc error
-   in a NEW file is a contradiction — investigate, never baseline it.
-2. Guardrail corrections never reached the browser (unhandled
-   `guardrail-fallback` SSE event) — client now replaces the bubble.
-3. PRICE_QUOTE_PATTERN flagged 里程/頭期款/月付/預算 "N萬" as fake prices →
-   whole replies nuked. Context exclusions added (+13 tests, 905✓ total).
-4. Ghost/duplicate bubbles: stored ≠ streamed copies (shop phone masked by
-   maskPIIInText, marker trim) re-appended by polling. Polling now merges
-   ONLY operator messages; SHOP_PHONE whitelisted from masking.
-5. 3s polling died at ~5min on generalLimiter 100/15min → dedicated
-   900/15min limiter for /api/chat/history.
-6. Marker-only output → silence → now falls back to LINE-redirect reply.
-7. llm.ts mid-stream retry duplicated replies; no timeout during body read →
-   no-retry-after-first-yield + rolling 30s idle timeout.
-8. Web ignored aiDisabled + dropped operator history → gate added, operator
-   turns fed to model as [真人客服回覆] assistant turns. Prompt gains
-   FACT_LOCK + multi-question rule + no-re-greet.
-
-Verification: build 606.4kb clean; tsc 12→11; vitest 905✓/46✗ (46 = same
-pre-existing DB-dependent set, count unchanged).
-
-Gold heart: deployed code verified correct. Card hearts are white UNTIL saved
-(by design); the always-gold reference is the floating drawer button
-(bottom-left). Jerry should hard-refresh/incognito if still navy.
+**Full-auto Routine (Jerry chose 全自動 + 每週2篇):**
+Trigger `trig_01EMJ2DpqvXmkhwAMS8xNuPz`, cron `0 1 * * 2,5` (Tue+Fri 09:00
+Taiwan, fresh session each fire, push notif). First run Fri 2026-07-17. Each
+fire: next `☐` queue keyword → fact-checked single-keyword article matching
+blogPosts.ts schema → **tsc+build gate: auto-merge only if clean, else draft
+PR + stop.** Runs in the cloud env — Jerry's computer being off doesn't matter.
 
 ## NEXT ACTION
-PR #106 awaiting Jerry's merge call (his pattern: merge-now via
-AskUserQuestion). After merge + Railway deploy, live re-test: ask a real
-question (bot should finally address it), price/mileage/loan question (no
-generic-card replacement), >5min session with operator reply, impossible
-question (LINE redirect, not silence).
+Nothing required. Fri 2026-07-17 the Routine auto-writes post #2 (泡水車怎麼看)
+and (if build clean) auto-merges → Railway deploys; Jerry gets a push. Watch
+the FIRST auto-run's outcome — confirm the cron session has GitHub access to
+open+merge the PR (if not, it'll push a branch + draft PR, needs a manual merge).
 
 ## Open Blockers
-- Railway auto-deploy unreliable (manual redeploy sometimes needed)
-- Dashboard UI for admin mutations not built (backend ready)
-- Deferred audit items (documented, not fixed): vehicleKB not abbreviated
-  around target vehicle (lost-in-middle dilution), customer-memory
-  【客人已知資訊】 not injected on web, error-path UX (partial bubble +
-  apology bubble), operator same-second timestamp edge in polling `since`
-- Sandbox firewall: cannot reach Railway/kuncar.tw by ANY tool (curl +
-  real Chromium both blocked) — live verification is always Jerry's
+- **GSC unreachable from sandbox** → the loop's VERIFY/LEARN half (rankings,
+  impressions) can't be automated here; stays manual or needs GSC API wired up.
+- Railway auto-deploy sometimes needs a manual redeploy.
+- Sandbox firewall: cannot reach Railway/kuncar.tw by ANY tool — live
+  verification is always Jerry's.
+- Dashboard UI for admin mutations not built (backend ready).
 
 ## Key Knowledge
-- **tsc baseline is 11 now.** Never dismiss "pre-existing" errors in new files.
-- **GitHub Actions "Deploy to Production" is a dead scaffold** (deploy steps
-  commented out; its Type-check failures do NOT mean Railway didn't deploy —
-  Railway deploys via its own GitHub integration)
-- **Web handoff philosophy:** hard questions redirect to official LINE
-- **Gold vs navy exception list:** VehicleLanding/Home = navy;
-  Wishlist*/VideoNudge/ChatTrigger/CarValuation/FaqPage/SmartRedirect = gold
-  (Jerry's explicit call); MediaKit/AboutUs/Blog/remotion untouched
-- **Polling channel contract:** web polling merges operator messages ONLY;
-  local streamed copies are authoritative for user/assistant
-- **Family context:** Jerry's father (70) uses phone; Megan onboarding
-- **Stack:** Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE + 8891 sync
+- **SEO loop is now semi-autonomous:** meta/sitemap plumbing fully auto (#109);
+  content on a cloud cron (每週2篇). Expect auto `seo/<slug>` PRs every Tue/Fri
+  — that's the Routine, not a bug. Pause/retune via
+  `mcp__Claude_Code_Remote__update_trigger`/`delete_trigger` on the trig id.
+- **tsc baseline is 11.** Never dismiss "pre-existing" errors in NEW files.
+- **blogPosts.ts has 2 duplicate slugs** (`used-car-price-guide`,
+  `used-car-warranty-guide`); find + sitemap dedupe keep first occurrence.
+  Deduping the data file is a deferred follow-up.
+- **seo.ts still hardcodes ~5-6 posts in `llms.txt` + the AI-content text list**
+  (not migrated in #109; out of scope). Follow-up if llms.txt should be full.
+- **GitHub Actions "Deploy to Production" is a dead scaffold** — its failures
+  don't mean Railway didn't deploy (Railway deploys via its own integration).
+- **Stack:** Node/Express/Drizzle/MySQL + Gemini 2.5 Flash + LINE + 8891 sync.
+- **Family context:** Jerry's father (70) uses phone; Megan onboarding.
 
-## Deployed + Working (after #106 merges)
-- Permanent AI lockout (`aiDisabled`) — now honored on web too
-- In-LINE operator controls; postback takeover buttons
-- Phantom-vehicle guardrail + Fact Lock — now also in the web prompt
-- SSE token streaming + 3s operator polling — both now actually correct
-  end-to-end (input no longer blanked, corrections displayed, no duplicate
-  bubbles, no 5-minute polling death)
+## Deployed + Working
+- All 47+ blog posts now have server-rendered meta + JSON-LD + sitemap entries.
+- Web chat: sanitize/streaming/guardrail/polling fixes (PR #106) live.
+- Permanent AI lockout (`aiDisabled`) honored on web; in-LINE operator controls;
+  phantom-vehicle guardrail + Fact Lock in web prompt; SSE streaming + polling.

@@ -14,6 +14,72 @@
 
 ---
 
+## 2026-07-15 — SEO content loop: seo.ts auto-generates all blog meta (#109) + full-auto weekly Routine
+
+**Context:**
+Cowork GEO-audit handoff (`kun-auto-chatbot/docs/SEO_LOOP.md`) set up a
+long-tail SEO content loop: pick a keyword from the §4 queue → write a blog
+post in `blogPosts.ts` → publish → verify in GSC → learn. First article
+(二手 Altis 買哪一代, slug `used-altis-which-generation`) was PR #108.
+While writing it, discovered `server/seo.ts` was NOT reading `blogPosts.ts`
+dynamically as the handoff doc assumed — sitemap listed only 6 posts and the
+`blogMeta` object only covered ~12 of the 47 posts. ~35 posts had NO
+server-rendered meta and were absent from the sitemap → they couldn't be
+indexed → the loop's VERIFY step was structurally broken.
+
+**Decision + what shipped:**
+1. **PR #109 (merged → main `b936a80`): `seo.ts` now derives everything from
+   `blogPosts.ts`** (single source of truth). Imported `blogPosts` into the
+   server bundle (pure data, no React deps, bundles cleanly under esbuild
+   `--packages=external`). `/blog/:slug` meta + Article + Person + Breadcrumb
+   JSON-LD now come from the matched post (title, description, keywords,
+   category→articleSection, publishedAt/updatedAt, wordCount from stripped
+   content); added `og:type=article` and a **FAQPage** schema extracted from
+   each post's own `<h3>Q：…</h3><p>…</p>` blocks (emitted only when ≥2 pairs).
+   `sitemap.xml` now emits one `<url>` per post, deduped by slug, each with
+   its own `updatedAt` as lastmod. **New articles are now covered
+   automatically the moment they land in `blogPosts.ts` — no seo.ts edits.**
+   Verified: tsc 11 (baseline, none in seo.ts); build clean; harness ran the
+   refactored `injectSeoTags` over all 47 unique slugs → 47/47 Article+desc+
+   og:type=article, 26/47 FAQPage, every JSON-LD block valid; sitemap 47
+   deduped blog URLs.
+2. **PR #108 (merged → main `e6a816c`): the Altis article + `SEO_LOOP.md`.**
+   Merged AFTER #109 so the Altis post auto-picked up its meta/sitemap.
+   Both merges done per Jerry's explicit "滿意就合併" instruction (squash).
+3. **Full-auto weekly Routine created** (Jerry chose 全自動 + 每週2篇 via
+   AskUserQuestion, overriding SEO_LOOP §8's "first 3-5 reviewed" guardrail —
+   his informed call). Trigger `trig_01EMJ2DpqvXmkhwAMS8xNuPz`, cron
+   `0 1 * * 2,5` (Tue & Fri 09:00 Taiwan), `create_new_session_on_fire`,
+   push notifications on, env `env_01AFrciPEZrVxn3FG38fHRTg`. Each fire: read
+   SEO_LOOP.md → take next `☐` queue keyword → write post (fact-checked via
+   WebSearch, single-keyword, schema-matched) → **safety gate: run tsc+build,
+   auto-merge ONLY if clean; else open a draft PR and stop** so a broken
+   article never auto-deploys. First run: Fri 2026-07-17.
+
+**Why:** Jerry wanted the loop to run without him manually triggering each
+article ("我不想之後再手動了"). The plumbing (meta/sitemap) is now fully
+automatic; the content generation is now on a cloud cron (runs regardless of
+his computer being on). Honest limit flagged to him: the VERIFY/LEARN half
+(reading GSC rankings) still can't run from the sandbox — GSC is unreachable.
+
+**FUTURE SESSIONS: expect auto-generated `seo/<slug>` SEO blog PRs every
+Tue/Fri from the Routine.** That's this cron, not a bug. To pause/stop/retune
+cadence: `mcp__Claude_Code_Remote__update_trigger`/`delete_trigger` on
+`trig_01EMJ2DpqvXmkhwAMS8xNuPz`.
+
+**Known follow-ups (not done):** `blogPosts.ts` has 2 duplicate slugs
+(`used-car-price-guide`, `used-car-warranty-guide`) — meta/find + sitemap
+dedupe both keep the first occurrence (consistent with `getBlogPost`);
+deduping the data file is deferred. `llms.txt` + the AI-content text list in
+seo.ts still hardcode ~5-6 posts (not migrated; out of scope for #109).
+
+**Artifacts:**
+- `kun-auto-chatbot/server/seo.ts` (PR #109, merged `b936a80`)
+- `kun-auto-chatbot/client/src/data/blogPosts.ts` + `docs/SEO_LOOP.md` (PR #108, merged `e6a816c`)
+- Routine `trig_01EMJ2DpqvXmkhwAMS8xNuPz` (每週2篇，全自動)
+
+---
+
 ## 2026-07-07 — Deep web-chat audit: the AI never saw a single customer message (PR #106)
 
 **Context:**
