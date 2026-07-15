@@ -8,6 +8,10 @@
 import { Router } from "express";
 import * as db from "./db";
 import { logger } from "./logger";
+// Blog content is the single source of truth for post meta / JSON-LD / sitemap.
+// blogPosts.ts is pure data (no React / browser deps), so it bundles cleanly
+// into the esbuild server build.
+import { blogPosts, type BlogPost } from "../client/src/data/blogPosts";
 
 // ============ IndexNow: Instant URL notification to Bing/Yandex ============
 
@@ -66,6 +70,60 @@ function escJson(str: string): string {
 /** Stable daily ISO timestamp — avoids per-request fluctuation that search engines flag as manipulation */
 function getStableDailyTimestamp(): string {
   return new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
+}
+
+// ============ BLOG: derive SEO data from blogPosts.ts (single source of truth) ============
+
+/** Unique posts by slug — blogPosts.ts currently contains a few duplicate slugs;
+ *  first occurrence wins (matches getBlogPost's find()). Prevents duplicate sitemap URLs. */
+function uniqueBlogPosts(): BlogPost[] {
+  const bySlug = new Map<string, BlogPost>();
+  for (const p of blogPosts) {
+    if (!bySlug.has(p.slug)) bySlug.set(p.slug, p);
+  }
+  return Array.from(bySlug.values());
+}
+
+/** Strip HTML tags + decode common entities + collapse whitespace → plain text. */
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Visible-character count — a reasonable wordCount signal for CJK content. */
+function blogWordCount(html: string): number {
+  return stripHtml(html).replace(/\s+/g, "").length;
+}
+
+/** "2026-01-15" → ISO datetime for schema/OG freshness fields; falls back to daily stamp. */
+function blogDateIso(date: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00.000Z` : getStableDailyTimestamp();
+}
+
+/**
+ * Extract FAQ Q&A pairs from a post's HTML for FAQPage schema.
+ * Handles both authoring styles used in blogPosts.ts:
+ *   <h3>Q：問題？</h3><p>A：答案</p>   and   <h3>Q：問題？</h3>\n<p>答案</p>
+ * Answer text is HTML-stripped; the optional leading "A：" prefix is dropped.
+ * Returns [] (→ no FAQPage emitted) when fewer than 2 valid pairs are found.
+ */
+function extractBlogFaqs(html: string): Array<{ q: string; a: string }> {
+  const faqs: Array<{ q: string; a: string }> = [];
+  const re = /<h3>\s*Q[：:]\s*([\s\S]*?)<\/h3>\s*<p>\s*(?:A[：:]\s*)?([\s\S]*?)<\/p>/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const q = stripHtml(m[1]);
+    const a = stripHtml(m[2]);
+    if (q && a) faqs.push({ q, a });
+  }
+  return faqs.length >= 2 ? faqs : [];
 }
 
 // ============ HELPER: Parse photo URLs ============
@@ -866,97 +924,19 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
   // ---------- Blog post pages (/blog/:slug) ----------
   else if (path.startsWith("/blog/")) {
     const slug = path.replace("/blog/", "");
-    // Blog post meta is static data — import inline to avoid circular deps
-    const blogMeta: Record<string, { title: string; description: string; keywords: string[] }> = {
-      "buy-used-car-guide": {
-        title: "買二手車必看！7大注意事項，避免踩雷完整指南",
-        description: "買二手車前必看的7大注意事項，從車輛歷史查詢、第三方認證、泡水車辨認到貸款陷阱，完整教學幫你避開所有地雷。",
-        keywords: ["買二手車", "二手車注意事項"],
-      },
-      "used-car-loan-guide": {
-        title: "二手車貸款全攻略：利率、條件、申辦流程一次看懂（2026年最新）",
-        description: "完整解析二手車貸款：貸款成數、利率比較、所需文件、申辦流程與注意事項。2026年最新資訊。",
-        keywords: ["二手車貸款", "中古車貸款", "二手車利率"],
-      },
-      "kaohsiung-used-car-guide": {
-        title: "高雄買二手車推薦：在地40年崑家汽車，正派經營完整評價",
-        description: "想在高雄買二手車？本文介紹高雄二手車市場生態、挑選車行標準，以及崑家汽車完整評價與服務特色。",
-        keywords: ["高雄二手車", "高雄二手車行", "高雄中古車推薦"],
-      },
-      "third-party-inspection-guide": {
-        title: "二手車第三方認證是什麼？買中古車一定要看的完整指南",
-        description: "詳解二手車第三方認證的意義、認證項目、如何閱讀認證報告，以及未認證車輛的潛在風險。",
-        keywords: ["二手車第三方認證", "中古車認證", "驗車"],
-      },
-      "used-car-transfer-guide": {
-        title: "二手車過戶流程與費用：2026年最新完整指南",
-        description: "完整解析2026年二手車過戶流程、所需文件、費用明細與注意事項。讓你輕鬆完成二手車過戶。",
-        keywords: ["二手車過戶", "中古車過戶流程", "過戶費用"],
-      },
-      "kaohsiung-used-car-dealers-comparison": {
-        title: "2026高雄二手車行推薦比較：崑家汽車 vs HOT大聯盟、SUM、Toyota認證中古車",
-        description: "客觀比較高雄主要二手車通路：崑家汽車、HOT大聯盟、SUM認證車聯盟、Toyota認證中古車、杰運汽車、格上租車等，從認證制度、價格透明度、貸款方案到售後服務完整評比。",
-        keywords: ["高雄二手車行推薦", "二手車行比較", "HOT大聯盟", "SUM認證車聯盟", "Toyota認證中古車", "崑家汽車評價", "杰運汽車", "格上租車中古車"],
-      },
-      "used-car-price-guide": {
-        title: "二手車行情怎麼查？2026年中古車價格查詢完整攻略",
-        description: "完整教學如何查詢二手車行情與中古車估價：8891、SUM、ABC Car等平台比較，影響車價的7大因素，以及如何判斷合理售價。",
-        keywords: ["二手車行情", "中古車行情", "二手車價格查詢", "中古車估價", "二手車行情表"],
-      },
-      "kunjia-vs-hot": {
-        title: "崑家汽車 vs HOT大聯盟：2026年二手車商完整比較",
-        description: "客觀比較崑家汽車與HOT大聯盟：從認證制度、定價透明度、貸款方案、保固範圍到服務體驗，幫你選擇最適合的二手車商。",
-        keywords: ["崑家汽車 vs HOT", "HOT大聯盟評價", "崑家汽車評價", "二手車行比較"],
-      },
-      "kunjia-vs-sum": {
-        title: "崑家汽車 vs SUM認證車聯盟：哪個適合你？完整分析",
-        description: "詳細分析崑家汽車與SUM認證車聯盟的差異：認證標準、價格策略、保固條件、換車服務，以及各自適合的購車族群。",
-        keywords: ["崑家汽車 vs SUM", "SUM認證車聯盟評價", "二手車行比較", "SUM二手車"],
-      },
-      "used-car-warranty-guide": {
-        title: "二手車保固範圍完整解析｜2026年買中古車前必看",
-        description: "二手車保固一般保多久？涵蓋哪些項目？車商保固 vs 第三方保固比較，以及購買前必確認的5個保固細節。",
-        keywords: ["二手車保固", "中古車保固範圍", "二手車保固期", "二手車保固項目", "中古車保固"],
-      },
-      "used-car-inspection-cost": {
-        title: "二手車驗車費用怎麼算？2026年第三方認證價格全解析",
-        description: "二手車驗車費用 1500-3000 元起跳。詳細解析監理所定檢、第三方認證、SGS 檢驗的差異與價格。",
-        keywords: ["二手車驗車費用", "中古車驗車", "二手車第三方認證費用", "車輛檢驗費", "中古車檢測"],
-      },
-      "used-car-contract-guide": {
-        title: "二手車買賣合約注意事項｜2026年消費者完整指南",
-        description: "簽二手車合約前必看：必備條款、解約條件、瑕疵擔保、過戶責任、消保法保護完整解析。",
-        keywords: ["二手車買賣合約", "中古車契約", "二手車合約注意事項", "車輛買賣契約書", "二手車消保"],
-      },
-    };
-    const meta = blogMeta[slug];
-    if (meta) {
-      title = `${meta.title}｜${SITE_NAME}`;
-      description = meta.description;
+    // Meta / JSON-LD are derived from blogPosts.ts (single source of truth) so
+    // every post is covered automatically — no per-slug hardcoded map to maintain.
+    const post = blogPosts.find(p => p.slug === slug);
+    if (post) {
+      title = `${post.title}｜${SITE_NAME}`;
+      description = post.description;
+      ogType = "article";
+      modifiedTime = blogDateIso(post.updatedAt);
       jsonLdBlocks.push(breadcrumb([
         { name: "首頁", url: baseUrl },
         { name: "購車攻略", url: `${baseUrl}/blog` },
-        { name: meta.title, url: canonicalUrl },
+        { name: post.title, url: canonicalUrl },
       ]));
-      // Enhanced Article schema with datePublished, dateModified, speakable, E-E-A-T author
-      const blogWordCount: Record<string, number> = {
-        "buy-used-car-guide": 1773,
-        "used-car-loan-guide": 1117,
-        "kaohsiung-used-car-guide": 1148,
-        "third-party-inspection-guide": 1187,
-        "used-car-transfer-guide": 1125,
-        "kaohsiung-used-car-dealers-comparison": 2350,
-      };
-      const blogDates: Record<string, { published: string; modified: string }> = {
-        "buy-used-car-guide":              { published: "2026-01-15", modified: "2026-03-24" },
-        "used-car-loan-guide":             { published: "2026-01-22", modified: "2026-03-24" },
-        "kaohsiung-used-car-guide":        { published: "2026-02-01", modified: "2026-03-24" },
-        "third-party-inspection-guide":    { published: "2026-02-10", modified: "2026-03-24" },
-        "used-car-transfer-guide":         { published: "2026-02-20", modified: "2026-03-24" },
-        "kaohsiung-used-car-dealers-comparison": { published: "2026-03-20", modified: "2026-03-24" },
-      };
-      const dates = blogDates[slug];
-      if (dates) modifiedTime = dates.modified + "T00:00:00.000Z";
 
       // Person schema for author E-E-A-T (named expert > generic org = higher citation)
       jsonLdBlocks.push({
@@ -988,8 +968,8 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
       jsonLdBlocks.push({
         "@context": "https://schema.org",
         "@type": "Article",
-        "headline": meta.title,
-        "description": meta.description,
+        "headline": post.title,
+        "description": post.description,
         "author": {
           "@type": "Person",
           "@id": `${baseUrl}/#author-lai`,
@@ -1011,7 +991,8 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
           "@type": "WebPage",
           "@id": canonicalUrl,
         },
-        "keywords": meta.keywords.join(", "),
+        "keywords": post.keywords.join(", "),
+        "articleSection": post.category,
         "inLanguage": "zh-TW",
         "isPartOf": { "@type": "WebSite", "@id": `${baseUrl}/#website` },
         "image": {
@@ -1020,13 +1001,16 @@ export async function injectSeoTags(html: string, url: string): Promise<string> 
           "width": 1200,
           "height": 630,
         },
-        ...(blogWordCount[slug] && { "wordCount": blogWordCount[slug] }),
-        ...(dates && {
-          "datePublished": dates.published,
-          "dateModified": dates.modified,
-        }),
+        "wordCount": blogWordCount(post.content),
+        "datePublished": blogDateIso(post.publishedAt),
+        "dateModified": blogDateIso(post.updatedAt),
         "speakable": speakableSchema(canonicalUrl, ["h1", "h2", ".answer-summary", "[data-speakable]"]),
       });
+
+      // FAQPage schema — extracted from the article's own Q&A blocks for rich
+      // results / AEO. Emitted only when the post actually has a FAQ section.
+      const blogFaqs = extractBlogFaqs(post.content);
+      if (blogFaqs.length > 0) jsonLdBlocks.push(faqSchema(blogFaqs));
 
       // HowTo schema removed — Google deprecated HowTo rich results in Sep 2023
     }
@@ -1704,17 +1688,12 @@ Toyota、Honda、BMW、Benz、Mazda、Nissan、Ford、Volkswagen、Mitsubishi、
       const baseUrl = getBaseUrl();
       const now = new Date().toISOString().split("T")[0];
 
-      // Static pages
+      // Static pages (blog posts are generated below from blogPosts.ts so every
+      // post is always included without maintaining a hardcoded list here)
       const staticPages = [
         { loc: "/",                              changefreq: "daily",   priority: "1.0" },
         { loc: "/faq",                           changefreq: "monthly", priority: "0.8" },
         { loc: "/blog",                          changefreq: "weekly",  priority: "0.8" },
-        { loc: "/blog/buy-used-car-guide",       changefreq: "monthly", priority: "0.7" },
-        { loc: "/blog/used-car-loan-guide",      changefreq: "monthly", priority: "0.7" },
-        { loc: "/blog/kaohsiung-used-car-guide", changefreq: "monthly", priority: "0.7" },
-        { loc: "/blog/third-party-inspection-guide", changefreq: "monthly", priority: "0.7" },
-        { loc: "/blog/used-car-transfer-guide",  changefreq: "monthly", priority: "0.7" },
-        { loc: "/blog/kaohsiung-used-car-dealers-comparison", changefreq: "monthly", priority: "0.8" },
         { loc: "/price/under-30",                changefreq: "weekly",  priority: "0.6" },
         { loc: "/price/30-50",                   changefreq: "weekly",  priority: "0.6" },
         { loc: "/price/50-80",                   changefreq: "weekly",  priority: "0.6" },
@@ -1726,6 +1705,18 @@ Toyota、Honda、BMW、Benz、Mazda、Nissan、Ford、Volkswagen、Mitsubishi、
         { loc: "/book-visit",                    changefreq: "monthly", priority: "0.7" },
         { loc: "/loan-inquiry",                  changefreq: "monthly", priority: "0.7" },
       ];
+
+      // Blog post pages — generated from blogPosts.ts (deduped by slug), with
+      // each post's own updatedAt as lastmod for an accurate freshness signal.
+      const blogEntries = uniqueBlogPosts().map(p => {
+        const lastmod = /^\d{4}-\d{2}-\d{2}$/.test(p.updatedAt) ? p.updatedAt : now;
+        return `  <url>
+    <loc>${baseUrl}/blog/${p.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+      });
 
       // Dynamic vehicle pages + brand pages
       let vehicleEntries: string[] = [];
@@ -1768,6 +1759,7 @@ ${staticPages.map(p => `  <url>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`).join("\n")}
+${blogEntries.join("\n")}
 ${vehicleEntries.join("\n")}
 </urlset>`;
 
