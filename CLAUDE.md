@@ -1,4 +1,3 @@
-@recall-stack/primer.md
 @docs/PROJECT_JOURNAL.md
 
 # Claude Code Configuration - RuFlo V3
