@@ -14,6 +14,75 @@
 
 ---
 
+## 2026-08-28 — Megan bug report: vehicle page text was navy-on-navy (contrast 1.03:1)
+
+**Context:**
+Megan (LINE, Family group) sent two screenshots of `/vehicle/28` with red boxes
+around unreadable elements: 「這裡字母顏色可以改像以前那樣用白色的嗎？客人反應看不清楚」
+and 「裡面的字還是都和背景同色被吃掉了…因為都是拉網址去投廣告 怕影響成效，也有幾個
+客人反應」. Jerry: 根據我姐說的進行修改 (website + related chatbot surfaces).
+
+**Root cause — measured, not eyeballed:**
+`VehicleLanding.tsx` renders on a hardcoded dark navy gradient
+(`#1B3A5C → #0f2440`), but the 2026-07-06 design-compliance pass (commit
+`3ddaace`) swapped its gold `#C4A265` accents for the `primary` token.
+Light-mode `--primary` = `oklch(0.35 0.08 250)` = **RGB(20,60,98)**; the page
+background is **RGB(27,58,92)**. Contrast ratio **1.03:1** on the page and
+**1.24:1** on the `bg-white/[0.08]` cards — literally invisible. Megan's
+「被背景吃掉」 is a precise description.
+
+The 2026-07-06 journal entry already flagged this exact hazard ("naively
+swapping text-[#C4A265] → text-primary on those backgrounds would have made
+text nearly invisible") and resolved it by matching `VehicleLanding.tsx`'s
+own precedent — but that precedent was itself the bug. PR #105 reverted 7
+other files to gold; `VehicleLanding.tsx` and `Home.tsx` were explicitly left
+navy, so this page kept shipping invisible text for ~7 weeks, on the exact
+URLs used as ad landing pages.
+
+**Elements that were invisible (all confirmed against the screenshots):**
+主要售價 (the 2xl price — worst one), 第三方認證 badge, active media tab
+(照片/影片/360/精選影片 — inactive tabs were white and readable, only the
+selected one vanished), 亮點配備 tags, 崑家認證車況 panel heading + border,
+3 of the 4 intent CTA buttons (the LINE-green one was fine), brand eyebrow
+「崑家汽車 · 40年老口碑」, recommendation-card prices, 附近服務地區 + footer
+links, spinners, and the two solid `bg-primary` CTA buttons (navy fill on
+navy page).
+
+**Decision:** follow Megan's ask — white, not gold. The page already has a
+white-opacity type scale (`text-white`, `/80`, `/50`, `/40`) plus green/orange
+status accents, so white slots into the existing system instead of adding a
+third palette. Gold stays where Jerry chose it on 2026-07-06 (wishlist, video
+nudge, chat trigger, valuation, FAQ, smart-redirect) — untouched here.
+
+**Verified numerically** (OKLab→sRGB + WCAG relative luminance script, same
+method as the 2026-07-06 entry): every fixed combination now lands
+4.5–11.6:1, i.e. WCAG AA for body text. Small footer/area links were first
+set to `white/60` (4.48:1, a hair under AA) and bumped to `white/75`.
+
+**Scope check (chatbot + rest of site):** swept every file with a hardcoded
+dark background. `WishlistDrawer` / `VideoShowcaseNudge` / `ProactiveChatTrigger`
+/ `SmartRedirect` / `CarValuation` all use white or gold on their dark
+surfaces — clean. Web chat (`Chat.tsx` → `bg-background`, `AIChatBox` →
+`bg-card`/`text-card-foreground`, Home's floating widget header →
+`bg-primary` + `text-primary-foreground`) is light-surface and readable —
+no chatbot change needed. `Home.tsx`'s dark header (`#303d4e`) carries no
+primary-token text. Issue was confined to `VehicleLanding.tsx`.
+
+**Verification:** `npm run build` clean (1,294kb client / 896kb server);
+`tsc --noEmit` 11 errors = post-#106 baseline, none in the touched file;
+`vitest run` 905 passed / 46 failed = documented baseline exactly.
+
+**Lesson:** a semantic token is only "compliant" relative to the surface it
+sits on. `text-primary` is correct on `bg-background` and invisible on a
+hardcoded dark hex. Any page that hardcodes its background must hardcode its
+foreground too — or be checked numerically before shipping.
+
+**Artifacts:**
+- `kun-auto-chatbot/client/src/pages/VehicleLanding.tsx` (26 lines)
+- Branch: `claude/website-font-color-update-izsd47`
+
+---
+
 ## 2026-07-07 — Deep web-chat audit: the AI never saw a single customer message (PR #106)
 
 **Context:**
