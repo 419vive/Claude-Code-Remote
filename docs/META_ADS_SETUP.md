@@ -75,3 +75,77 @@ Jerry 的個人廣告帳號有被停權紀錄。Meta 的停權判定是實體層
 - 拿到 token 之後，**不要用自己的瀏覽器登入這個廣告帳號後台**，讀報表走 `getInsights()`
 
 停權狀態查詢：`facebook.com/business-support-home`（`facebook.com/accountquality` 會轉址到這裡）→「查看我的帳號」。
+
+---
+
+# 受眾與報表（對齊大表 SOP）
+
+## 模組分工
+
+| 檔案 | 負責 |
+|---|---|
+| `server/metaAds.ts` | 傳輸層＋四層物件（Campaign/AdSet/Creative/Ad）、預算與 token 防護 |
+| `server/metaTargeting.ts` | 受眾層：地區/興趣/類似受眾/排除、Advantage+ 開關、命名規則 |
+| `server/metaVehicleAds.ts` | 一台車 → 一整組 PAUSED 廣告 |
+| `server/metaReporting.ts` | insights → 大表日報/月報列 + CSV |
+
+## 為什麼地區和興趣的 ID 不寫死
+
+Meta 用不透明的數字 key 定位縣市和興趣，各市場不同、且會變。猜錯的後果是**廣告看起來設定正確、實際上打到別的地方**。所以先查再用：
+
+```ts
+const regions = await searchGeoLocations(cfg, "高雄");   // → [{ key, name, type }]
+const interests = await searchInterests(cfg, "中古車");   // → [{ id, name, audienceSize }]
+const audiences = await listCustomAudiences(cfg);        // → LL2%、已填單名單
+```
+
+## 一組完整的廣告
+
+```ts
+const info = await getAdAccountInfo(cfg);   // 先確認 currency offset
+
+await launchVehicleAd(cfg, vehicle, {
+  imageUrl: "https://kuncar.tw/...jpg",
+  baseUrl: "https://kuncar.tw",
+  dailyBudgetMinor: toMinorUnits(500, info.currencyOffset),
+  targeting: {
+    regionKeys: [kaohsiungKey],
+    ageMin: 35,
+    ageMax: 65,
+    interestIds: [usedCarInterestId],
+    excludedCustomAudienceIds: [alreadySubmittedId],  // 排除已填單
+    advantageAudience: false,                          // AI 受眾關閉，測試才讀得出來
+  },
+  naming: { region: "高雄", audience: "中古車 家庭用車", flight: "9月檔" },
+  bidStrategy: "COST_CAP",                             // CPA 控價
+  bidAmountMinor: toMinorUnits(1500, info.currencyOffset),
+});
+// → adsetName「高雄｜35-65+｜中古車 家庭用車｜9月檔」，全部 PAUSED
+```
+
+`advantageAudience` 預設 **關閉**。Meta 開著時會自行擴大受眾，興趣測試就讀不出結果——這正是大表裡「這週AI全關閉觀察！」在做的事，所以做成明確開關而不是預設值。
+
+`bidStrategy: "COST_CAP"` 沒帶 `bidAmountMinor` 會直接報錯，不會默默退回預設出價（那等於沒控價）。
+
+## 報表回填大表
+
+```ts
+const rows = await getDailyRows(cfg, { since: "2026-09-01", until: "2026-09-30" });
+console.log(formatDailyCsv(rows));   // 欄位順序與大表一致，可直接貼回
+```
+
+**指標定義**（從大表真實列反推，逐位驗算過）：
+
+```
+點擊率      = 連結點擊次數 / 曝光次數
+千次曝光成本 = 花費 / 曝光次數 × 1000
+單次點擊成本 = 花費 / 連結點擊次數
+轉換率      = 填單次數 / 連結點擊次數
+單次填單成本 = 花費 / 填單次數
+```
+
+⚠️ Meta 自己的 `ctr` / `cpc` 欄位算的是**所有點擊**（含表情、頭像點擊、看大圖），大表算的是**連結點擊**。直接用 Meta 的欄位會讓 CPC 從 90 變成 20，整張表的數字全變。所以模組一律自己從連結點擊推導，不使用 Meta 的 ctr/cpc。
+
+回歸測試用 2026/8/1、8/2、8/5、8/7 四天的真實數字驗證，五個指標全部逐位吻合；月報用好珈貿易 2023-06 驗證 ROAS/CPA/客單價。
+
+除以零回傳 null，CSV 輸出空白（不是 `#DIV/0!`），避免污染平均值。

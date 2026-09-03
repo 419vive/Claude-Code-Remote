@@ -25,9 +25,7 @@
  */
 
 import { logger } from "./logger";
-import { SHOP_NAME, SHOP_CITY, SHOP_PHONE } from "../shared/shopConfig";
-import { formatVehiclePriceSafe } from "../shared/priceFormat";
-import type { Vehicle } from "../drizzle/schema";
+import { buildTargeting, type TargetingSpec } from "./metaTargeting";
 
 // ============================================================
 // CONFIG
@@ -276,13 +274,20 @@ export async function createCampaign(cfg: MetaAdsConfig, input: CreateCampaignIn
   return res.id;
 }
 
-/** Geo targeting by radius around the shop — the only shape a local dealer needs. */
+/** Geo targeting by radius around the shop — the simplest local-dealer shape. */
 export interface RadiusTarget {
   latitude: number;
   longitude: number;
   /** 1–80 for km. Meta rejects anything outside that. */
   radiusKm: number;
 }
+
+/**
+ * Bid strategy. "CPA控價" in the playbook is COST_CAP: Meta keeps the average
+ * cost per result at or under `bidAmountMinor`. LOWEST_COST_WITHOUT_CAP is
+ * Meta's default (spend the budget, take whatever the cost lands at).
+ */
+export type BidStrategy = "LOWEST_COST_WITHOUT_CAP" | "COST_CAP" | "LOWEST_COST_WITH_BID_CAP";
 
 export interface CreateAdSetInput {
   campaignId: string;
@@ -293,17 +298,57 @@ export interface CreateAdSetInput {
   optimizationGoal?: "OFFSITE_CONVERSIONS" | "LINK_CLICKS" | "LEAD_GENERATION" | "REACH";
   /** Pixel conversion event to optimize for, e.g. "LEAD" or "SCHEDULE". */
   customEventType?: string;
-  radius: RadiusTarget;
+
+  /**
+   * Full audience spec — cities, interests, lookalikes, exclusions, the
+   * Advantage+ toggle. Provide this OR `radius`, not both.
+   */
+  targeting?: TargetingSpec;
+  /** Shorthand for a single radius ring. Equivalent to targeting.customLocation. */
+  radius?: RadiusTarget;
   ageMin?: number;
   ageMax?: number;
+
+  /** Cost cap. Required when bidStrategy is COST_CAP or LOWEST_COST_WITH_BID_CAP. */
+  bidStrategy?: BidStrategy;
+  /** The cap itself, in minor units — same conversion as the budget. */
+  bidAmountMinor?: number;
 }
 
 export async function createAdSet(cfg: MetaAdsConfig, input: CreateAdSetInput): Promise<string> {
   assertBudgetSane(input.dailyBudgetMinor, input.allowBudgetAboveCeiling);
 
-  if (input.radius.radiusKm < 1 || input.radius.radiusKm > 80) {
-    throw new RangeError(`radiusKm must be between 1 and 80, got ${input.radius.radiusKm}`);
+  if (input.targeting && input.radius) {
+    throw new RangeError("pass either targeting or radius, not both");
   }
+  if (!input.targeting && !input.radius) {
+    throw new RangeError("createAdSet needs targeting or radius");
+  }
+
+  // A cost cap with no amount silently degrades to Meta's default bidding,
+  // which is the opposite of what "控價" is for — so fail loudly instead.
+  const needsBidAmount =
+    input.bidStrategy === "COST_CAP" || input.bidStrategy === "LOWEST_COST_WITH_BID_CAP";
+  if (needsBidAmount && !input.bidAmountMinor) {
+    throw new RangeError(`bidStrategy ${input.bidStrategy} requires bidAmountMinor`);
+  }
+  if (input.bidAmountMinor !== undefined) {
+    assertBudgetSane(input.bidAmountMinor, input.allowBudgetAboveCeiling);
+  }
+
+  const spec: TargetingSpec = input.targeting ?? {
+    customLocation: {
+      latitude: input.radius!.latitude,
+      longitude: input.radius!.longitude,
+      radiusKm: input.radius!.radiusKm,
+    },
+  };
+
+  const targeting = buildTargeting({
+    ...spec,
+    ageMin: input.ageMin ?? spec.ageMin ?? 25,
+    ageMax: input.ageMax ?? spec.ageMax ?? 60,
+  });
 
   const optimizationGoal = input.optimizationGoal ?? "OFFSITE_CONVERSIONS";
 
@@ -316,24 +361,13 @@ export async function createAdSet(cfg: MetaAdsConfig, input: CreateAdSetInput): 
       daily_budget: input.dailyBudgetMinor,
       billing_event: "IMPRESSIONS",
       optimization_goal: optimizationGoal,
+      bid_strategy: input.bidStrategy,
+      bid_amount: input.bidAmountMinor,
       promoted_object:
         optimizationGoal === "OFFSITE_CONVERSIONS"
           ? { pixel_id: cfg.pixelId, custom_event_type: input.customEventType ?? "LEAD" }
           : undefined,
-      targeting: {
-        geo_locations: {
-          custom_locations: [
-            {
-              latitude: input.radius.latitude,
-              longitude: input.radius.longitude,
-              radius: input.radius.radiusKm,
-              distance_unit: "kilometer",
-            },
-          ],
-        },
-        age_min: input.ageMin ?? 25,
-        age_max: input.ageMax ?? 60,
-      },
+      targeting,
     },
   });
 
@@ -429,108 +463,4 @@ export async function createAd(
 export async function activateAd(cfg: MetaAdsConfig, adId: string): Promise<void> {
   await metaGraph(cfg, adId, { method: "POST", params: { status: "ACTIVE" } });
   logger.warn("MetaAds", `ad ${adId} ACTIVATED — this ad can now spend money`);
-}
-
-// ============================================================
-// VEHICLE AD BUILDER
-// ============================================================
-
-/** Ad copy for one car, in the shop's own voice. Pure — no network, easy to test. */
-export function buildVehicleCreativeSpec(
-  vehicle: Pick<Vehicle, "id" | "brand" | "model" | "modelYear" | "mileage" | "price" | "priceDisplay">,
-  baseUrl: string,
-): Omit<CreateCreativeInput, "imageHash"> {
-  const title = [vehicle.modelYear, vehicle.brand, vehicle.model].filter(Boolean).join(" ");
-  const price = formatVehiclePriceSafe(vehicle);
-  const mileageLine = vehicle.mileage ? `｜${vehicle.mileage}` : "";
-
-  return {
-    name: `${title} — 車輛廣告`,
-    headline: `${title}　${price}`,
-    description: `${SHOP_NAME}・${SHOP_CITY}｜40年老口碑`,
-    message:
-      `${title}${mileageLine}\n` +
-      `${price}\n\n` +
-      `${SHOP_NAME}在${SHOP_CITY}，實車實價、車況透明。\n` +
-      `想看車或問貸款，直接私訊或電洽 ${SHOP_PHONE}。`,
-    link: `${baseUrl.replace(/\/$/, "")}/vehicle/${vehicle.id}`,
-    callToAction: "LEARN_MORE",
-  };
-}
-
-export interface LaunchVehicleAdResult {
-  campaignId: string;
-  adsetId: string;
-  creativeId: string;
-  adId: string;
-  /** Always false — nothing here activates. Call activateAd() to go live. */
-  active: false;
-}
-
-/**
- * Build a complete, PAUSED ad for one vehicle. Review it in Ads Manager,
- * then call activateAd(adId) when you actually want it running.
- */
-export async function launchVehicleAd(
-  cfg: MetaAdsConfig,
-  vehicle: Pick<Vehicle, "id" | "brand" | "model" | "modelYear" | "mileage" | "price" | "priceDisplay">,
-  opts: {
-    imageUrl: string;
-    baseUrl: string;
-    dailyBudgetMinor: number;
-    radius: RadiusTarget;
-    objective?: AdObjective;
-    allowBudgetAboveCeiling?: boolean;
-  },
-): Promise<LaunchVehicleAdResult> {
-  const spec = buildVehicleCreativeSpec(vehicle, opts.baseUrl);
-
-  const campaignId = await createCampaign(cfg, {
-    name: `${spec.name}｜${new Date().toISOString().slice(0, 10)}`,
-    objective: opts.objective ?? "OUTCOME_LEADS",
-  });
-
-  const adsetId = await createAdSet(cfg, {
-    campaignId,
-    name: `${spec.name}｜受眾`,
-    dailyBudgetMinor: opts.dailyBudgetMinor,
-    allowBudgetAboveCeiling: opts.allowBudgetAboveCeiling,
-    radius: opts.radius,
-  });
-
-  const imageHash = await uploadAdImage(cfg, opts.imageUrl);
-  const creativeId = await createAdCreative(cfg, { ...spec, imageHash });
-  const adId = await createAd(cfg, { name: spec.name, adsetId, creativeId });
-
-  logger.info("MetaAds", `vehicle ${vehicle.id} ad stack built (PAUSED) ad=${adId}`);
-  return { campaignId, adsetId, creativeId, adId, active: false };
-}
-
-// ============================================================
-// INSIGHTS
-// ============================================================
-
-export interface InsightRow {
-  spend: string;
-  impressions: string;
-  clicks: string;
-  ctr: string;
-  cpc: string;
-  actions?: Array<{ action_type: string; value: string }>;
-  [key: string]: unknown;
-}
-
-export async function getInsights(
-  cfg: MetaAdsConfig,
-  opts: { level?: "account" | "campaign" | "adset" | "ad"; datePreset?: string; objectId?: string } = {},
-): Promise<InsightRow[]> {
-  const target = opts.objectId || cfg.adAccountId;
-  const res = await metaGraph<{ data: InsightRow[] }>(cfg, `${target}/insights`, {
-    params: {
-      level: opts.level ?? "campaign",
-      date_preset: opts.datePreset ?? "last_7d",
-      fields: "campaign_name,adset_name,spend,impressions,clicks,ctr,cpc,actions",
-    },
-  });
-  return res.data ?? [];
 }

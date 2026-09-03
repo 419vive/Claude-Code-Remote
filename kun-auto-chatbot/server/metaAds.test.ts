@@ -8,7 +8,6 @@ import {
   toMinorUnits,
   assertBudgetSane,
   DAILY_BUDGET_CEILING_MINOR,
-  buildVehicleCreativeSpec,
   createCampaign,
   createAdSet,
   createAd,
@@ -145,55 +144,6 @@ describe("assertBudgetSane", () => {
   });
 });
 
-describe("buildVehicleCreativeSpec", () => {
-  const vehicle = {
-    id: 28,
-    brand: "Hyundai",
-    model: "Mufasa 2.0 GLC旗艦版",
-    modelYear: "2023",
-    mileage: "1.2萬公里",
-    price: "80.9",
-    priceDisplay: "80.9萬",
-  };
-
-  it("builds the landing link from the vehicle id", () => {
-    expect(buildVehicleCreativeSpec(vehicle, "https://kuncar.tw").link).toBe("https://kuncar.tw/vehicle/28");
-  });
-
-  it("does not double the slash when baseUrl has a trailing one", () => {
-    expect(buildVehicleCreativeSpec(vehicle, "https://kuncar.tw/").link).toBe("https://kuncar.tw/vehicle/28");
-  });
-
-  it("puts year, brand and model in the headline", () => {
-    const spec = buildVehicleCreativeSpec(vehicle, "https://kuncar.tw");
-    expect(spec.headline).toContain("2023");
-    expect(spec.headline).toContain("Hyundai");
-    expect(spec.headline).toContain("Mufasa 2.0 GLC旗艦版");
-  });
-
-  // FACT_LOCK: ad copy is customer-facing, so the same shop-fact rules apply.
-  it("uses the real shop city and phone, never invented ones", () => {
-    const spec = buildVehicleCreativeSpec(vehicle, "https://kuncar.tw");
-    expect(spec.message).toContain("高雄");
-    expect(spec.message).toContain("0936-812-818");
-    expect(spec.message).not.toMatch(/台北|台中|新車/);
-  });
-
-  it("never renders undefined/null/NaN as a price", () => {
-    const spec = buildVehicleCreativeSpec(
-      { ...vehicle, price: null, priceDisplay: null },
-      "https://kuncar.tw",
-    );
-    expect(spec.headline).not.toMatch(/undefined|null|NaN/);
-    expect(spec.message).not.toMatch(/undefined|null|NaN/);
-  });
-
-  it("omits the mileage separator when mileage is missing", () => {
-    const spec = buildVehicleCreativeSpec({ ...vehicle, mileage: null }, "https://kuncar.tw");
-    expect(spec.message).not.toContain("｜\n");
-  });
-});
-
 describe("Graph transport + create calls", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -297,5 +247,104 @@ describe("Graph transport + create calls", () => {
       }),
     ).rejects.toThrow(/safety ceiling/);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("createAdSet — playbook controls", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+  const ok = (body: unknown) =>
+    ({ ok: true, status: 200, text: async () => JSON.stringify(body) }) as unknown as Response;
+
+  beforeEach(() => {
+    fetchMock = vi.fn().mockResolvedValue(ok({ id: "s1" }));
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const lastBody = () => new URLSearchParams(String(fetchMock.mock.calls.at(-1)![1].body));
+  const base = { campaignId: "c1", name: "t", dailyBudgetMinor: 50_000 };
+
+  it("passes a full targeting spec straight through", async () => {
+    await createAdSet(cfg, {
+      ...base,
+      targeting: {
+        regionKeys: ["3886"],
+        interestIds: ["6003"],
+        customAudienceIds: ["LL2pct"],
+        excludedCustomAudienceIds: ["already_submitted"],
+        gender: "female",
+      },
+      ageMin: 35,
+      ageMax: 65,
+    });
+
+    const t = JSON.parse(lastBody().get("targeting")!);
+    expect(t.geo_locations.regions).toEqual([{ key: "3886" }]);
+    expect(t.flexible_spec).toEqual([{ interests: [{ id: "6003" }] }]);
+    expect(t.custom_audiences).toEqual([{ id: "LL2pct" }]);
+    expect(t.excluded_custom_audiences).toEqual([{ id: "already_submitted" }]);
+    expect(t.genders).toEqual([2]);
+    expect(t.age_min).toBe(35);
+    expect(t.age_max).toBe(65);
+    expect(t.targeting_automation).toEqual({ advantage_audience: 0 });
+  });
+
+  it("still accepts the radius shorthand", async () => {
+    await createAdSet(cfg, { ...base, radius: { latitude: 22.63, longitude: 120.3, radiusKm: 30 } });
+    const t = JSON.parse(lastBody().get("targeting")!);
+    expect(t.geo_locations.custom_locations[0].radius).toBe(30);
+  });
+
+  it("rejects passing both targeting and radius", async () => {
+    await expect(
+      createAdSet(cfg, {
+        ...base,
+        targeting: { regionKeys: ["3886"] },
+        radius: { latitude: 22.63, longitude: 120.3, radiusKm: 30 },
+      }),
+    ).rejects.toThrow(/either targeting or radius/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects passing neither", async () => {
+    await expect(createAdSet(cfg, base)).rejects.toThrow(/needs targeting or radius/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sends the CPA cost cap (控價) when one is set", async () => {
+    await createAdSet(cfg, {
+      ...base,
+      targeting: { regionKeys: ["3886"] },
+      bidStrategy: "COST_CAP",
+      bidAmountMinor: 150_000,
+    });
+    expect(lastBody().get("bid_strategy")).toBe("COST_CAP");
+    expect(lastBody().get("bid_amount")).toBe("150000");
+  });
+
+  // A cost cap with no amount degrades to default bidding — the opposite of 控價.
+  it("refuses a cost cap with no amount", async () => {
+    await expect(
+      createAdSet(cfg, { ...base, targeting: { regionKeys: ["3886"] }, bidStrategy: "COST_CAP" }),
+    ).rejects.toThrow(/requires bidAmountMinor/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("applies the same safety ceiling to the bid amount as to the budget", async () => {
+    await expect(
+      createAdSet(cfg, {
+        ...base,
+        targeting: { regionKeys: ["3886"] },
+        bidStrategy: "COST_CAP",
+        bidAmountMinor: DAILY_BUDGET_CEILING_MINOR + 1,
+      }),
+    ).rejects.toThrow(/safety ceiling/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("omits bid fields entirely when no strategy is chosen", async () => {
+    await createAdSet(cfg, { ...base, targeting: { regionKeys: ["3886"] } });
+    expect(lastBody().get("bid_strategy")).toBeNull();
+    expect(lastBody().get("bid_amount")).toBeNull();
   });
 });
